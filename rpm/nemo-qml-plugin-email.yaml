@@ -17,9 +17,9 @@ PkgConfigBR:
     - qmfclient
     - mlite
 Provides:
-    - nemo-qml-plugins-email > 0.3.5
+    - nemo-qml-plugins-email > 0.3.10
 Obsoletes:
-    - nemo-qml-plugins-email <= 0.3.5
+    - nemo-qml-plugins-email <= 0.3.10
 Files:
     - "%{_libdir}/qt4/imports/org/nemomobile/email/libnemoemail.so"
     - "%{_libdir}/qt4/imports/org/nemomobile/email/qmldir"
