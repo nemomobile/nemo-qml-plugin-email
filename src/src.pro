@@ -1,7 +1,22 @@
 TARGET = nemoemail
 PLUGIN_IMPORT_PATH = org/nemomobile/email
+
+TEMPLATE = lib
+CONFIG += qt plugin hide_symbols
+QT += declarative
+
+target.path = $$[QT_INSTALL_IMPORTS]/$$PLUGIN_IMPORT_PATH
+INSTALLS += target
+
+qmldir.files += $$_PRO_FILE_PWD_/qmldir
+TARGET = nemoemail
+PLUGIN_IMPORT_PATH = org/nemomobile/email
+
+qmldir.path +=  $$[QT_INSTALL_IMPORTS]/$$$$PLUGIN_IMPORT_PATH
+INSTALLS += qmldir
+
 QT += webkit network
-CONFIG += link_pkgconfig \
+CONFIG += link_pkgconfig
 
 PKGCONFIG += qmfmessageserver \
     qmfclient
@@ -39,4 +54,3 @@ HEADERS += \
 MOC_DIR = $$PWD/../.moc
 OBJECTS_DIR = $$PWD/../.obj
 
-include(../../plugin.pri)
