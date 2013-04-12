@@ -9,9 +9,6 @@ target.path = $$[QT_INSTALL_IMPORTS]/$$PLUGIN_IMPORT_PATH
 INSTALLS += target
 
 qmldir.files += $$_PRO_FILE_PWD_/qmldir
-TARGET = nemoemail
-PLUGIN_IMPORT_PATH = org/nemomobile/email
-
 qmldir.path +=  $$[QT_INSTALL_IMPORTS]/$$$$PLUGIN_IMPORT_PATH
 INSTALLS += qmldir
 
