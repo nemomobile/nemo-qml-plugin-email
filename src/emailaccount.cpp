@@ -596,3 +596,13 @@ int EmailAccount::errorCode() const
 {
     return mErrorCode;
 }
+
+QString EmailAccount::encodePassword(const QString &value)
+{
+    return Base64::encode(value);
+}
+
+QString EmailAccount::decodePassword(const QString &value)
+{
+    return Base64::decode(value);
+}

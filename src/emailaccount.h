@@ -61,6 +61,8 @@ public:
     Q_INVOKABLE void test();
     Q_INVOKABLE void clear();
     Q_INVOKABLE void applyPreset();
+    Q_INVOKABLE QString encodePassword(const QString &value);
+    Q_INVOKABLE QString decodePassword(const QString &value);
 
     QString description() const;
     void setDescription(QString val);
