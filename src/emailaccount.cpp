@@ -166,7 +166,7 @@ void EmailAccount::test()
         QTimer::singleShot(5000, this, SLOT(testConfiguration()));
     } else {
         // skip test if not connected to a network
-        emit testSucceeded();
+        emit testSkipped();
     }
 }
 
@@ -181,6 +181,7 @@ void EmailAccount::testConfiguration()
             qWarning() << "account has no message sources or sinks";
         }
     } else {
+        emit testFailed(invalidAccount);
     }
 }
 
@@ -205,7 +206,8 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            emit testFailed();
+            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            emit testFailed(incomingServer);
         }
     } else if (sender() == static_cast<QObject*>(mTransmitAction)) {
         const QMailServiceAction::Status status(mTransmitAction->status());
@@ -220,7 +222,8 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            emit testFailed();
+            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            emit testFailed(outgoingServer);
         }
     }
 }
@@ -365,6 +368,27 @@ void EmailAccount::applyPreset()
             break;
         default:
             break;
+    }
+}
+
+QVariant EmailAccount::accountId() const
+{
+    if (mAccount->id().isValid()) {
+        return mAccount->id();
+    }
+    else {
+        return -1;
+    }
+}
+
+void EmailAccount::setAccountId(const QVariant accId)
+{
+    QMailAccountId accountId = accId.value<QMailAccountId>();
+    if (accountId.isValid()) {
+        mAccount->setId(accountId);
+    }
+    else {
+        qWarning() << "Invalid account id";
     }
 }
 
