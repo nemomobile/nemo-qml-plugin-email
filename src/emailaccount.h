@@ -20,7 +20,9 @@
 
 class EmailAccount : public QObject {
     Q_OBJECT
+    Q_ENUMS(ErrorType)
 
+    Q_PROPERTY(int accountId READ accountId WRITE setAccountId)
     Q_PROPERTY(QString description READ description WRITE setDescription)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled)
     Q_PROPERTY(QString name READ name WRITE setName)
@@ -61,7 +63,11 @@ public:
     Q_INVOKABLE void test();
     Q_INVOKABLE void clear();
     Q_INVOKABLE void applyPreset();
+    Q_INVOKABLE QString toBase64(const QString &value);
+    Q_INVOKABLE QString fromBase64(const QString &value);
 
+    int accountId() const;
+    void setAccountId(const int accId);
     QString description() const;
     void setDescription(QString val);
     bool enabled() const;
@@ -116,9 +122,16 @@ public:
         mslivePreset
     };
 
+    enum ErrorType {
+        InvalidAccount = 0,
+        IncomingServer,
+        OutgoingServer
+    };
+
 signals:
     void testSucceeded();
-    void testFailed();
+    void testSkipped();
+    void testFailed(ErrorType e);
 
 private slots:
     void testConfiguration();
