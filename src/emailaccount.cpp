@@ -161,66 +161,50 @@ bool EmailAccount::remove()
 
 void EmailAccount::test()
 {
+    QTimer::singleShot(5000, this, SLOT(testConfiguration()));
+    //TODO: check for network here when conf manager is integrated
+    //with conman
+    /*
     QNetworkConfigurationManager networkManager;
     if (networkManager.isOnline()) {
         QTimer::singleShot(5000, this, SLOT(testConfiguration()));
     } else {
         // skip test if not connected to a network
-        emit testSucceeded();
-    }
+        emit testSkipped();
+    }*/
 }
 
 void EmailAccount::testConfiguration()
 {
     if (mAccount->id().isValid()) {
-        if (mAccount->status() & QMailAccount::MessageSource) {
-            mRetrievalAction->retrieveFolderList(mAccount->id(), QMailFolderId(), true);
-        } else if (mAccount->status() & QMailAccount::MessageSink) {
-            mTransmitAction->transmitMessages(mAccount->id());
-        } else {
-            qWarning() << "account has no message sources or sinks";
-        }
+        mRetrievalAction->retrieveFolderList(mAccount->id(), QMailFolderId(), true);
     } else {
+        emit testFailed(InvalidAccount);
     }
 }
 
 void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
 {
-    static const int AccountUpdatedByOther = 1040;
-
     if (sender() == static_cast<QObject*>(mRetrievalAction)) {
         const QMailServiceAction::Status status(mRetrievalAction->status());
 
-        if ((activity == QMailServiceAction::Failed) && (status.errorCode == AccountUpdatedByOther)) {
-            // ignore error 1040/"Account updated by other process"
-            activity = QMailServiceAction::Successful;
-        }
-
         if (activity == QMailServiceAction::Successful) {
-            if (mAccount->status() & QMailAccount::MessageSink) {
-                mTransmitAction->transmitMessages(mAccount->id());
-            } else {
-                emit testSucceeded();
-            }
+            mTransmitAction->transmitMessages(mAccount->id());
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            emit testFailed();
+            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            emit testFailed(IncomingServer);
         }
     } else if (sender() == static_cast<QObject*>(mTransmitAction)) {
         const QMailServiceAction::Status status(mTransmitAction->status());
-
-        if ((activity == QMailServiceAction::Failed) && (status.errorCode == AccountUpdatedByOther)) {
-            // ignore error 1040/"Account updated by other process"
-            activity = QMailServiceAction::Successful;
-        }
-
         if (activity == QMailServiceAction::Successful) {
             emit testSucceeded();
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            emit testFailed();
+            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            emit testFailed(OutgoingServer);
         }
     }
 }
@@ -365,6 +349,27 @@ void EmailAccount::applyPreset()
             break;
         default:
             break;
+    }
+}
+
+int EmailAccount::accountId() const
+{
+    if (mAccount->id().isValid()) {
+        return mAccount->id().toULongLong();
+    }
+    else {
+        return -1;
+    }
+}
+
+void EmailAccount::setAccountId(const int accId)
+{
+    QMailAccountId accountId(accId);
+    if (accountId.isValid()) {
+        mAccount = new QMailAccount(accountId);
+    }
+    else {
+        qWarning() << "Invalid account id " << accountId.toULongLong();
     }
 }
 
@@ -595,4 +600,14 @@ QString EmailAccount::errorMessage() const
 int EmailAccount::errorCode() const
 {
     return mErrorCode;
+}
+
+QString EmailAccount::toBase64(const QString &value)
+{
+    return Base64::encode(value);
+}
+
+QString EmailAccount::fromBase64(const QString &value)
+{
+    return Base64::decode(value);
 }
