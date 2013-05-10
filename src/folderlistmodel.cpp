@@ -70,9 +70,11 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
 void FolderListModel::setAccountKey(QVariant id)
 {
   // Get all the folders belonging to this email account
+    beginResetModel();
     QMailAccountId accountId = id.value<QMailAccountId>();
     QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
     m_mailFolderIds = QMailStore::instance()->queryFolders(key);
+    endResetModel();
 }
 
 QStringList FolderListModel::folderNames()
