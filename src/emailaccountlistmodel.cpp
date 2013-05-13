@@ -23,6 +23,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(UnreadCount, "unreadCount");
     roles.insert(MailAccountId, "mailAccountId");
     roles.insert(LastSynchronized, "lastSynchronized");
+    roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
     setRoleNames(roles);
 
     connect (QMailStore::instance(), SIGNAL(accountsAdded(const QMailAccountIdList &)), this,
@@ -94,6 +95,11 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
         }
     }
 
+    if (role == StandardFoldersRetrieved) {
+        quint64 standardFoldersMask = QMailAccount::statusMask("StandardFoldersRetrieved");
+        return account.status() & standardFoldersMask;
+    }
+
     return QVariant();
 }
 
@@ -148,6 +154,11 @@ QVariant EmailAccountListModel::getDisplayNameByIndex(int idx)
 QVariant EmailAccountListModel::getEmailAddressByIndex(int idx)
 {
     return data(index(idx), EmailAccountListModel::EmailAddress);
+}
+
+QVariant EmailAccountListModel::getStandardFoldersRetrievedByIndex(int idx)
+{
+    return data(index(idx), EmailAccountListModel::StandardFoldersRetrieved);
 }
 
 int EmailAccountListModel::getRowCount()

@@ -34,6 +34,7 @@ public:
     ~EmailAgent();
 
     void initMailServer();
+    void setupAccountFlags();
     void sendMessages(const QMailAccountId &id);
     bool isSynchronizing() const;
 

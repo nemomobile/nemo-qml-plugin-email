@@ -30,7 +30,8 @@ public:
         UnreadCount = Qt::UserRole + 7,
         MailAccountId  = Qt::UserRole + 8,
         LastSynchronized = Qt::UserRole + 9,
-        Index = Qt::UserRole + 10
+        StandardFoldersRetrieved = Qt::UserRole + 10,
+        Index = Qt::UserRole + 11
     };
 
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -40,6 +41,7 @@ public slots:
     Q_INVOKABLE int indexFromAccountId(QVariant id);
     Q_INVOKABLE QVariant getDisplayNameByIndex(int idx);
     Q_INVOKABLE QVariant getEmailAddressByIndex(int idx);
+    Q_INVOKABLE QVariant getStandardFoldersRetrievedByIndex(int idx);
     Q_INVOKABLE int getRowCount();
     Q_INVOKABLE QStringList getAllEmailAddresses();
     Q_INVOKABLE QStringList getAllDisplayNames();

@@ -53,7 +53,8 @@ EmailAgent::EmailAgent(QDeclarativeItem *parent)
     , m_confirmDeleteMail(new MGConfItem("/apps/meego-app-email/confirmdeletemail"))
 #endif
 {
-    initMailServer(); 
+    initMailServer();
+    setupAccountFlags();
 
     connect(m_transmitAction.data(), SIGNAL(progressChanged(uint, uint)),
             this, SLOT(progressChanged(uint,uint)));
@@ -94,6 +95,13 @@ void EmailAgent::initMailServer()
     m_messageServerProcess.start("/usr/bin/messageserver");
     m_messageServerProcess.waitForStarted();
     return;
+}
+
+void EmailAgent::setupAccountFlags()
+{
+    if (!QMailStore::instance()->accountStatusMask("StandardFoldersRetrieved")) {
+        QMailStore::instance()->registerAccountStatusFlag("StandardFoldersRetrieved");
+    }
 }
 
 void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
@@ -147,6 +155,9 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         }
 
         if (_currentAction->type() == EmailAction::StandardFolders) {
+            QMailAccount *account = new QMailAccount(_currentAction->accountId());
+            account->setStatus(QMailAccount::statusMask("StandardFoldersRetrieved"), true);
+            QMailStore::instance()->updateAccount(account);
             emit standardFoldersCreated(_currentAction->accountId());
         }
 
