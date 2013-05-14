@@ -13,6 +13,7 @@
 #include <qmailmessage.h>
 
 #include "emailaccount.h"
+#include "emailagent.h"
 
 EmailAccount::EmailAccount()
     : mAccount(new QMailAccount())
@@ -27,6 +28,7 @@ EmailAccount::EmailAccount()
     , mSignatureConf(new MGConfItem("/apps/meego-app-email/signature"))
 #endif
 { 
+    EmailAgent::instance();
     mAccount->setMessageType(QMailMessage::Email);
     init();
 }
@@ -44,6 +46,7 @@ EmailAccount::EmailAccount(const QMailAccount &other)
     , mSignatureConf(new MGConfItem("/apps/meego-app-email/signature"))
 #endif
 {
+    EmailAgent::instance();
     *mAccountConfig = QMailStore::instance()->accountConfiguration(mAccount->id());
     init();
 }
