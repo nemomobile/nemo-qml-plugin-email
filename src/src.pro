@@ -12,7 +12,7 @@ qmldir.files += $$_PRO_FILE_PWD_/qmldir
 qmldir.path +=  $$[QT_INSTALL_IMPORTS]/$$$$PLUGIN_IMPORT_PATH
 INSTALLS += qmldir
 
-QT += webkit network
+QT += network
 CONFIG += link_pkgconfig
 
 PKGCONFIG += qmfmessageserver \
@@ -33,7 +33,6 @@ SOURCES += \
     $$PWD/emailmessage.cpp \
     $$PWD/emailaccountsettingsmodel.cpp \
     $$PWD/emailaccount.cpp \
-    $$PWD/htmlfield.cpp \
     $$PWD/plugin.cpp \
     emailaction.cpp
 
@@ -45,7 +44,6 @@ HEADERS += \
     $$PWD/emailmessage.h \
     $$PWD/emailaccountsettingsmodel.h \
     $$PWD/emailaccount.h \
-    $$PWD/htmlfield.h \
     $$PWD/emailaction.h
 
 MOC_DIR = $$PWD/../.moc

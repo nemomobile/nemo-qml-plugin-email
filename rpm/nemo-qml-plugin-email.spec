@@ -18,7 +18,6 @@ Source0:    %{name}-%{version}.tar.bz2
 Source100:  nemo-qml-plugin-email.yaml
 BuildRequires:  pkgconfig(QtCore) >= 4.7.0
 BuildRequires:  pkgconfig(QtDeclarative)
-BuildRequires:  pkgconfig(QtWebKit)
 BuildRequires:  pkgconfig(qmfclient)
 BuildRequires:  pkgconfig(mlite)
 Provides:   nemo-qml-plugins-email > 0.3.10

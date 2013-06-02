@@ -42,7 +42,6 @@
 #include "emailmessage.h"
 #include "emailaccountsettingsmodel.h"
 #include "emailaccount.h"
-#include "htmlfield.h"
 
 class Q_DECL_EXPORT NemoEmailPlugin : public QDeclarativeExtensionPlugin
 {
@@ -67,7 +66,6 @@ public:
         qmlRegisterType<EmailMessage>(uri, 0, 1, "EmailMessage");
         qmlRegisterType<EmailAccountSettingsModel>(uri, 0, 1, "EmailAccountSettingsModel");
         qmlRegisterType<EmailAccount>(uri, 0, 1, "EmailAccount");
-        qmlRegisterType<HtmlField>(uri, 0, 1, "HtmlField");
     }
 };
 
