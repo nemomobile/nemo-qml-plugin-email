@@ -14,7 +14,6 @@
 EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     : QAbstractListModel(parent)
 {
-    QHash<int,QByteArray> roles;
     roles[DescriptionRole] = "description";
     roles[EnabledRole] = "enabled";
     roles[NameRole] = "name";
@@ -36,7 +35,9 @@ EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     roles[SendPasswordRole] = "sendPassword";
 
     roles[PresetRole] = "preset";
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
+#endif
 
     /*
     service["IMAP"] = "imap4";
@@ -110,6 +111,13 @@ void EmailAccountSettingsModel::reload()
     init();
     endResetModel();
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+QHash<int, QByteArray> EmailAccountSettingsModel::roleNames() const
+{
+    return roles;
+}
+#endif
 
 int EmailAccountSettingsModel::rowCount(const QModelIndex &parent) const
 {

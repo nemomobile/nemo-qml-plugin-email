@@ -7,7 +7,6 @@
  */
 
 
-#include <QDeclarativeItem>
 #include <QFileInfo>
 
 #include <qmailaccount.h>
@@ -17,8 +16,8 @@
 #include "emailmessage.h"
 #include "qmailnamespace.h"
 
-EmailMessage::EmailMessage (QDeclarativeItem *parent)
-    : QDeclarativeItem(parent)
+EmailMessage::EmailMessage (QObject *parent)
+    : QObject(parent)
     , m_textOnly(true)
 {
     setPriority(NormalPriority);

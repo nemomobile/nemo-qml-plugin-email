@@ -56,7 +56,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
       m_filterUnread(true),
       m_retrievalAction(new QMailRetrievalAction(this))
 {
-    QHash<int, QByteArray> roles;
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
     roles[QMailMessageModelBase::MessageSubjectTextRole] = "subject";
     roles[QMailMessageModelBase::MessageFilterTextRole] = "messageFilter";
@@ -89,7 +88,9 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageAccountIdRole] = "accountId";
     roles[MessageHasAttachmentsRole] = "hasAttachments";
     roles[MessageSizeSectionRole] = "sizeSection";
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
+#endif
 
     EmailAgent::instance()->initMailServer();
     m_mailAccountIds = QMailStore::instance()->queryAccounts(
@@ -108,6 +109,13 @@ EmailMessageListModel::~EmailMessageListModel()
 {
     delete m_retrievalAction;
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+QHash<int, QByteArray> EmailMessageListModel::roleNames() const
+{
+    return roles;
+}
+#endif
 
 int EmailMessageListModel::rowCount(const QModelIndex & parent) const {
     return QMailMessageListModel::rowCount(parent);

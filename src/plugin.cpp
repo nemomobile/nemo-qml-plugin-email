@@ -31,9 +31,18 @@
  */
 
 #include <QtGlobal>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#include <QtQml>
+#include <QQmlEngine>
+#include <QQmlExtensionPlugin>
+#define QDeclarativeEngine QQmlEngine
+#define QDeclarativeExtensionPlugin QQmlExtensionPlugin
+#else
 #include <QtDeclarative>
 #include <QDeclarativeEngine>
 #include <QDeclarativeExtensionPlugin>
+#endif
 
 #include "folderlistmodel.h"
 #include "emailaccountlistmodel.h"
@@ -45,6 +54,10 @@
 
 class Q_DECL_EXPORT NemoEmailPlugin : public QDeclarativeExtensionPlugin
 {
+    Q_OBJECT
+    #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        Q_PLUGIN_METADATA(IID "org.nemomobile.email")
+    #endif
 public:
     virtual ~NemoEmailPlugin() {}
 
@@ -68,5 +81,8 @@ public:
         qmlRegisterType<EmailAccount>(uri, 0, 1, "EmailAccount");
     }
 };
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    Q_EXPORT_PLUGIN2(nemoemail, NemoEmailPlugin)
+#endif
 
-Q_EXPORT_PLUGIN2(nemoemail, NemoEmailPlugin);
+#include "plugin.moc"

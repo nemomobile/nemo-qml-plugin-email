@@ -43,7 +43,13 @@ public:
     Q_INVOKABLE int totalNumberOfFolders();
     Q_INVOKABLE QVariant folderUnreadCount(QVariant folderId);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+protected:
+    virtual QHash<int, QByteArray> roleNames() const;
+#endif
+
 private:
+    QHash<int, QByteArray> roles;
     QMailFolderIdList m_mailFolderIds;
 };
 

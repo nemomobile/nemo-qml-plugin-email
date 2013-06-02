@@ -9,18 +9,18 @@
 #ifndef EMAILMESSAGE_H
 #define EMAILMESSAGE_H
 
-#include <QDeclarativeItem>
+#include <QObject>
 
 #include <qmailaccount.h>
 #include <qmailstore.h>
 
-class EmailMessage : public QDeclarativeItem
+class EmailMessage : public QObject
 {
     Q_OBJECT
     Q_ENUMS(Priority)
 
 public:
-    explicit EmailMessage(QDeclarativeItem *parent = 0);
+    explicit EmailMessage(QObject *parent = 0);
     ~EmailMessage ();
 
     enum Priority { LowPriority, NormalPriority, HighPriority };
