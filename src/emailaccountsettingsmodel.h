@@ -67,7 +67,13 @@ public slots:
     void saveChanges();
     void deleteRow(int row);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+protected:
+    virtual QHash<int, QByteArray> roleNames() const;
+#endif
+
 private:
+    QHash<int,QByteArray> roles;
     QList<QMailAccount> mAccounts;
     QList<QMailAccountConfiguration> mAccountConfigs;
     int mUpdateInterval;

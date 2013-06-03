@@ -13,8 +13,8 @@ Builder: qmake
 PkgConfigBR:
     - QtCore >= 4.7.0
     - QtDeclarative
-    - QtWebKit
     - qmfclient
+    - qmfmessageserver
     - mlite
 Provides:
     - nemo-qml-plugins-email > 0.3.10

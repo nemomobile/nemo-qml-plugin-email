@@ -24,17 +24,25 @@
 FolderListModel::FolderListModel(QObject *parent) :
     QAbstractListModel(parent)
 {
-    QHash<int, QByteArray> roles;
     roles.insert(FolderName, "folderName");
     roles.insert(FolderId, "folderId");
     roles.insert(FolderUnreadCount, "folderUnreadCount");
     roles.insert(FolderServerCount, "folderServerCount");
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
+#endif
 }
 
 FolderListModel::~FolderListModel()
 {
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+QHash<int, QByteArray> FolderListModel::roleNames() const
+{
+    return roles;
+}
+#endif
 
 int FolderListModel::rowCount(const QModelIndex &parent) const
 {

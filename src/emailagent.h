@@ -9,7 +9,6 @@
 #ifndef EMAILAGENT_H
 #define EMAILAGENT_H
 
-#include <QDeclarativeItem>
 #include <QProcess>
 #include <QTimer>
 
@@ -23,14 +22,14 @@
 #include <mgconfitem.h>
 #endif
 
-class EmailAgent : public QDeclarativeItem
+class EmailAgent : public QObject
 {
     Q_OBJECT
 
 public:
     static EmailAgent *instance();
 
-    explicit EmailAgent(QDeclarativeItem *parent = 0);
+    explicit EmailAgent(QObject *parent = 0);
     ~EmailAgent();
 
     void initMailServer();

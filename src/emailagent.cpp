@@ -40,8 +40,8 @@ EmailAgent *EmailAgent::instance()
     return m_instance;
 }
 
-EmailAgent::EmailAgent(QDeclarativeItem *parent)
-    : QDeclarativeItem(parent)
+EmailAgent::EmailAgent(QObject *parent)
+    : QObject(parent)
     , m_actionCount(0)
     , m_transmitting(false)
     , m_cancelling(false)
