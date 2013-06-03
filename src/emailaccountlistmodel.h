@@ -61,7 +61,13 @@ private slots:
     void onAccountsRemoved(const QMailAccountIdList &);
     void onAccountsUpdated(const QMailAccountIdList &);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+protected:
+    virtual QHash<int, QByteArray> roleNames() const;
+#endif
+
 private:
+    QHash<int, QByteArray> roles;
 };
 
 #endif

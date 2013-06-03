@@ -16,7 +16,6 @@
 EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     QMailAccountListModel(parent)
 {
-    QHash<int, QByteArray> roles;
     roles.insert(DisplayName, "displayName");
     roles.insert(EmailAddress, "emailAddress");
     roles.insert(MailServer, "mailServer");
@@ -24,7 +23,9 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(MailAccountId, "mailAccountId");
     roles.insert(LastSynchronized, "lastSynchronized");
     roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
+#endif
 
     connect (QMailStore::instance(), SIGNAL(accountsAdded(const QMailAccountIdList &)), this,
              SLOT(onAccountsAdded (const QMailAccountIdList &)));
@@ -40,6 +41,13 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
 EmailAccountListModel::~EmailAccountListModel()
 {
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+QHash<int, QByteArray> EmailAccountListModel::roleNames() const
+{
+    return roles;
+}
+#endif
 
 int EmailAccountListModel::rowCount(const QModelIndex &parent) const
 {
@@ -105,7 +113,8 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 
 void EmailAccountListModel::onAccountsAdded(const QMailAccountIdList &ids)
 {
-    QMailAccountListModel::reset();
+    QMailAccountListModel::beginResetModel();
+    QMailAccountListModel::endResetModel();
     QVariantList accountIds;
     foreach (QMailAccountId accountId, ids) {
         accountIds.append(accountId.toULongLong());
@@ -115,7 +124,8 @@ void EmailAccountListModel::onAccountsAdded(const QMailAccountIdList &ids)
 
 void EmailAccountListModel::onAccountsRemoved(const QMailAccountIdList &ids)
 {
-    QMailAccountListModel::reset();
+    QMailAccountListModel::beginResetModel();
+    QMailAccountListModel::endResetModel();
     QVariantList accountIds;
     foreach (QMailAccountId accountId, ids) {
         accountIds.append(accountId.toULongLong());
@@ -125,7 +135,8 @@ void EmailAccountListModel::onAccountsRemoved(const QMailAccountIdList &ids)
 
 void EmailAccountListModel::onAccountsUpdated(const QMailAccountIdList &ids)
 {
-    QMailAccountListModel::reset();
+    QMailAccountListModel::beginResetModel();
+    QMailAccountListModel::endResetModel();
     QVariantList accountIds;
     foreach (QMailAccountId accountId, ids) {
         accountIds.append(accountId.toULongLong());
