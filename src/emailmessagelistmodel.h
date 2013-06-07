@@ -25,6 +25,9 @@ class EmailMessageListModel : public QMailMessageListModel
     Q_ENUMS(Priority)
     Q_ENUMS(Sort)
 
+    Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
+    Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
+
 public:
     enum Roles
     {
@@ -61,9 +64,6 @@ public:
     enum Priority { LowPriority, NormalPriority, HighPriority };
 
     enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject};
-
-    Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
-    Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
 
     // property accessors.
     bool combinedInbox() const;
