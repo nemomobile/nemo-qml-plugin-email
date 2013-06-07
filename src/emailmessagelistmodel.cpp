@@ -128,6 +128,46 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     }
 
     QMailMessageId msgId = idFromIndex(index);
+
+    if (role == QMailMessageModelBase::MessageBodyTextRole) {
+        QMailMessage message (msgId);
+        return bodyPlainText(message);
+    }
+    else if (role == MessageHtmlBodyRole) {
+        QMailMessage message (msgId);
+        return bodyHtmlText(message);
+    }
+    else if (role == MessageQuotedBodyRole) {
+        QMailMessage message (msgId);
+        QString body = bodyPlainText(message);
+        body.prepend('\n');
+        body.replace('\n', "\n>");
+        body.truncate(body.size() - 1);  // remove the extra ">" put there by QString.replace
+        return body;
+    }
+    else if (role == MessageUuidRole) {
+        QString uuid = QString::number(msgId.toULongLong());
+        return uuid;
+    }
+    else if (role == MessageToRole) {
+        QMailMessage message (msgId);
+        return QMailAddress::toStringList(message.to());
+    }
+    else if (role == MessageCcRole) {
+        QMailMessage message (msgId);
+        return QMailAddress::toStringList(message.cc());
+    }
+    else if (role == MessageBccRole) {
+        QMailMessage message (msgId);
+        return QMailAddress::toStringList(message.bcc());
+    }
+    else if (role == MessageSelectModeRole) {
+       int selected = 0;
+       if (m_selectedMsgIds.contains(msgId) == true)
+           selected = 1;
+        return (selected);
+    }
+
     QMailMessageMetaData messageMetaData(msgId);
 
     if (role == QMailMessageModelBase::MessageTimeStampTextRole) {
@@ -178,52 +218,14 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         else
             return 0; // 0 for unread
     }
-    else if (role == QMailMessageModelBase::MessageBodyTextRole) {
-        QMailMessage message (msgId);
-        return bodyPlainText(message);
-    }
-    else if (role == MessageHtmlBodyRole) {
-        QMailMessage message (msgId);
-        return bodyHtmlText(message);
-    }
-    else if (role == MessageQuotedBodyRole) {
-        QMailMessage message (msgId);
-        QString body = bodyPlainText(message);
-        body.prepend('\n');
-        body.replace('\n', "\n>");
-        body.truncate(body.size() - 1);  // remove the extra ">" put there by QString.replace
-        return body;
-    }
-    else if (role == MessageUuidRole) {
-        QString uuid = QString::number(msgId.toULongLong());
-        return uuid;
-    }
     else if (role == MessageSenderDisplayNameRole) {
         return messageMetaData.from().name();
     }
     else if (role == MessageSenderEmailAddressRole) {
         return messageMetaData.from().address();
     }
-    else if (role == MessageToRole) {
-        QMailMessage message (msgId);
-        return QMailAddress::toStringList(message.to());
-    }
-    else if (role == MessageCcRole) {
-        QMailMessage message (msgId);
-        return QMailAddress::toStringList(message.cc());
-    }
-    else if (role == MessageBccRole) {
-        QMailMessage message (msgId);
-        return QMailAddress::toStringList(message.bcc());
-    }
     else if (role == MessageTimeStampRole) {
         return (messageMetaData.date().toLocalTime());
-    }
-    else if (role == MessageSelectModeRole) {
-       int selected = 0;
-       if (m_selectedMsgIds.contains(msgId) == true)
-           selected = 1;
-        return (selected);
     }
     else if (role == MessagePreviewRole) {
         return messageMetaData.preview().simplified();
