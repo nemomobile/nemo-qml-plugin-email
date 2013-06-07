@@ -49,9 +49,6 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
-#ifdef HAS_MLITE
-    , m_confirmDeleteMail(new MGConfItem("/apps/meego-app-email/confirmdeletemail"))
-#endif
 {
     initMailServer();
     setupAccountFlags();
@@ -430,15 +427,6 @@ QString EmailAgent::getSignatureForAccount(QVariant vMailAccountId)
         return mailAccount.signature();
     }
     return (QString (""));
-}
-
-bool EmailAgent::confirmDeleteMail()
-{
-#ifdef HAS_MLITE
-    return m_confirmDeleteMail->value().toBool();
-#else
-    return true;
-#endif
 }
 
 void EmailAgent::exportUpdates(const QMailAccountId id)

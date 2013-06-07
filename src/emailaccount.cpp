@@ -23,10 +23,6 @@ EmailAccount::EmailAccount()
     , mRetrievalAction(new QMailRetrievalAction(this))
     , mTransmitAction(new QMailTransmitAction(this))
     , mErrorCode(0)
-#ifdef HAS_MLITE
-    , mUpdateIntervalConf(new MGConfItem("/apps/meego-app-email/updateinterval"))
-    , mSignatureConf(new MGConfItem("/apps/meego-app-email/signature"))
-#endif
 { 
     EmailAgent::instance();
     mAccount->setMessageType(QMailMessage::Email);
@@ -41,10 +37,6 @@ EmailAccount::EmailAccount(const QMailAccount &other)
     , mRetrievalAction(new QMailRetrievalAction(this))
     , mTransmitAction(new QMailTransmitAction(this))
     , mErrorCode(0)
-#ifdef HAS_MLITE
-    , mUpdateIntervalConf(new MGConfItem("/apps/meego-app-email/updateinterval"))
-    , mSignatureConf(new MGConfItem("/apps/meego-app-email/signature"))
-#endif
 {
     EmailAgent::instance();
     *mAccountConfig = QMailStore::instance()->accountConfiguration(mAccount->id());
@@ -89,20 +81,6 @@ void EmailAccount::init()
     mRecvCfg->setType(QMailServiceConfiguration::Source);
     mRecvCfg->setVersion(100);
 
-    /*
-    serviceCode["IMAP"] = "imap4";
-    serviceCode["POP"] = "pop3";
-
-    encryptionCode["None"] = "0";
-    encryptionCode["SSL"] = "1";
-    encryptionCode["TLS"] = "2";
-
-    authenticationCode["None"] = "0";
-    authenticationCode["Login"] = "1";
-    authenticationCode["Plain"] = "2";
-    authenticationCode["Cram MD5"] = "3";
-    */
-
     connect(mRetrievalAction, SIGNAL(activityChanged(QMailServiceAction::Activity)), this, SLOT(activityChanged(QMailServiceAction::Activity)));
     connect(mTransmitAction, SIGNAL(activityChanged(QMailServiceAction::Activity)), this, SLOT(activityChanged(QMailServiceAction::Activity)));
 }
@@ -121,16 +99,6 @@ void EmailAccount::clear()
 bool EmailAccount::save()
 {
     bool result;
-#ifdef HAS_MLITE
-    QString signature = mSignatureConf->value().toString();
-    mAccount->setSignature(signature);
-    mAccount->setStatus(QMailAccount::AppendSignature, !signature.isEmpty());
-#endif
-
-#ifdef HAS_MLITE
-    mRecvCfg->setValue("checkInterval", QString("%1").arg(mUpdateIntervalConf->value().toInt()));
-#endif
-
     mAccount->setStatus(QMailAccount::UserEditable, true);
     mAccount->setStatus(QMailAccount::UserRemovable, true);
     mAccount->setStatus(QMailAccount::MessageSource, true);
@@ -456,22 +424,6 @@ void EmailAccount::setRecvType(QString val)
         mRecvCfg = new QMailServiceConfiguration(mAccountConfig, mRecvType);
         mRecvCfg->setType(QMailServiceConfiguration::Source);
         mRecvCfg->setVersion(100);
-        /*
-        if (newRecvType == "imap4") {
-            mRecvCfg->setValue("authentication", "0");
-            mRecvCfg->setValue("autoDownload", "0");
-            mRecvCfg->setValue("baseFolder", "");
-            mRecvCfg->setValue("canDelete", "1");
-            mRecvCfg->setValue("checkInterval", "0");
-            mRecvCfg->setValue("intervalCheckRoamingEnabled", "1");
-            mRecvCfg->setValue("maxSize", "20");
-            mRecvCfg->setValue("pushEnabled", "0");
-            mRecvCfg->setValue("pushCapable", "1");
-            mRecvCfg->setValue("pushFolders", "INBOX");
-            mRecvCfg->setValue("textSubtype", "html");
-            mRecvCfg->setValue("capabilities", "IMAP4rev1 SORT THREAD=REFERENCES MULTIAPPEND UNSELECT LITERAL+ IDLE CHILDREN NAMESPACE LOGIN-REFERRALS AUTH=PLAIN");
-        }
-        */
     }
 }
 

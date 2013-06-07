@@ -459,7 +459,7 @@ QVariant EmailMessageListModel::indexFromMessageId(QString uuid)
 
 QVariant EmailMessageListModel::messageId(int idx)
 {
-    QMailMessageId id = idFromIndex (index(idx));
+    QMailMessageId id = idFromIndex(index(idx));
     return id;
 }
 

@@ -14,10 +14,6 @@
 #include <qmailserviceconfiguration.h>
 #include <qmailserviceaction.h>
 
-#ifdef HAS_MLITE
-#include <mgconfitem.h>
-#endif
-
 class EmailAccount : public QObject {
     Q_OBJECT
     Q_ENUMS(ErrorType)
@@ -148,11 +144,6 @@ private:
     QString mPassword;
     QString mErrorMessage;
     int mErrorCode;
-
-#ifdef HAS_MLITE
-    MGConfItem *mUpdateIntervalConf;
-    MGConfItem *mSignatureConf;
-#endif
 
     void init();
 

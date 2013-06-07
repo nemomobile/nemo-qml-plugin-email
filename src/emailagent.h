@@ -18,10 +18,6 @@
 
 #include "emailaction.h"
 
-#ifdef HAS_MLITE
-#include <mgconfitem.h>
-#endif
-
 class EmailAgent : public QObject
 {
     Q_OBJECT
@@ -59,7 +55,6 @@ public:
     Q_INVOKABLE void moveMessage(QVariant id, QVariant destinationId);
     Q_INVOKABLE void getMoreMessages(QVariant vFolderId, uint minimum = 20);
     Q_INVOKABLE QString getSignatureForAccount(QVariant vMailAccountId);
-    Q_INVOKABLE bool confirmDeleteMail();
     Q_INVOKABLE void downloadAttachment(QVariant vMailMessage, const QString& attachmentDisplayName);
     Q_INVOKABLE bool openAttachment(const QString& attachmentDisplayName);
     Q_INVOKABLE void openBrowser(const QString& url);
@@ -112,10 +107,6 @@ private:
 
     QList<QSharedPointer<EmailAction> > _actionQueue;
     QSharedPointer<EmailAction> _currentAction;
-
-#ifdef HAS_MLITE
-    MGConfItem *m_confirmDeleteMail;
-#endif
 };
 
 #endif
