@@ -27,7 +27,7 @@ public:
         FolderId = Qt::UserRole + 2,
         FolderUnreadCount = Qt::UserRole + 3,
         FolderServerCount = Qt::UserRole + 4,
-        Index = Qt::UserRole + 5,
+        Index = Qt::UserRole + 5
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const;

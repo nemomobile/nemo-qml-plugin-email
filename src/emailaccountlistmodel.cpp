@@ -59,23 +59,14 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return QVariant();
 
-     QMailAccountId accountId = QMailAccountListModel::idFromIndex(index);
-    
-     QMailAccount account(accountId);
     if (role == DisplayName) {
         return QMailAccountListModel::data(index, QMailAccountListModel::NameTextRole);
     }
 
-    if (role == EmailAddress) {
-        return account.fromAddress().address();
-    }
+    QMailAccountId accountId = QMailAccountListModel::idFromIndex(index);
 
-    if (role == MailServer) {
-        QString address = account.fromAddress().address();
-        int index = address.indexOf("@");
-        QString server = address.right(address.size() - index - 1);
-        index = server.indexOf(".com", Qt::CaseInsensitive);
-        return server.left(index);
+    if (role == MailAccountId) {
+        return accountId;
     }
 
     if (role == UnreadCount) {
@@ -89,8 +80,18 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
         return (QMailStore::instance()->countMessages(accountKey & folderKey & unreadKey));
     }
 
-    if (role == MailAccountId) {
-        return accountId;
+    QMailAccount account(accountId);
+
+    if (role == EmailAddress) {
+        return account.fromAddress().address();
+    }
+
+    if (role == MailServer) {
+        QString address = account.fromAddress().address();
+        int index = address.indexOf("@");
+        QString server = address.right(address.size() - index - 1);
+        index = server.indexOf(".com", Qt::CaseInsensitive);
+        return server.left(index);
     }
 
     if (role == LastSynchronized) {
