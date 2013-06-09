@@ -20,7 +20,6 @@ BuildRequires:  pkgconfig(QtCore) >= 4.7.0
 BuildRequires:  pkgconfig(QtDeclarative)
 BuildRequires:  pkgconfig(qmfclient)
 BuildRequires:  pkgconfig(qmfmessageserver)
-BuildRequires:  pkgconfig(mlite)
 Provides:   nemo-qml-plugins-email > 0.3.10
 Obsoletes:   nemo-qml-plugins-email <= 0.3.10
 

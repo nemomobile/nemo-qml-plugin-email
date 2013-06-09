@@ -15,7 +15,6 @@ PkgConfigBR:
     - QtDeclarative
     - qmfclient
     - qmfmessageserver
-    - mlite
 Provides:
     - nemo-qml-plugins-email > 0.3.10
 Obsoletes:
