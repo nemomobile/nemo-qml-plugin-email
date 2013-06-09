@@ -49,11 +49,6 @@ QHash<int, QByteArray> EmailAccountListModel::roleNames() const
 }
 #endif
 
-int EmailAccountListModel::rowCount(const QModelIndex &parent) const
-{
-    return QMailAccountListModel::rowCount(parent);
-}
-
 QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid())
@@ -112,6 +107,11 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+int EmailAccountListModel::rowCount(const QModelIndex &parent) const
+{
+    return QMailAccountListModel::rowCount(parent);
+}
+// ############ Slots ##############
 void EmailAccountListModel::onAccountsAdded(const QMailAccountIdList &ids)
 {
     QMailAccountListModel::beginResetModel();
@@ -145,6 +145,64 @@ void EmailAccountListModel::onAccountsUpdated(const QMailAccountIdList &ids)
     emit accountsUpdated(accountIds);
 }
 
+// ########### Invokable API ###################
+
+QVariant EmailAccountListModel::accountId(int idx)
+{
+    return data(index(idx), EmailAccountListModel::MailAccountId);
+}
+
+QStringList EmailAccountListModel::allDisplayNames()
+{
+    QStringList displayNameList;
+    for (int row = 0; row < rowCount(); row++) {
+        QString displayName = data(index(row), EmailAccountListModel::DisplayName).toString();
+        displayNameList << displayName;
+    }
+    return displayNameList;
+}
+
+QStringList EmailAccountListModel::allEmailAddresses()
+{
+    QStringList emailAddressList;
+    for (int row = 0; row < rowCount(); row++) {
+        QString emailAddress = data(index(row), EmailAccountListModel::EmailAddress).toString();
+        emailAddressList << emailAddress;
+    }
+    return emailAddressList;
+}
+
+QVariant EmailAccountListModel::displayName(int idx)
+{
+    return data(index(idx), EmailAccountListModel::DisplayName);
+}
+
+QString EmailAccountListModel::displayNameFromAccountId(QVariant accountId)
+{
+    int accountIndex = indexFromAccountId(accountId);
+
+    if (accountIndex < 0)
+        return QString();
+
+    return data(index(accountIndex), EmailAccountListModel::DisplayName).toString();
+}
+
+
+QVariant EmailAccountListModel::emailAddress(int idx)
+{
+    return data(index(idx), EmailAccountListModel::EmailAddress);
+}
+
+QString EmailAccountListModel::emailAddressFromAccountId(QVariant accountId)
+{
+    int accountIndex = indexFromAccountId(accountId);
+
+    if (accountIndex < 0)
+        return QString();
+
+    return data(index(accountIndex), EmailAccountListModel::EmailAddress).toString();
+}
+
 int EmailAccountListModel::indexFromAccountId(QVariant id)
 { 
     QMailAccountId accountId = id.value<QMailAccountId>();
@@ -158,71 +216,6 @@ int EmailAccountListModel::indexFromAccountId(QVariant id)
     return -1;
 }
 
-QVariant EmailAccountListModel::getDisplayNameByIndex(int idx)
-{
-    return data(index(idx), EmailAccountListModel::DisplayName);
-}
-
-QVariant EmailAccountListModel::getEmailAddressByIndex(int idx)
-{
-    return data(index(idx), EmailAccountListModel::EmailAddress);
-}
-
-QVariant EmailAccountListModel::getStandardFoldersRetrievedByIndex(int idx)
-{
-    return data(index(idx), EmailAccountListModel::StandardFoldersRetrieved);
-}
-
-int EmailAccountListModel::getRowCount()
-{
-    return rowCount();
-}
-
-QStringList EmailAccountListModel::getAllDisplayNames()
-{
-    QStringList displayNameList;
-    for (int row = 0; row < rowCount(); row++) {
-        QString displayName = data(index(row), EmailAccountListModel::DisplayName).toString();
-        displayNameList << displayName;
-    }
-    return displayNameList;
-}
-
-QStringList EmailAccountListModel::getAllEmailAddresses()
-{
-    QStringList emailAddressList;
-    for (int row = 0; row < rowCount(); row++) {
-        QString emailAddress = data(index(row), EmailAccountListModel::EmailAddress).toString();
-        emailAddressList << emailAddress;
-    }
-    return emailAddressList;
-}
-
-QVariant EmailAccountListModel::getAccountIdByIndex(int idx)
-{
-    return data(index(idx), EmailAccountListModel::MailAccountId);
-}
-
-QString EmailAccountListModel::addressFromAccountId(QVariant accountId)
-{
-    int accountIndex = indexFromAccountId(accountId);
-
-    if (accountIndex < 0)
-        return "";
-
-    return data(index(accountIndex), EmailAccountListModel::EmailAddress).toString();
-}
-
-QString EmailAccountListModel::displayNameFromAccountId(QVariant accountId)
-{
-    int accountIndex = indexFromAccountId(accountId);
-
-    if (accountIndex < 0)
-        return "";
-
-    return data(index(accountIndex), EmailAccountListModel::DisplayName).toString();
-}
-
 QDateTime EmailAccountListModel::lastUpdatedAccountTime()
 {
     QDateTime lastUpdatedAccTime;
@@ -231,4 +224,14 @@ QDateTime EmailAccountListModel::lastUpdatedAccountTime()
             lastUpdatedAccTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
     }
     return lastUpdatedAccTime;
+}
+
+int EmailAccountListModel::numberOfAccounts()
+{
+    return rowCount();
+}
+
+QVariant EmailAccountListModel::standardFoldersRetrieved(int idx)
+{
+    return data(index(idx), EmailAccountListModel::StandardFoldersRetrieved);
 }
