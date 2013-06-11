@@ -18,10 +18,6 @@
 
 #include "emailaction.h"
 
-#ifdef HAS_MLITE
-#include <mgconfitem.h>
-#endif
-
 class EmailAgent : public QObject
 {
     Q_OBJECT
@@ -32,58 +28,56 @@ public:
     explicit EmailAgent(QObject *parent = 0);
     ~EmailAgent();
 
+    void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
-    void setupAccountFlags();
-    void sendMessages(const QMailAccountId &id);
     bool isSynchronizing() const;
-
-    void exportUpdates(const QMailAccountId id);
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
     quint64 newAction();
+    void sendMessages(const QMailAccountId &accountId);
+    void setupAccountFlags();
 
     Q_INVOKABLE void accountsSync(const bool syncOnlyInbox = false, const uint minimum = 20);
-    Q_INVOKABLE void deleteMessage(QVariant id);
-    Q_INVOKABLE void deleteMessages(const QMailMessageIdList &ids);
-    Q_INVOKABLE void createFolder(const QString &name, QVariant vMailAccountId, QVariant vParentFolderId);
-    Q_INVOKABLE void deleteFolder(QVariant vFolderId);
-    Q_INVOKABLE void renameFolder(QVariant vFolderId, const QString &name);
-    Q_INVOKABLE void retrieveFolderList(QVariant vMailAccountId, QVariant vFolderId = 0, const bool descending = true);
-    Q_INVOKABLE void synchronize(QVariant vMailAccountId);
-    Q_INVOKABLE void synchronizeInbox(QVariant mailAccountId, const uint minimum = 20);
-    Q_INVOKABLE void retrieveMessageList(QVariant vMailAccountId, QVariant vFolderId, const uint minimum = 20);
-    Q_INVOKABLE void retrieveMessageRange(QVariant messageId, uint minimum);
     Q_INVOKABLE void cancelSync();
-    Q_INVOKABLE void markMessageAsRead(QVariant vMsgId);
-    Q_INVOKABLE void markMessageAsUnread(QVariant vMsgId);
-    Q_INVOKABLE void moveMessage(QVariant id, QVariant destinationId);
-    Q_INVOKABLE void getMoreMessages(QVariant vFolderId, uint minimum = 20);
-    Q_INVOKABLE QString getSignatureForAccount(QVariant vMailAccountId);
-    Q_INVOKABLE bool confirmDeleteMail();
-    Q_INVOKABLE void downloadAttachment(QVariant vMailMessage, const QString& attachmentDisplayName);
+    Q_INVOKABLE void createFolder(const QString &name, QVariant mailAccountId, QVariant parentFolderId);
+    Q_INVOKABLE void deleteFolder(QVariant folderId);
+    Q_INVOKABLE void deleteMessage(QVariant messageId);
+    Q_INVOKABLE void deleteMessages(const QMailMessageIdList &ids);
+    Q_INVOKABLE void downloadAttachment(QVariant messageId, const QString &attachmentDisplayName);
+    Q_INVOKABLE qint64 folderIdToInt(QVariant folderId);
+    Q_INVOKABLE QString getMessageBodyFromFile(const QString& bodyFilePath);
+    Q_INVOKABLE void getMoreMessages(QVariant folderId, uint minimum = 20);
+    Q_INVOKABLE QString getSignatureForAccount(QVariant accountId);
+    Q_INVOKABLE QVariant inboxFolderId(QVariant accountId);
+    Q_INVOKABLE void markMessageAsRead(QVariant messageId);
+    Q_INVOKABLE void markMessageAsUnread(QVariant messageId);
+    Q_INVOKABLE void moveMessage(QVariant messageId, QVariant destinationId);
     Q_INVOKABLE bool openAttachment(const QString& attachmentDisplayName);
     Q_INVOKABLE void openBrowser(const QString& url);
-    Q_INVOKABLE QString getMessageBodyFromFile(const QString& bodyFilePath);
-    Q_INVOKABLE QVariant inboxFolderId(QVariant vMailAccountId);
-    Q_INVOKABLE qint64 folderIdToInt(QVariant folderId);
+    Q_INVOKABLE void renameFolder(QVariant folderId, const QString &name);
+    Q_INVOKABLE void retrieveFolderList(QVariant accountId, QVariant folderId = 0, const bool descending = true);
+    Q_INVOKABLE void retrieveMessageList(QVariant accountId, QVariant folderId, const uint minimum = 20);
+    Q_INVOKABLE void retrieveMessageRange(QVariant messageId, uint minimum);
+    Q_INVOKABLE void synchronize(QVariant accountId);
+    Q_INVOKABLE void synchronizeInbox(QVariant accountId, const uint minimum = 20);
 
 signals:
-    void standardFoldersCreated(const QMailAccountId &id);
+    void attachmentDownloadCompleted();
+    void attachmentDownloadStarted();
+    void error(const QMailAccountId &accountId, const QString &message, int code);
+    void folderRetrievalCompleted(const QMailAccountId &accountId);
+    void progressUpdate(int percent);
     void retrievalCompleted();
     void sendCompleted();
+    void standardFoldersCreated(const QMailAccountId &accountId);
     void syncCompleted();
     void syncBegin();
-    void error(const QMailAccountId &id, const QString &msg, int code);
-    void attachmentDownloadStarted();
-    void attachmentDownloadCompleted();
-    void progressUpdate(int percent);
-    void folderRetrievalCompleted(const QMailAccountId &id);
 
 private slots:
-    void progressChanged(uint value, uint total);
     void activityChanged(QMailServiceAction::Activity activity);
     void attachmentDownloadActivityChanged(QMailServiceAction::Activity activity);
     void onStandardFoldersCreated(const QMailAccountId &accountId);
+    void progressChanged(uint value, uint total);
 
 private:
     static EmailAgent *m_instance;
@@ -104,18 +98,14 @@ private:
 
     QProcess m_messageServerProcess;
 
-    void enqueue(EmailAction *action);
-    void dequeue();
+    QList<QSharedPointer<EmailAction> > m_actionQueue;
+    QSharedPointer<EmailAction> m_currentAction;
+
     bool actionInQueue(QSharedPointer<EmailAction> action) const;
+    void dequeue();
+    void enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
-
-    QList<QSharedPointer<EmailAction> > _actionQueue;
-    QSharedPointer<EmailAction> _currentAction;
-
-#ifdef HAS_MLITE
-    MGConfItem *m_confirmDeleteMail;
-#endif
 };
 
 #endif

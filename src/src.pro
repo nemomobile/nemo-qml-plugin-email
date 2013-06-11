@@ -21,14 +21,6 @@ CONFIG += link_pkgconfig
 equals(QT_MAJOR_VERSION, 4): PKGCONFIG += qmfmessageserver qmfclient
 equals(QT_MAJOR_VERSION, 5): PKGCONFIG += qmfmessageserver5 qmfclient5
 
-packagesExist(mlite) | packagesExist(mlite-qt5) {
-    equals(QT_MAJOR_VERSION, 4): PKGCONFIG += mlite
-    equals(QT_MAJOR_VERSION, 5): PKGCONFIG += mlite5
-    DEFINES += HAS_MLITE
-} else {
-    warning("mlite not available. Some functionality may not work as expected.")
-}
-
 SOURCES += \
     $$PWD/emailaccountlistmodel.cpp \
     $$PWD/emailmessagelistmodel.cpp \

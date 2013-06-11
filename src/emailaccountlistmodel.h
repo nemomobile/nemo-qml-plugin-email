@@ -34,21 +34,21 @@ public:
         Index = Qt::UserRole + 11
     };
 
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role) const;
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
 
 public slots:
-    Q_INVOKABLE int indexFromAccountId(QVariant id);
-    Q_INVOKABLE QVariant getDisplayNameByIndex(int idx);
-    Q_INVOKABLE QVariant getEmailAddressByIndex(int idx);
-    Q_INVOKABLE QVariant getStandardFoldersRetrievedByIndex(int idx);
-    Q_INVOKABLE int getRowCount();
-    Q_INVOKABLE QStringList getAllEmailAddresses();
-    Q_INVOKABLE QStringList getAllDisplayNames();
-    Q_INVOKABLE QVariant getAccountIdByIndex(int idx);
-    Q_INVOKABLE QString addressFromAccountId(QVariant accountId);
+    Q_INVOKABLE QVariant accountId(int idx);
+    Q_INVOKABLE QStringList allDisplayNames();
+    Q_INVOKABLE QStringList allEmailAddresses();
+    Q_INVOKABLE QVariant displayName(int idx);
     Q_INVOKABLE QString displayNameFromAccountId(QVariant accountId);
+    Q_INVOKABLE QVariant emailAddress(int idx);
+    Q_INVOKABLE QString emailAddressFromAccountId(QVariant accountId);
+    Q_INVOKABLE int indexFromAccountId(QVariant id);
     Q_INVOKABLE QDateTime lastUpdatedAccountTime();
+    Q_INVOKABLE int numberOfAccounts();
+    Q_INVOKABLE QVariant standardFoldersRetrieved(int idx);
 
 signals:
     void accountsAdded(QVariantList accountIds);

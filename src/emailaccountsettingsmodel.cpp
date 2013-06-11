@@ -39,27 +39,6 @@ EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     setRoleNames(roles);
 #endif
 
-    /*
-    service["IMAP"] = "imap4";
-    service["POP"] = "pop3";
-
-    encryption["None"] = "0";
-    encryption["SSL"] = "1";
-    encryption["TLS"] = "2";
-
-    authentication["None"] = "0";
-    authentication["Login"] = "1";
-    authentication["Plain"] = "2";
-    authentication["Cram MD5"] = "3";
-    */
-
-#ifdef HAS_MLITE
-    mUpdateIntervalConf = new MGConfItem("/apps/meego-app-email/updateinterval");
-    mSignatureConf = new MGConfItem("/apps/meego-app-email/signature");
-    mNewMailNotificationConf = new MGConfItem("/apps/meego-app-email/newmailnotifications");
-    mConfirmDeleteMailConf = new MGConfItem("/apps/meego-app-email/confirmdeletemail");
-#endif
-
     init();
 }
 
@@ -76,18 +55,10 @@ void EmailAccountSettingsModel::init()
     }
 
     // TODO: there is not really any point storing these.
-#ifdef HAS_MLITE
-    // initialize global settings from gconf
-    mUpdateInterval = mUpdateIntervalConf->value().toInt();
-    mSignature = mSignatureConf->value().toString();
-    mNewMailNotification = mNewMailNotificationConf->value().toBool();
-    mConfirmDeleteMail = mConfirmDeleteMailConf->value().toBool();
-#else
     mUpdateInterval = 60;
     mSignature = "No GConf configured";
     mNewMailNotification = true;
     mConfirmDeleteMail = true;
-#endif
 }
 
 QMailAccountConfiguration::ServiceConfiguration *EmailAccountSettingsModel::getRecvCfg(QMailAccountConfiguration &acctcfg)
@@ -417,13 +388,6 @@ void EmailAccountSettingsModel::saveChanges()
 {
     int i;
     QMailStore *mailstore = QMailStore::instance();
-
-#ifdef HAS_MLITE
-    mUpdateIntervalConf->set(mUpdateInterval);
-    mSignatureConf->set(mSignature);
-    mNewMailNotificationConf->set(mNewMailNotification);
-    mConfirmDeleteMailConf->set(mConfirmDeleteMail);
-#endif
 
     for (i = 0; i < mAccounts.size(); i++) {
         //set update interval and signature globally
