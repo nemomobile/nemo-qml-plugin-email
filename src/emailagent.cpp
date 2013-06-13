@@ -22,6 +22,12 @@
 #include "emailagent.h"
 #include "emailaction.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+#define MESSAGESERVER "/usr/bin/messageserver"
+#else
+#define MESSAGESERVER "/usr/bin/messageserver5"
+#endif
+
 namespace {
 
 QMailAccountId accountForMessageId(const QMailMessageId &msgId)
@@ -89,7 +95,7 @@ void EmailAgent::initMailServer()
     }
     QMail::fileUnlock(id);
 
-    m_messageServerProcess.start("/usr/bin/messageserver");
+    m_messageServerProcess.start(MESSAGESERVER);
     m_messageServerProcess.waitForStarted();
     return;
 }
