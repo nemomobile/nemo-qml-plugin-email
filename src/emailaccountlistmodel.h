@@ -31,7 +31,8 @@ public:
         MailAccountId  = Qt::UserRole + 8,
         LastSynchronized = Qt::UserRole + 9,
         StandardFoldersRetrieved = Qt::UserRole + 10,
-        Index = Qt::UserRole + 11
+        Index = Qt::UserRole + 11,
+        Preset = Qt::UserRole + 12
     };
 
     virtual QVariant data(const QModelIndex &index, int role) const;
