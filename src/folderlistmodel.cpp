@@ -28,6 +28,7 @@ FolderListModel::FolderListModel(QObject *parent) :
     roles.insert(FolderId, "folderId");
     roles.insert(FolderUnreadCount, "folderUnreadCount");
     roles.insert(FolderServerCount, "folderServerCount");
+    roles.insert(FolderNestingLevel, "folderNestingLevel");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -70,6 +71,15 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
     }
     else if (role == FolderServerCount) {
         return (folder.serverCount());
+    }
+    else if (role == FolderNestingLevel) {
+        QMailFolder tempFolder = folder;
+        int level = 0;
+        while (tempFolder.parentFolderId().isValid()) {
+            tempFolder = QMailFolder(tempFolder.parentFolderId());
+            level++;
+        }
+        return level;
     }
 
     return QVariant();
