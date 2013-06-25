@@ -340,7 +340,7 @@ void EmailAgent::deleteMessage(QVariant messageId)
 
 void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
 {
-    Q_ASSERT(ids.isEmpty());
+    Q_ASSERT(!ids.isEmpty());
 
     QMailMessageId id(ids[0]);
     QMailAccountId accountId = accountForMessageId(id);
