@@ -49,6 +49,8 @@ public:
     Q_INVOKABLE void getMoreMessages(QVariant folderId, uint minimum = 20);
     Q_INVOKABLE QString getSignatureForAccount(QVariant accountId);
     Q_INVOKABLE QVariant inboxFolderId(QVariant accountId);
+    Q_INVOKABLE bool isAccountValid(QVariant accountId);
+    Q_INVOKABLE bool isMessageValid(QVariant messageId);
     Q_INVOKABLE void markMessageAsRead(QVariant messageId);
     Q_INVOKABLE void markMessageAsUnread(QVariant messageId);
     Q_INVOKABLE void moveMessage(QVariant messageId, QVariant destinationId);
