@@ -472,6 +472,18 @@ QVariant EmailAgent::inboxFolderId(QVariant accountId)
     }
 }
 
+bool EmailAgent::isAccountValid(QVariant accountId)
+{
+    QMailAccountId acctId = accountId.value<QMailAccountId>();
+    return acctId.isValid();
+}
+
+bool EmailAgent::isMessageValid(QVariant messageId)
+{
+    QMailMessageId id = messageId.value<QMailMessageId>();
+    return id.isValid();
+}
+
 void EmailAgent::markMessageAsRead(QVariant messageId)
 {
     QMailMessageId id = messageId.value<QMailMessageId>();
