@@ -78,6 +78,15 @@ EmailAgent::~EmailAgent()
 {
 }
 
+QString EmailAgent::bodyPlainText(const QMailMessage &mailMsg) const
+{
+    if (QMailMessagePartContainer *container = mailMsg.findPlainTextContainer()) {
+        return container->body().data();
+    }
+
+    return QString();
+}
+
 void EmailAgent::exportUpdates(const QMailAccountId accountId)
 {
     enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
@@ -268,6 +277,17 @@ void EmailAgent::progressChanged(uint value, uint total)
 }
 
 // ############# Invokable API ########################
+QMailAccountId EmailAgent::accountIdFromVariant(QVariant accountId)
+{
+    QMailAccountId acctId;
+    if (accountId.canConvert<QMailAccountId>()) {
+        acctId = accountId.value<QMailAccountId>();
+    } else {
+        acctId = QMailAccountId(accountId.toULongLong());
+    }
+    return acctId;
+}
+
 //Sync all accounts (both ways)
 void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
 {
@@ -474,14 +494,12 @@ QVariant EmailAgent::inboxFolderId(QVariant accountId)
 
 bool EmailAgent::isAccountValid(QVariant accountId)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
-    return acctId.isValid();
+    return accountIdFromVariant(accountId).isValid();
 }
 
 bool EmailAgent::isMessageValid(QVariant messageId)
 {
-    QMailMessageId id = messageId.value<QMailMessageId>();
-    return id.isValid();
+    return messageIdFromVariant(messageId).isValid();
 }
 
 void EmailAgent::markMessageAsRead(QVariant messageId)
@@ -498,6 +516,17 @@ void EmailAgent::markMessageAsUnread(QVariant messageId)
     quint64 status(QMailMessage::Read);
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(id), status, false);
     exportUpdates(accountForMessageId(id));
+}
+
+QMailMessageId EmailAgent::messageIdFromVariant(QVariant messageId)
+{
+    QMailMessageId message;
+    if (messageId.canConvert<QMailMessageId>()) {
+        message = messageId.value<QMailMessageId>();
+    } else {
+        message = QMailMessageId(messageId.toULongLong());
+    }
+    return message;
 }
 
 void EmailAgent::moveMessage(QVariant messageId, QVariant destinationId)
@@ -636,7 +665,7 @@ void EmailAgent::synchronizeInbox(QVariant accountId, const uint minimum)
     }
 }
 
-// ############## Queue of actions #########################
+// ############## Private API #########################
 
 bool EmailAgent::actionInQueue(QSharedPointer<EmailAction> action) const
 {
