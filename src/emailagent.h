@@ -36,6 +36,7 @@ public:
     quint64 newAction();
     void sendMessages(const QMailAccountId &accountId);
     void setupAccountFlags();
+    QVariant standardFolderId(QVariant accountId, QMailFolder::StandardFolder folder);
 
     Q_INVOKABLE void accountsSync(const bool syncOnlyInbox = false, const uint minimum = 20);
     Q_INVOKABLE void cancelSync();
@@ -49,6 +50,7 @@ public:
     Q_INVOKABLE void getMoreMessages(QVariant folderId, uint minimum = 20);
     Q_INVOKABLE QString getSignatureForAccount(QVariant accountId);
     Q_INVOKABLE QVariant inboxFolderId(QVariant accountId);
+    Q_INVOKABLE QVariant draftsFolderId(QVariant accountId);
     Q_INVOKABLE bool isAccountValid(QVariant accountId);
     Q_INVOKABLE bool isMessageValid(QVariant messageId);
     Q_INVOKABLE void markMessageAsRead(QVariant messageId);

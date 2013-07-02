@@ -88,6 +88,7 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageAccountIdRole] = "accountId";
     roles[MessageHasAttachmentsRole] = "hasAttachments";
     roles[MessageSizeSectionRole] = "sizeSection";
+    roles[MessageFolderIdRole] = "folderId";
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -275,6 +276,8 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         else {
             return 2;
         }
+    } else if (role == MessageFolderIdRole) {
+        return messageMetaData.parentFolderId();
     }
     return QMailMessageListModel::data(index, role);
 }
