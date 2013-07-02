@@ -454,22 +454,30 @@ QString EmailAgent::getSignatureForAccount(QVariant accountId)
     return QString();
 }
 
-QVariant EmailAgent::inboxFolderId(QVariant accountId)
+QVariant EmailAgent::standardFolderId(QVariant accountId, QMailFolder::StandardFolder folder)
 {
     QMailAccountId acctId = accountId.value<QMailAccountId>();
     Q_ASSERT(acctId.isValid());
     QMailAccount account(acctId);
-    QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);
+    QMailFolderId foldId = account.standardFolder(folder);
 
     if (foldId.isValid()) {
-
         return foldId;
     }
     else {
-
-        qDebug() << "Error: Inbox not found for account: " << acctId;
+        qDebug() << "Error: Standard folder " << folder << " not found for account: " << acctId;
         return QVariant();
     }
+}
+
+QVariant EmailAgent::inboxFolderId(QVariant accountId)
+{
+    return standardFolderId(accountId, QMailFolder::InboxFolder);
+}
+
+QVariant EmailAgent::draftsFolderId(QVariant accountId)
+{
+    return standardFolderId(accountId, QMailFolder::DraftsFolder);
 }
 
 bool EmailAgent::isAccountValid(QVariant accountId)
