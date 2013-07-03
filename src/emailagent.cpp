@@ -441,6 +441,12 @@ qint64 EmailAgent::folderIdToInt(QVariant folderId)
     return foldId.toULongLong();
 }
 
+qint64 EmailAgent::messageIdToInt(QVariant messageId)
+{
+    QMailMessageId msgId = messageId.value<QMailMessageId>();
+    return msgId.toULongLong();
+}
+
 QString EmailAgent::getMessageBodyFromFile (const QString& bodyFilePath)
 {
     QFile f(bodyFilePath);
