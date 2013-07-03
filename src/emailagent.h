@@ -28,6 +28,7 @@ public:
     explicit EmailAgent(QObject *parent = 0);
     ~EmailAgent();
 
+    QString bodyPlainText(const QMailMessage &mailMsg) const;
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
     bool isSynchronizing() const;
@@ -38,6 +39,7 @@ public:
     void setupAccountFlags();
     QVariant standardFolderId(QVariant accountId, QMailFolder::StandardFolder folder);
 
+    Q_INVOKABLE QMailAccountId accountIdFromVariant(QVariant accountId);
     Q_INVOKABLE void accountsSync(const bool syncOnlyInbox = false, const uint minimum = 20);
     Q_INVOKABLE void cancelSync();
     Q_INVOKABLE void createFolder(const QString &name, QVariant mailAccountId, QVariant parentFolderId);
@@ -55,6 +57,7 @@ public:
     Q_INVOKABLE bool isMessageValid(QVariant messageId);
     Q_INVOKABLE void markMessageAsRead(QVariant messageId);
     Q_INVOKABLE void markMessageAsUnread(QVariant messageId);
+    Q_INVOKABLE QMailMessageId messageIdFromVariant(QVariant messageId);
     Q_INVOKABLE void moveMessage(QVariant messageId, QVariant destinationId);
     Q_INVOKABLE bool openAttachment(const QString& attachmentDisplayName);
     Q_INVOKABLE void openBrowser(const QString& url);

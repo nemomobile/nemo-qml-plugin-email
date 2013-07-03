@@ -40,15 +40,6 @@ QString EmailMessageListModel::bodyHtmlText(const QMailMessage &mailMsg) const
     return QString();
 }
 
-QString EmailMessageListModel::bodyPlainText(const QMailMessage &mailMsg) const
-{
-    if (QMailMessagePartContainer *container = mailMsg.findPlainTextContainer()) {
-        return container->body().data();
-    }
-
-    return QString();
-}
-
 //![0]
 EmailMessageListModel::EmailMessageListModel(QObject *parent)
     : QMailMessageListModel(parent),
@@ -132,7 +123,7 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
 
     if (role == QMailMessageModelBase::MessageBodyTextRole) {
         QMailMessage message (msgId);
-        return bodyPlainText(message);
+        return EmailAgent::instance()->bodyPlainText(message);
     }
     else if (role == MessageHtmlBodyRole) {
         QMailMessage message (msgId);
@@ -140,7 +131,7 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     }
     else if (role == MessageQuotedBodyRole) {
         QMailMessage message (msgId);
-        QString body = bodyPlainText(message);
+        QString body = EmailAgent::instance()->bodyPlainText(message);
         body.prepend('\n');
         body.replace('\n', "\n>");
         body.truncate(body.size() - 1);  // remove the extra ">" put there by QString.replace
