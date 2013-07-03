@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE void deleteMessages(const QMailMessageIdList &ids);
     Q_INVOKABLE void downloadAttachment(QVariant messageId, const QString &attachmentDisplayName);
     Q_INVOKABLE qint64 folderIdToInt(QVariant folderId);
+    Q_INVOKABLE qint64 messageIdToInt(QVariant messageId);
     Q_INVOKABLE QString getMessageBodyFromFile(const QString& bodyFilePath);
     Q_INVOKABLE void getMoreMessages(QVariant folderId, uint minimum = 20);
     Q_INVOKABLE QString getSignatureForAccount(QVariant accountId);
