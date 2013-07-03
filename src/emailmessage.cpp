@@ -15,6 +15,7 @@
 #include "emailagent.h"
 #include "emailmessage.h"
 #include "qmailnamespace.h"
+#include <qmaildisconnected.h>
 
 EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
@@ -65,33 +66,40 @@ void EmailMessage::saveDraft()
 {
     buildMessage();
 
-    QMailFolderKey nameKey(QMailFolderKey::displayName("Drafts", QMailDataComparator::Includes));
-    QMailFolderKey accountKey(QMailFolderKey::parentAccountId(m_msg.parentAccountId()));
-    QMailFolderIdList draftsFolders = QMailStore::instance()->queryFolders(nameKey & accountKey);
+    QMailAccount account(m_msg.parentAccountId());
+    QMailFolderId draftFolderId = account.standardFolder(QMailFolder::DraftsFolder);
 
-    if (draftsFolders.length() > 0 && draftsFolders[0].isValid()) {
-        m_msg.setParentFolderId(draftsFolders[0]);
+    if (draftFolderId.isValid()) {
+        m_msg.setParentFolderId(draftFolderId);
+        //local storage set on buildMessage step
+        qWarning() << "Drafts folder not found, saving to local storage(Outbox)!";
+    }
 
-        bool saved = false;
+    bool saved = false;
 
-        // Unset outgoing and outbox so it wont really send
-        // when we sync to the server Drafts folder
-        m_msg.setStatus(QMailMessage::Outgoing, false);
-        m_msg.setStatus(QMailMessage::Outbox, false);
-        if (!m_msg.id().isValid()) {
-            saved = QMailStore::instance()->addMessage(&m_msg);
-        } else {
-            saved = QMailStore::instance()->updateMessage(&m_msg);
-            m_newMessage = false;
-        }
-        //
-        // Sync to the server, so the message will be in the remote Drafts folder
-        if (saved) {
-            EmailAgent::instance()->flagMessages(QMailMessageIdList() << m_msg.id(),
-                QMailMessage::Draft, 0);
-            EmailAgent::instance()->exportUpdates(m_msg.parentAccountId());
-            emitSignals();
-        }
+    // Unset outgoing and outbox so it wont really send
+    // when we sync to the server Drafts folder
+    m_msg.setStatus(QMailMessage::Outgoing, false);
+    m_msg.setStatus(QMailMessage::Outbox, false);
+    m_msg.setStatus(QMailMessage::Draft, true);
+    // This message is present only on the local device until we externalise or send it
+    m_msg.setStatus(QMailMessage::LocalOnly, true);
+
+    if (!m_msg.id().isValid()) {
+        saved = QMailStore::instance()->addMessage(&m_msg);
+    } else {
+        saved = QMailStore::instance()->updateMessage(&m_msg);
+        m_newMessage = false;
+    }
+    // Sync to the server, so the message will be in the remote Drafts folder
+    if (saved) {
+        QMailDisconnected::flagMessage(m_msg.id(), QMailMessage::Draft, QMailMessage::Temporary,
+                                       "Flagging message as draft");
+        QMailDisconnected::moveToFolder(QMailMessageIdList() << m_msg.id(), m_msg.parentFolderId());
+        EmailAgent::instance()->exportUpdates(m_msg.parentAccountId());
+        emitSignals();
+    } else {
+        qWarning() << "Failed to save message!";
     }
 }
 
