@@ -40,7 +40,7 @@ public:
     Q_PROPERTY(Priority priority READ priority WRITE setPriority NOTIFY priorityChanged)
     Q_PROPERTY(QString quotedBody READ quotedBody NOTIFY storedMessageChanged)
     Q_PROPERTY(QStringList recipients READ recipients NOTIFY recipientsChanged)
-    Q_PROPERTY(bool read READ read NOTIFY readChanged)
+    Q_PROPERTY(bool read READ read WRITE setRead NOTIFY readChanged)
     Q_PROPERTY(QString replyTo READ replyTo WRITE setReplyTo NOTIFY replyToChanged)
     Q_PROPERTY(int size READ size NOTIFY storedMessageChanged)
     Q_PROPERTY(QString subject READ subject WRITE setSubject NOTIFY subjectChanged)
@@ -79,6 +79,7 @@ public:
     void setInReplyTo(const QString &messageId);
     void setMessageId(int messageId);
     void setPriority(Priority priority);
+    void setRead(bool read);
     void setReplyTo(const QString &address);
     void setSubject(const QString &subject);
     void setTo(const QStringList &toList);
