@@ -262,7 +262,7 @@ void EmailAgent::onStandardFoldersCreated(const QMailAccountId &accountId)
     QMailAccount account(accountId);
     QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);
     if(foldId.isValid()) {
-        synchronizeInbox(accountId);
+        synchronizeInbox(accountId.toULongLong());
     }
     else {
         qDebug() << "Error: Inbox not found!!!";
@@ -277,16 +277,6 @@ void EmailAgent::progressChanged(uint value, uint total)
 }
 
 // ############# Invokable API ########################
-QMailAccountId EmailAgent::accountIdFromVariant(QVariant accountId)
-{
-    QMailAccountId acctId;
-    if (accountId.canConvert<QMailAccountId>()) {
-        acctId = accountId.value<QMailAccountId>();
-    } else {
-        acctId = QMailAccountId(accountId.toULongLong());
-    }
-    return acctId;
-}
 
 //Sync all accounts (both ways)
 void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
@@ -300,7 +290,7 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
 
     foreach (QMailAccountId accountId, m_enabledAccounts) {
         if (syncOnlyInbox) {
-            synchronizeInbox(accountId, minimum);
+            synchronizeInbox(accountId.toULongLong(), minimum);
         }
         else {
             enqueue(new Synchronize(m_retrievalAction.data(), accountId));
@@ -325,7 +315,7 @@ void EmailAgent::cancelSync()
     }
 }
 
-void EmailAgent::createFolder(const QString &name, QVariant mailAccountId, QVariant parentFolderId)
+void EmailAgent::createFolder(const QString &name, int mailAccountId, int parentFolderId)
 {
 
     if(!name.isEmpty()) {
@@ -333,26 +323,26 @@ void EmailAgent::createFolder(const QString &name, QVariant mailAccountId, QVari
     }
 
     else {
-        QMailAccountId accountId = mailAccountId.value<QMailAccountId>();
+        QMailAccountId accountId(mailAccountId);
         Q_ASSERT(accountId.isValid());
 
-        QMailFolderId parentId = parentFolderId.value<QMailFolderId>();
+        QMailFolderId parentId(parentFolderId);
 
         enqueue(new OnlineCreateFolder(m_storageAction.data(), name, accountId, parentId));
     }
 }
 
-void EmailAgent::deleteFolder(QVariant folderId)
+void EmailAgent::deleteFolder(int folderId)
 {
-    QMailFolderId id = folderId.value<QMailFolderId>();
+    QMailFolderId id(folderId);
     Q_ASSERT(id.isValid());
 
     enqueue(new OnlineDeleteFolder(m_storageAction.data(),id));
 }
 
-void EmailAgent::deleteMessage(QVariant messageId)
+void EmailAgent::deleteMessage(int messageId)
 {
-    QMailMessageId msgId = messageId.value<QMailMessageId>();
+    QMailMessageId msgId(messageId);
     QMailMessageIdList msgIdList;
     msgIdList << msgId;
     deleteMessages (msgIdList);
@@ -399,9 +389,9 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
     }
 }
 
-void EmailAgent::downloadAttachment(QVariant messageId, const QString &attachmentDisplayName)
+void EmailAgent::downloadAttachment(int messageId, const QString &attachmentDisplayName)
 {
-    m_messageId = messageId.value<QMailMessageId>();
+    m_messageId = QMailMessageId(messageId);
     QMailMessage message (m_messageId);
 
     emit attachmentDownloadStarted();
@@ -435,18 +425,6 @@ void EmailAgent::downloadAttachment(QVariant messageId, const QString &attachmen
     }
 }
 
-qint64 EmailAgent::folderIdToInt(QVariant folderId)
-{
-    QMailFolderId foldId = folderId.value<QMailFolderId>();
-    return foldId.toULongLong();
-}
-
-qint64 EmailAgent::messageIdToInt(QVariant messageId)
-{
-    QMailMessageId msgId = messageId.value<QMailMessageId>();
-    return msgId.toULongLong();
-}
-
 QString EmailAgent::getMessageBodyFromFile (const QString& bodyFilePath)
 {
     QFile f(bodyFilePath);
@@ -457,9 +435,9 @@ QString EmailAgent::getMessageBodyFromFile (const QString& bodyFilePath)
     return data;
 }
 
-void EmailAgent::getMoreMessages(QVariant folderId, uint minimum)
+void EmailAgent::getMoreMessages(int folderId, uint minimum)
 {
-    QMailFolderId foldId = folderId.value<QMailFolderId>();
+    QMailFolderId foldId(folderId);
     if (foldId.isValid()) {
         emit syncBegin();
         QMailFolder folder(foldId);
@@ -470,9 +448,9 @@ void EmailAgent::getMoreMessages(QVariant folderId, uint minimum)
     }
 }
 // TODO: remove and add similar functionality to accountListModel
-QString EmailAgent::getSignatureForAccount(QVariant accountId)
+QString EmailAgent::getSignatureForAccount(int accountId)
 {
-    QMailAccountId mailAccountId = accountId.value<QMailAccountId>();
+    QMailAccountId mailAccountId(accountId);
     if (mailAccountId.isValid()) {
         QMailAccount mailAccount (mailAccountId);
         return mailAccount.signature();
@@ -480,75 +458,64 @@ QString EmailAgent::getSignatureForAccount(QVariant accountId)
     return QString();
 }
 
-QVariant EmailAgent::standardFolderId(QVariant accountId, QMailFolder::StandardFolder folder)
+int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder folder)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
+    QMailAccountId acctId(accountId);
     Q_ASSERT(acctId.isValid());
     QMailAccount account(acctId);
     QMailFolderId foldId = account.standardFolder(folder);
 
     if (foldId.isValid()) {
-        return foldId;
+        return foldId.toULongLong();
     }
     else {
-        qDebug() << "Error: Standard folder " << folder << " not found for account: " << acctId;
-        return QVariant();
+        qDebug() << "Error: Standard folder " << folder << " not found for account: " << accountId;
+        return -1;
     }
 }
 
-QVariant EmailAgent::inboxFolderId(QVariant accountId)
+int EmailAgent::inboxFolderId(int accountId)
 {
     return standardFolderId(accountId, QMailFolder::InboxFolder);
 }
 
-QVariant EmailAgent::draftsFolderId(QVariant accountId)
+int EmailAgent::draftsFolderId(int accountId)
 {
     return standardFolderId(accountId, QMailFolder::DraftsFolder);
 }
 
-bool EmailAgent::isAccountValid(QVariant accountId)
+bool EmailAgent::isAccountValid(int accountId)
 {
-    return accountIdFromVariant(accountId).isValid();
+    return QMailAccountId(accountId).isValid();
 }
 
-bool EmailAgent::isMessageValid(QVariant messageId)
+bool EmailAgent::isMessageValid(int messageId)
 {
-    return messageIdFromVariant(messageId).isValid();
+    return QMailMessageId(messageId).isValid();
 }
 
-void EmailAgent::markMessageAsRead(QVariant messageId)
+void EmailAgent::markMessageAsRead(int messageId)
 {
-    QMailMessageId id = messageId.value<QMailMessageId>();
+    QMailMessageId id(messageId);
     quint64 status(QMailMessage::Read);
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(id), status, true);
     exportUpdates(accountForMessageId(id));
 }
 
-void EmailAgent::markMessageAsUnread(QVariant messageId)
+void EmailAgent::markMessageAsUnread(int messageId)
 {
-    QMailMessageId id = messageId.value<QMailMessageId>();
+    QMailMessageId id(messageId);
     quint64 status(QMailMessage::Read);
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(id), status, false);
     exportUpdates(accountForMessageId(id));
 }
 
-QMailMessageId EmailAgent::messageIdFromVariant(QVariant messageId)
+void EmailAgent::moveMessage(int messageId, int destinationId)
 {
-    QMailMessageId message;
-    if (messageId.canConvert<QMailMessageId>()) {
-        message = messageId.value<QMailMessageId>();
-    } else {
-        message = QMailMessageId(messageId.toULongLong());
-    }
-    return message;
-}
-
-void EmailAgent::moveMessage(QVariant messageId, QVariant destinationId)
-{
-    QMailMessageId msgId = messageId.value<QMailMessageId>();
+    QMailMessageId msgId(messageId);
     QMailMessageIdList msgIdList;
     msgIdList << msgId;
-    QMailFolderId destId = destinationId.value<QMailFolderId>();
+    QMailFolderId destId(destinationId);
     moveMessages(msgIdList, destId);
 }
 
@@ -605,24 +572,24 @@ void EmailAgent::openBrowser(const QString & url)
     QProcess::startDetached(executable, parameters);
 }
 
-void EmailAgent::renameFolder(QVariant folderId, const QString &name)
+void EmailAgent::renameFolder(int folderId, const QString &name)
 {
     if(!name.isEmpty()) {
         qDebug() << "Error: Can't rename a folder to a empty name";
     }
 
     else{
-        QMailFolderId id = folderId.value<QMailFolderId>();
+        QMailFolderId id(folderId);
         Q_ASSERT(id.isValid());
 
         enqueue(new OnlineRenameFolder(m_storageAction.data(),id, name));
     }
 }
 
-void EmailAgent::retrieveFolderList(QVariant accountId, QVariant folderId, const bool descending)
+void EmailAgent::retrieveFolderList(int accountId, int folderId, const bool descending)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
-    QMailFolderId foldId = folderId.value<QMailFolderId>();
+    QMailAccountId acctId(accountId);
+    QMailFolderId foldId(folderId);
 
     if (acctId.isValid()) {
         emit syncBegin();
@@ -630,10 +597,10 @@ void EmailAgent::retrieveFolderList(QVariant accountId, QVariant folderId, const
     }
 }
 
-void EmailAgent::retrieveMessageList(QVariant accountId, QVariant folderId, const uint minimum)
+void EmailAgent::retrieveMessageList(int accountId, int folderId, const uint minimum)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
-    QMailFolderId foldId = folderId.value<QMailFolderId>();
+    QMailAccountId acctId(accountId);
+    QMailFolderId foldId(folderId);
 
     if (acctId.isValid()) {
         emit syncBegin();
@@ -641,16 +608,16 @@ void EmailAgent::retrieveMessageList(QVariant accountId, QVariant folderId, cons
     }
 }
 
-void EmailAgent::retrieveMessageRange(QVariant messageId, uint minimum)
+void EmailAgent::retrieveMessageRange(int messageId, uint minimum)
 {
     emit syncBegin();
-    QMailMessageId id = messageId.value<QMailMessageId>();
+    QMailMessageId id(messageId);
     enqueue(new RetrieveMessageRange(m_retrievalAction.data(), id, minimum));
 }
 
-void EmailAgent::synchronize(QVariant accountId)
+void EmailAgent::synchronize(int accountId)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
+    QMailAccountId acctId(accountId);
 
     if (acctId.isValid()) {
         emit syncBegin();
@@ -658,9 +625,9 @@ void EmailAgent::synchronize(QVariant accountId)
     }
 }
 
-void EmailAgent::synchronizeInbox(QVariant accountId, const uint minimum)
+void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
 {
-    QMailAccountId acctId = accountId.value<QMailAccountId>();
+    QMailAccountId acctId(accountId);
 
     QMailAccount account(acctId);
     QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);

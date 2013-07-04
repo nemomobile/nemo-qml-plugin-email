@@ -57,7 +57,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[QMailMessageModelBase::MessageDirectionIconRole] = "directionIcon";
     roles[QMailMessageModelBase::MessagePresenceIconRole] = "presenceIcon";
     roles[QMailMessageModelBase::MessageBodyTextRole] = "body";
-    roles[QMailMessageModelBase::MessageIdRole] = "messageId";
     roles[MessageAttachmentCountRole] = "numberOfAttachments";
     roles[MessageAttachmentsRole] = "listOfAttachments";
     roles[MessageRecipientsRole] = "recipients";
@@ -65,7 +64,7 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageReadStatusRole] = "readStatus";
     roles[MessageHtmlBodyRole] = "htmlBody";
     roles[MessageQuotedBodyRole] = "quotedBody";
-    roles[MessageUuidRole] = "messageUuid";
+    roles[MessageIdRole] = "messageId";
     roles[MessageSenderDisplayNameRole] = "senderDisplayName";
     roles[MessageSenderEmailAddressRole] = "senderEmailAddress";
     roles[MessageToRole] = "to";
@@ -137,9 +136,8 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         body.truncate(body.size() - 1);  // remove the extra ">" put there by QString.replace
         return body;
     }
-    else if (role == MessageUuidRole) {
-        QString uuid = QString::number(msgId.toULongLong());
-        return uuid;
+    else if (role == MessageIdRole) {
+        return msgId.toULongLong();
     }
     else if (role == MessageToRole) {
         QMailMessage message (msgId);
@@ -245,7 +243,7 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         }
     }
     else if (role == MessageAccountIdRole) {
-        return messageMetaData.parentAccountId();
+        return messageMetaData.parentAccountId().toULongLong();
     }
     else if (role == MessageHasAttachmentsRole) {
         if (messageMetaData.status() & QMailMessageMetaData::HasAttachments)
@@ -268,7 +266,7 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
             return 2;
         }
     } else if (role == MessageFolderIdRole) {
-        return messageMetaData.parentFolderId();
+        return messageMetaData.parentFolderId().toULongLong();
     }
     return QMailMessageListModel::data(index, role);
 }
@@ -289,9 +287,9 @@ void EmailMessageListModel::setSearch(const QString search)
     m_search = search;
 }
 
-void EmailMessageListModel::setFolderKey(QVariant id)
+void EmailMessageListModel::setFolderKey(int id)
 {
-    m_currentFolderId = id.value<QMailFolderId>();
+    m_currentFolderId = QMailFolderId(id);
     if (!m_currentFolderId.isValid())
         return;
     QMailMessageKey folderKey = QMailMessageKey::parentFolderId(m_currentFolderId);
@@ -303,9 +301,9 @@ void EmailMessageListModel::setFolderKey(QVariant id)
         setCombinedInbox(false);
 }
 
-void EmailMessageListModel::setAccountKey(QVariant id)
+void EmailMessageListModel::setAccountKey(int id)
 {
-    QMailAccountId accountId = id.value<QMailAccountId>();
+    QMailAccountId accountId = QMailAccountId(id);
     if (!accountId.isValid()) {
         //If accountId is invalid, empty key will be set.
         QMailMessageListModel::setKey(QMailMessageKey::nonMatchingKey());
@@ -424,21 +422,21 @@ void EmailMessageListModel::sortBySize(int order)
     QMailMessageListModel::setSortKey(m_sortKey);
 }
 
-QVariant EmailMessageListModel::accountIdForMessage(QVariant messageId)
+int EmailMessageListModel::accountIdForMessage(QVariant messageId)
 {
     QMailMessageId msgId = messageId.value<QMailMessageId>();
     QMailMessageMetaData metaData(msgId);
-    return metaData.parentAccountId();
+    return metaData.parentAccountId().toULongLong();
 }
 
-QVariant EmailMessageListModel::folderIdForMessage(QVariant messageId)
+int EmailMessageListModel::folderIdForMessage(QVariant messageId)
 {
     QMailMessageId msgId = messageId.value<QMailMessageId>();
     QMailMessageMetaData metaData(msgId);
-    return metaData.parentFolderId();
+    return metaData.parentFolderId().toULongLong();
 }
 
-QVariant EmailMessageListModel::indexFromMessageId(QString uuid)
+int EmailMessageListModel::indexFromMessageId(QString uuid)
 {
     quint64 id = uuid.toULongLong();
     QMailMessageId msgId (id);
@@ -451,50 +449,50 @@ QVariant EmailMessageListModel::indexFromMessageId(QString uuid)
     return -1;
 }
 
-QVariant EmailMessageListModel::messageId(int idx)
+int EmailMessageListModel::messageId(int idx)
 {
     QMailMessageId id = idFromIndex(index(idx));
-    return id;
+    return id.toULongLong();
 }
 
-QVariant EmailMessageListModel::subject(int idx)
+QString EmailMessageListModel::subject(int idx)
 {
-    return data(index(idx), QMailMessageModelBase::MessageSubjectTextRole);
+    return data(index(idx), QMailMessageModelBase::MessageSubjectTextRole).toString();
 }
 
-QVariant EmailMessageListModel::mailSender(int idx)
+QString EmailMessageListModel::mailSender(int idx)
 {
-    return data(index(idx), QMailMessageModelBase::MessageAddressTextRole);
+    return data(index(idx), QMailMessageModelBase::MessageAddressTextRole).toString();
 }
 
-QVariant EmailMessageListModel::senderDisplayName(int idx)
+QString EmailMessageListModel::senderDisplayName(int idx)
 {
-    return data(index(idx), MessageSenderDisplayNameRole);
+    return data(index(idx), MessageSenderDisplayNameRole).toString();
 }
 
-QVariant EmailMessageListModel::senderEmailAddress(int idx)
+QString EmailMessageListModel::senderEmailAddress(int idx)
 {
-    return data(index(idx), MessageSenderEmailAddressRole);
+    return data(index(idx), MessageSenderEmailAddressRole).toString();
 }
 
-QVariant EmailMessageListModel::timeStamp(int idx)
+QDateTime EmailMessageListModel::timeStamp(int idx)
 {
-    return data(index(idx), QMailMessageModelBase::MessageTimeStampTextRole);
+    return data(index(idx), QMailMessageModelBase::MessageTimeStampTextRole).toDateTime();
 }
 
-QVariant EmailMessageListModel::body(int idx)
+QString EmailMessageListModel::body(int idx)
 {
-    return data(index(idx), QMailMessageModelBase::MessageBodyTextRole);
+    return data(index(idx), QMailMessageModelBase::MessageBodyTextRole).toString();
 }
 
-QVariant EmailMessageListModel::quotedBody(int idx)
+QString EmailMessageListModel::quotedBody(int idx)
 {
-    return data(index(idx), MessageQuotedBodyRole);
+    return data(index(idx), MessageQuotedBodyRole).toString();
 }
 
-QVariant EmailMessageListModel::htmlBody(int idx)
+QString EmailMessageListModel::htmlBody(int idx)
 {
-    return data(index(idx), MessageHtmlBodyRole);
+    return data(index(idx), MessageHtmlBodyRole).toString();
 }
 
 QVariant EmailMessageListModel::attachments(int idx)
@@ -502,9 +500,9 @@ QVariant EmailMessageListModel::attachments(int idx)
     return data(index(idx), MessageAttachmentsRole);
 }
 
-QVariant EmailMessageListModel::numberOfAttachments(int idx)
+int EmailMessageListModel::numberOfAttachments(int idx)
 {
-    return data(index(idx), MessageAttachmentCountRole);
+    return data(index(idx), MessageAttachmentCountRole).toInt();
 }
 
 QVariant EmailMessageListModel::toList(int idx)
@@ -527,19 +525,19 @@ QVariant EmailMessageListModel::bccList(int idx)
     return data(index(idx), MessageBccRole);
 }
 
-QVariant EmailMessageListModel::messageRead(int idx)
+bool EmailMessageListModel::messageRead(int idx)
 {
-    return data(index(idx), MessageReadStatusRole);
+    return data(index(idx), MessageReadStatusRole).toBool();
 }
 
-QVariant EmailMessageListModel::size(int idx)
+QString EmailMessageListModel::size(int idx)
 {
-    return data(index(idx), QMailMessageModelBase::MessageSizeTextRole);
+    return data(index(idx), QMailMessageModelBase::MessageSizeTextRole).toString();
 }
 
-QVariant EmailMessageListModel::accountId(int idx)
+int EmailMessageListModel::accountId(int idx)
 {
-    return data(index(idx), MessageAccountIdRole);
+    return data(index(idx), MessageAccountIdRole).toInt();
 }
 
 QVariant EmailMessageListModel::priority(int idx)
@@ -587,12 +585,12 @@ void EmailMessageListModel::deSelectMessage(int idx)
     dataChanged(index(idx), index(idx));
 }
 
-void EmailMessageListModel::moveSelectedMessageIds(QVariant vFolderId)
+void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
 {
     if (m_selectedMsgIds.empty())
         return;
 
-    QMailFolderId const id(vFolderId.value<QMailFolderId>());
+    QMailFolderId const id(vFolderId);
 
     QMailMessage const msg(m_selectedMsgIds[0]);
 
