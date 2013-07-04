@@ -30,7 +30,8 @@ SOURCES += \
     $$PWD/emailaccountsettingsmodel.cpp \
     $$PWD/emailaccount.cpp \
     $$PWD/plugin.cpp \
-    emailaction.cpp
+    $$PWD/emailaction.cpp \
+    $$PWD/emailfolder.cpp
 
 HEADERS += \
     $$PWD/emailaccountlistmodel.h \
@@ -40,7 +41,8 @@ HEADERS += \
     $$PWD/emailmessage.h \
     $$PWD/emailaccountsettingsmodel.h \
     $$PWD/emailaccount.h \
-    $$PWD/emailaction.h
+    $$PWD/emailaction.h \
+    $$PWD/emailfolder.h
 
 MOC_DIR = $$PWD/../.moc
 OBJECTS_DIR = $$PWD/../.obj
