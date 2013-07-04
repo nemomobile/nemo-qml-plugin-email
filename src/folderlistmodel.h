@@ -34,15 +34,15 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
 
-    Q_INVOKABLE void setAccountKey(QVariant id);
+    Q_INVOKABLE void setAccountKey(int id);
     Q_INVOKABLE QStringList folderNames();
-    Q_INVOKABLE QVariant folderId(int index);
-    Q_INVOKABLE int indexFromFolderId(QVariant vFolderId);
-    Q_INVOKABLE QVariant folderServerCount(QVariant vFolderId);
-    Q_INVOKABLE QVariant inboxFolderId();
-    Q_INVOKABLE QVariant inboxFolderName();
+    Q_INVOKABLE int folderId(int index);
+    Q_INVOKABLE int indexFromFolderId(int vFolderId);
+    Q_INVOKABLE int folderServerCount(int vFolderId);
+    Q_INVOKABLE int inboxFolderId();
+    Q_INVOKABLE QString inboxFolderName();
     Q_INVOKABLE int totalNumberOfFolders();
-    Q_INVOKABLE QVariant folderUnreadCount(QVariant folderId);
+    Q_INVOKABLE int folderUnreadCount(int folderId);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:

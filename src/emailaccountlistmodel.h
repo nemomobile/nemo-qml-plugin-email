@@ -18,6 +18,7 @@
 class EmailAccountListModel : public QMailAccountListModel
 {
     Q_OBJECT
+    Q_PROPERTY(int numberOfAccounts READ numberOfAccounts NOTIFY numberOfAccountsChanged)
 
 public:
     explicit EmailAccountListModel(QObject *parent = 0);
@@ -37,24 +38,27 @@ public:
     virtual QVariant data(const QModelIndex &index, int role) const;
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const;
 
+public:
+    int numberOfAccounts() const;
+
 public slots:
-    Q_INVOKABLE QVariant accountId(int idx);
+    Q_INVOKABLE int accountId(int idx);
     Q_INVOKABLE QStringList allDisplayNames();
     Q_INVOKABLE QStringList allEmailAddresses();
-    Q_INVOKABLE QVariant displayName(int idx);
-    Q_INVOKABLE QString displayNameFromAccountId(QVariant accountId);
-    Q_INVOKABLE QVariant emailAddress(int idx);
-    Q_INVOKABLE QString emailAddressFromAccountId(QVariant accountId);
-    Q_INVOKABLE int indexFromAccountId(QVariant id);
+    Q_INVOKABLE QString displayName(int idx);
+    Q_INVOKABLE QString displayNameFromAccountId(int accountId);
+    Q_INVOKABLE QString emailAddress(int idx);
+    Q_INVOKABLE QString emailAddressFromAccountId(int accountId);
+    Q_INVOKABLE int indexFromAccountId(int accountId);
     Q_INVOKABLE QDateTime lastUpdatedAccountTime();
-    Q_INVOKABLE int numberOfAccounts();
-    Q_INVOKABLE QVariant standardFoldersRetrieved(int idx);
+    Q_INVOKABLE bool standardFoldersRetrieved(int idx);
 
 signals:
     void accountsAdded(QVariantList accountIds);
     void accountsRemoved(QVariantList accountIds);
     void accountsUpdated(QVariantList accountIds);
     void modelReset();
+    void numberOfAccountsChanged();
 
 private slots:
     void onAccountsAdded(const QMailAccountIdList &);

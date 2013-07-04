@@ -38,7 +38,7 @@ public:
         MessageReadStatusRole,                                 // returns the read/unread status
         MessageQuotedBodyRole,                                 // returns the quoted body
         MessageHtmlBodyRole,                                   // returns the html body
-        MessageUuidRole,			                           // returns a unique string id
+        MessageIdRole,                                         // returns the message id
         MessageSenderDisplayNameRole,                          // returns sender's display name
         MessageSenderEmailAddressRole,                         // returns sender's email address
         MessageToRole,                                         // returns a list of To (email + displayName)
@@ -80,8 +80,8 @@ signals:
     void messageDownloadCompleted();
 
 public slots:
-    Q_INVOKABLE void setFolderKey(QVariant id);
-    Q_INVOKABLE void setAccountKey(QVariant id);
+    Q_INVOKABLE void setFolderKey(int id);
+    Q_INVOKABLE void setAccountKey(int id);
     Q_INVOKABLE void sortBySender(int order = 0);
     Q_INVOKABLE void sortBySubject(int order = 0);
     Q_INVOKABLE void sortByDate(int order = 1);
@@ -91,33 +91,34 @@ public slots:
     Q_INVOKABLE void sortBySize(int order = 1);
     Q_INVOKABLE void setSearch(const QString search);
 
-    Q_INVOKABLE QVariant accountIdForMessage(QVariant messageId);
-    Q_INVOKABLE QVariant indexFromMessageId(QString msgId);
-    Q_INVOKABLE QVariant folderIdForMessage(QVariant messageId);
-    Q_INVOKABLE QVariant messageId(int index);
-    Q_INVOKABLE QVariant subject(int index);
-    Q_INVOKABLE QVariant mailSender(int index);
-    Q_INVOKABLE QVariant senderDisplayName(int index);
-    Q_INVOKABLE QVariant senderEmailAddress(int index);
-    Q_INVOKABLE QVariant timeStamp(int index);
-    Q_INVOKABLE QVariant body(int index);
-    Q_INVOKABLE QVariant htmlBody(int index);
-    Q_INVOKABLE QVariant quotedBody(int index);
+    Q_INVOKABLE int accountIdForMessage(QVariant messageId);
+    Q_INVOKABLE int indexFromMessageId(QString msgId);
+    Q_INVOKABLE int folderIdForMessage(QVariant messageId);
+    Q_INVOKABLE int messageId(int index);
+    Q_INVOKABLE QString subject(int index);
+    Q_INVOKABLE QString mailSender(int index);
+    Q_INVOKABLE QString senderDisplayName(int index);
+    Q_INVOKABLE QString senderEmailAddress(int index);
+    Q_INVOKABLE QDateTime timeStamp(int index);
+    Q_INVOKABLE QString body(int index);
+    Q_INVOKABLE QString htmlBody(int index);
+    Q_INVOKABLE QString quotedBody(int index);
     Q_INVOKABLE QVariant attachments(int index);
-    Q_INVOKABLE QVariant numberOfAttachments(int index);
+    Q_INVOKABLE int numberOfAttachments(int index);
     Q_INVOKABLE QVariant recipients(int index);
     Q_INVOKABLE QVariant ccList(int index);
     Q_INVOKABLE QVariant bccList(int index);
     Q_INVOKABLE QVariant toList(int index);
-    Q_INVOKABLE QVariant messageRead(int index);
-    Q_INVOKABLE QVariant size(int index);
-    Q_INVOKABLE QVariant accountId(int index);
+    Q_INVOKABLE bool messageRead(int index);
+    Q_INVOKABLE QString size(int index);
+    Q_INVOKABLE int accountId(int index);
     Q_INVOKABLE QVariant priority(int index);
     Q_INVOKABLE int messagesCount();
+
     Q_INVOKABLE void deSelectAllMessages();
     Q_INVOKABLE void selectMessage(int index);
     Q_INVOKABLE void deSelectMessage(int index);
-    Q_INVOKABLE void moveSelectedMessageIds(QVariant vFolderId);
+    Q_INVOKABLE void moveSelectedMessageIds(int vFolderId);
     Q_INVOKABLE void deleteSelectedMessageIds();
     Q_INVOKABLE void markAllMessagesAsRead();
 
