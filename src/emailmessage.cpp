@@ -343,6 +343,18 @@ void EmailMessage::setPriority(EmailMessage::Priority priority)
     emit priorityChanged();
 }
 
+void EmailMessage::setRead(bool read) {
+    if (read != this->read()) {
+        if (read) {
+            EmailAgent::instance()->markMessageAsRead(m_id.toULongLong());
+        } else {
+            EmailAgent::instance()->markMessageAsUnread(m_id.toULongLong());
+        }
+        m_msg.setStatus(QMailMessage::Read, read);
+        emit readChanged();
+    }
+}
+
 void EmailMessage::setReplyTo(const QString &address)
 {
     QMailAddress addr(address);
