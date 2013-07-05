@@ -20,7 +20,7 @@ public:
     explicit EmailFolder(QObject *parent = 0);
      ~EmailFolder();
 
-    Q_PROPERTY(QString displayName READ displayName NOTIFY folderIdChanged) //check agent about rename/remove folders
+    Q_PROPERTY(QString displayName READ displayName NOTIFY folderIdChanged)
     Q_PROPERTY(int folderId READ folderId WRITE setFolderId NOTIFY folderIdChanged)
     Q_PROPERTY(int parentAccountId READ parentAccountId NOTIFY folderIdChanged)
     Q_PROPERTY(int parentFolderId READ parentFolderId NOTIFY folderIdChanged)
