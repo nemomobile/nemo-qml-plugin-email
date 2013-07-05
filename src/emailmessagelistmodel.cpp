@@ -422,24 +422,23 @@ void EmailMessageListModel::sortBySize(int order)
     QMailMessageListModel::setSortKey(m_sortKey);
 }
 
-int EmailMessageListModel::accountIdForMessage(QVariant messageId)
+int EmailMessageListModel::accountIdForMessage(int messageId)
 {
-    QMailMessageId msgId = messageId.value<QMailMessageId>();
+    QMailMessageId msgId(messageId);
     QMailMessageMetaData metaData(msgId);
     return metaData.parentAccountId().toULongLong();
 }
 
-int EmailMessageListModel::folderIdForMessage(QVariant messageId)
+int EmailMessageListModel::folderIdForMessage(int messageId)
 {
-    QMailMessageId msgId = messageId.value<QMailMessageId>();
+    QMailMessageId msgId(messageId);
     QMailMessageMetaData metaData(msgId);
     return metaData.parentFolderId().toULongLong();
 }
 
-int EmailMessageListModel::indexFromMessageId(QString uuid)
+int EmailMessageListModel::indexFromMessageId(int messageId)
 {
-    quint64 id = uuid.toULongLong();
-    QMailMessageId msgId (id);
+    QMailMessageId msgId(messageId);
     for (int row = 0; row < rowCount(); row++) {
         QVariant vMsgId = data(index(row), QMailMessageModelBase::MessageIdRole);
         
@@ -495,9 +494,9 @@ QString EmailMessageListModel::htmlBody(int idx)
     return data(index(idx), MessageHtmlBodyRole).toString();
 }
 
-QVariant EmailMessageListModel::attachments(int idx)
+QStringList EmailMessageListModel::attachments(int idx)
 {
-    return data(index(idx), MessageAttachmentsRole);
+    return data(index(idx), MessageAttachmentsRole).toStringList();
 }
 
 int EmailMessageListModel::numberOfAttachments(int idx)
@@ -505,24 +504,24 @@ int EmailMessageListModel::numberOfAttachments(int idx)
     return data(index(idx), MessageAttachmentCountRole).toInt();
 }
 
-QVariant EmailMessageListModel::toList(int idx)
+QStringList EmailMessageListModel::toList(int idx)
 {
-    return data(index(idx), MessageToRole);
+    return data(index(idx), MessageToRole).toStringList();
 }
 
-QVariant EmailMessageListModel::recipients(int idx)
+QStringList EmailMessageListModel::recipients(int idx)
 {
-    return data(index(idx), MessageRecipientsRole);
+    return data(index(idx), MessageRecipientsRole).toStringList();
 }
 
-QVariant EmailMessageListModel::ccList(int idx)
+QStringList EmailMessageListModel::ccList(int idx)
 {
-    return data(index(idx), MessageCcRole);
+    return data(index(idx), MessageCcRole).toStringList();
 }
 
-QVariant EmailMessageListModel::bccList(int idx)
+QStringList EmailMessageListModel::bccList(int idx)
 {
-    return data(index(idx), MessageBccRole);
+    return data(index(idx), MessageBccRole).toStringList();
 }
 
 bool EmailMessageListModel::messageRead(int idx)
