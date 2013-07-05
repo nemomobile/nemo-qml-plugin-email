@@ -486,12 +486,16 @@ int EmailAgent::draftsFolderId(int accountId)
 
 bool EmailAgent::isAccountValid(int accountId)
 {
-    return QMailAccountId(accountId).isValid();
+    QMailAccountId id(accountId);
+    QMailAccount account = QMailStore::instance()->account(id);
+    return account.id().isValid();
 }
 
 bool EmailAgent::isMessageValid(int messageId)
 {
-    return QMailMessageId(messageId).isValid();
+    QMailMessageId id(messageId);
+    QMailMessageMetaData message = QMailStore::instance()->messageMetaData(id);
+    return message.id().isValid();
 }
 
 void EmailAgent::markMessageAsRead(int messageId)
