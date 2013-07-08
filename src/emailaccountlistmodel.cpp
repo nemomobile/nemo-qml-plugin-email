@@ -23,6 +23,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(MailAccountId, "mailAccountId");
     roles.insert(LastSynchronized, "lastSynchronized");
     roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
+    roles.insert(Signature, "signature");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -102,6 +103,10 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     if (role == StandardFoldersRetrieved) {
         quint64 standardFoldersMask = QMailAccount::statusMask("StandardFoldersRetrieved");
         return account.status() & standardFoldersMask;
+    }
+
+    if (role == Signature) {
+        return account.signature();
     }
 
     return QVariant();
