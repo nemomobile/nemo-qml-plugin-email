@@ -51,6 +51,7 @@
 #include "emailmessage.h"
 #include "emailaccountsettingsmodel.h"
 #include "emailaccount.h"
+#include "emailfolder.h"
 
 class Q_DECL_EXPORT NemoEmailPlugin : public QDeclarativeExtensionPlugin
 {
@@ -79,6 +80,7 @@ public:
         qmlRegisterType<EmailMessage>(uri, 0, 1, "EmailMessage");
         qmlRegisterType<EmailAccountSettingsModel>(uri, 0, 1, "EmailAccountSettingsModel");
         qmlRegisterType<EmailAccount>(uri, 0, 1, "EmailAccount");
+        qmlRegisterType<EmailFolder>(uri, 0, 1, "EmailFolder");
     }
 };
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
