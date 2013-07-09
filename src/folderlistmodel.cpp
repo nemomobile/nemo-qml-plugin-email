@@ -85,14 +85,12 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-void FolderListModel::setAccountKey(int id)
+int FolderListModel::folderId(int index)
 {
-  // Get all the folders belonging to this email account
-    beginResetModel();
-    QMailAccountId accountId(id);
-    QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
-    m_mailFolderIds = QMailStore::instance()->queryFolders(key);
-    endResetModel();
+    if (index < 0 || index >= m_mailFolderIds.count())
+        return -1;
+
+    return m_mailFolderIds[index].toULongLong();
 }
 
 QStringList FolderListModel::folderNames()
@@ -112,12 +110,24 @@ QStringList FolderListModel::folderNames()
     return folderNames;
 }
 
-int FolderListModel::folderId(int index)
+int FolderListModel::folderServerCount(int vFolderId)
 {
-    if (index < 0 || index >= m_mailFolderIds.count())
-        return -1;
+    QMailFolderId folderId(vFolderId);
+    if (!folderId.isValid())
+        return 0;
 
-    return m_mailFolderIds[index].toULongLong();
+    QMailFolder folder (folderId);
+    return (folder.serverCount());
+}
+
+int FolderListModel::folderUnreadCount(int folderId)
+{
+    int folderIndex = indexFromFolderId(folderId);
+
+    if (folderIndex < 0)
+        return 0;
+
+    return data(index(folderIndex), FolderUnreadCount).toInt();
 }
 
 int FolderListModel::indexFromFolderId(int vFolderId)
@@ -130,54 +140,17 @@ int FolderListModel::indexFromFolderId(int vFolderId)
     return -1;
 }
 
-int FolderListModel::folderServerCount(int vFolderId)
-{
-    QMailFolderId folderId(vFolderId);
-    if (!folderId.isValid())
-        return 0;
-
-    QMailFolder folder (folderId);
-    return (folder.serverCount());
-}
-
-//TODO: Remove
-//We can't assume that all create folder models will have an Inbox
-//E.g, list of childs under some particular folder
-//This can be get from the emailAgent
-int FolderListModel::inboxFolderId()
-{
-    for (int i = 0; i < m_mailFolderIds.size(); i++) {
-        QMailFolder folder(m_mailFolderIds[i]);
-        if (QString::compare(folder.displayName(), "INBOX", Qt::CaseInsensitive) == 0)
-            return m_mailFolderIds[i].toULongLong();
-    }
-    return -1;
-}
-
-//TODO: investigate if this is really needed
-//seems redundant
-QString FolderListModel::inboxFolderName()
-{
-    for (int i = 0; i < m_mailFolderIds.size(); i++) {
-        QMailFolder folder(m_mailFolderIds[i]);
-        QString folderName = folder.displayName();
-        if (QString::compare(folderName, "INBOX", Qt::CaseInsensitive) == 0)
-            return folderName;
-    }
-    return QString();
-}
-
-int FolderListModel::totalNumberOfFolders()
+int FolderListModel::numberOfFolders()
 {
     return m_mailFolderIds.count();
 }
 
-int FolderListModel::folderUnreadCount(int folderId)
+void FolderListModel::setAccountKey(int id)
 {
-    int folderIndex = indexFromFolderId(folderId);
-
-    if (folderIndex < 0)
-        return 0;
-
-    return data(index(folderIndex), FolderUnreadCount).toInt();
+  // Get all the folders belonging to this email account
+    beginResetModel();
+    QMailAccountId accountId(id);
+    QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
+    m_mailFolderIds = QMailStore::instance()->queryFolders(key);
+    endResetModel();
 }
