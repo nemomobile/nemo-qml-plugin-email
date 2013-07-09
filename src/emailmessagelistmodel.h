@@ -60,7 +60,6 @@ public:
     int rowCount(const QModelIndex & parent = QModelIndex()) const;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
     QString bodyHtmlText(const QMailMessage &) const;
-    QString bodyPlainText(const QMailMessage &) const;
 
     enum Priority { LowPriority, NormalPriority, HighPriority };
 
