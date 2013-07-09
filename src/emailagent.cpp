@@ -425,16 +425,6 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentDisp
     }
 }
 
-QString EmailAgent::getMessageBodyFromFile (const QString& bodyFilePath)
-{
-    QFile f(bodyFilePath);
-    if(!f.open(QFile::ReadOnly))
-        return ("");
-
-    QString data = f.readAll();
-    return data;
-}
-
 void EmailAgent::getMoreMessages(int folderId, uint minimum)
 {
     QMailFolderId foldId(folderId);
@@ -447,8 +437,8 @@ void EmailAgent::getMoreMessages(int folderId, uint minimum)
         enqueue(new RetrieveMessageList(m_retrievalAction.data(), folder.parentAccountId(), foldId, minimum));
     }
 }
-// TODO: remove and add similar functionality to accountListModel
-QString EmailAgent::getSignatureForAccount(int accountId)
+
+QString EmailAgent::signatureForAccount(int accountId)
 {
     QMailAccountId mailAccountId(accountId);
     if (mailAccountId.isValid()) {
