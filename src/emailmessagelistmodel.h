@@ -27,6 +27,7 @@ class EmailMessageListModel : public QMailMessageListModel
 
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
+    Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
 
 public:
     enum Roles
@@ -52,7 +53,8 @@ public:
         MessageAccountIdRole,                                  // returns parent account id for the message
         MessageHasAttachmentsRole,                             // returns 1 if message has attachments, 0 otherwise
         MessageSizeSectionRole,                                // returns size section (0-2)
-        MessageFolderIdRole                                    // returns parent folder id for the message
+        MessageFolderIdRole,                                   // returns parent folder id for the message
+        MessageSortByRole                                      // returns the sorting order of the list model
     };
 
     EmailMessageListModel(QObject *parent = 0);
@@ -70,10 +72,12 @@ public:
     void setCombinedInbox(bool c);
     bool filterUnread() const;
     void setFilterUnread(bool u);
+    EmailMessageListModel::Sort sortBy() const;
 
 Q_SIGNALS:
     void combinedInboxChanged();
     void filterUnreadChanged();
+    void sortByChanged();
 
 signals:
     void messageDownloadCompleted();
@@ -143,6 +147,7 @@ private:
     QString m_search;
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
+    EmailMessageListModel::Sort m_sortBy;
     QList<QMailMessageId> m_selectedMsgIds;
 };
 
