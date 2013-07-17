@@ -23,6 +23,7 @@
 
 FolderListModel::FolderListModel(QObject *parent) :
     QAbstractListModel(parent)
+  , m_accountId(QMailAccountId())
 {
     roles.insert(FolderName, "folderName");
     roles.insert(FolderId, "folderId");
@@ -32,6 +33,13 @@ FolderListModel::FolderListModel(QObject *parent) :
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
+
+    connect(QMailStore::instance(), SIGNAL(foldersAdded(const QMailFolderIdList &)), this,
+                          SLOT(onFoldersChanged(const QMailFolderIdList &)));
+    connect(QMailStore::instance(), SIGNAL(foldersRemoved(const QMailFolderIdList &)), this,
+                          SLOT(onFoldersChanged(const QMailFolderIdList &)));
+    connect(QMailStore::instance(), SIGNAL(foldersUpdated(const QMailFolderIdList &)), this,
+                          SLOT(onFoldersChanged(const QMailFolderIdList &)));
 }
 
 FolderListModel::~FolderListModel()
@@ -83,6 +91,19 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
     }
 
     return QVariant();
+}
+
+void FolderListModel::onFoldersChanged(const QMailFolderIdList &ids)
+{
+    // Don't reload the model if folders are not from current account
+    // folders list can be long in some cases.
+    foreach (QMailFolderId folderId, ids) {
+        QMailFolder folder(folderId);
+        if (folder.parentAccountId() == m_accountId) {
+            resetModel();
+            return;
+        }
+    }
 }
 
 int FolderListModel::folderId(int index)
@@ -148,9 +169,20 @@ int FolderListModel::numberOfFolders()
 void FolderListModel::setAccountKey(int id)
 {
   // Get all the folders belonging to this email account
-    beginResetModel();
     QMailAccountId accountId(id);
-    QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
+    if (accountId.isValid()) {
+        m_accountId = accountId;
+        resetModel();
+    } else {
+        qDebug() << "Can't create folder model for invalid account: " << id;
+    }
+
+}
+
+void FolderListModel::resetModel()
+{
+    beginResetModel();
+    QMailFolderKey key = QMailFolderKey::parentAccountId(m_accountId);
     m_mailFolderIds = QMailStore::instance()->queryFolders(key);
     endResetModel();
 }
