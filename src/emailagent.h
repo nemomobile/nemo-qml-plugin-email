@@ -28,10 +28,12 @@ public:
     explicit EmailAgent(QObject *parent = 0);
     ~EmailAgent();
 
+    Q_PROPERTY(bool synchronizing READ synchronizing NOTIFY synchronizingChanged)
+
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
-    bool isSynchronizing() const;
+    bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
     quint64 newAction();
@@ -70,11 +72,9 @@ signals:
     void error(const QMailAccountId &accountId, const QString &message, int code);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
     void progressUpdate(int percent);
-    void retrievalCompleted();
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);
-    void syncCompleted();
-    void syncBegin();
+    void synchronizingChanged();
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
