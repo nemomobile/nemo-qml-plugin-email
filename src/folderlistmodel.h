@@ -48,9 +48,15 @@ protected:
     virtual QHash<int, QByteArray> roleNames() const;
 #endif
 
+private slots:
+    void onFoldersChanged(const QMailFolderIdList &);
+
 private:
     QHash<int, QByteArray> roles;
     QMailFolderIdList m_mailFolderIds;
+    QMailAccountId m_accountId;
+
+    void resetModel();
 };
 
 #endif

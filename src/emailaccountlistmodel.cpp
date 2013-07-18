@@ -116,6 +116,7 @@ int EmailAccountListModel::rowCount(const QModelIndex &parent) const
 {
     return QMailAccountListModel::rowCount(parent);
 }
+
 // ############ Slots ##############
 void EmailAccountListModel::onAccountsAdded(const QMailAccountIdList &ids)
 {

@@ -451,17 +451,16 @@ QString EmailAgent::signatureForAccount(int accountId)
 int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder folder)
 {
     QMailAccountId acctId(accountId);
-    Q_ASSERT(acctId.isValid());
-    QMailAccount account(acctId);
-    QMailFolderId foldId = account.standardFolder(folder);
+    if (acctId.isValid()) {
+        QMailAccount account(acctId);
+        QMailFolderId foldId = account.standardFolder(folder);
 
-    if (foldId.isValid()) {
-        return foldId.toULongLong();
+        if (foldId.isValid()) {
+            return foldId.toULongLong();
+        }
     }
-    else {
-        qDebug() << "Error: Standard folder " << folder << " not found for account: " << accountId;
-        return -1;
-    }
+    qDebug() << "Error: Standard folder " << folder << " not found for account: " << accountId;
+    return -1;
 }
 
 int EmailAgent::inboxFolderId(int accountId)
