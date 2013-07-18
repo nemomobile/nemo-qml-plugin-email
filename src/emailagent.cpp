@@ -109,7 +109,7 @@ void EmailAgent::initMailServer()
     return;
 }
 
-bool EmailAgent::isSynchronizing() const
+bool EmailAgent::synchronizing() const
 {
     return m_synchronizing;
 }
@@ -165,6 +165,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         // don't try to synchronise extra accounts if the user cancelled the sync
         if (m_cancelling) {
             m_synchronizing = false;
+            emit synchronizingChanged();
             m_transmitting = false;
             m_cancelling = false;
             m_actionQueue.clear();
@@ -186,7 +187,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             if (m_currentAction.isNull()) {
                 qDebug() << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
-                emit syncCompleted();
+                emit synchronizingChanged();
             }
             else {
                 executeCurrent();
@@ -220,7 +221,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction.isNull()) {
             qDebug() << "Sync completed.";
             m_synchronizing = false;
-            emit syncCompleted();
+            emit synchronizingChanged();
         }
         else {
             executeCurrent();
@@ -300,7 +301,7 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
 
 void EmailAgent::cancelSync()
 {
-    if (!isSynchronizing())
+    if (!m_synchronizing)
         return;
 
     m_cancelling = true;
@@ -429,7 +430,6 @@ void EmailAgent::getMoreMessages(int folderId, uint minimum)
 {
     QMailFolderId foldId(folderId);
     if (foldId.isValid()) {
-        emit syncBegin();
         QMailFolder folder(foldId);
         QMailMessageKey countKey(QMailMessageKey::parentFolderId(foldId));
         countKey &= ~QMailMessageKey::status(QMailMessage::Temporary);
@@ -585,7 +585,6 @@ void EmailAgent::retrieveFolderList(int accountId, int folderId, const bool desc
     QMailFolderId foldId(folderId);
 
     if (acctId.isValid()) {
-        emit syncBegin();
         enqueue(new RetrieveFolderList(m_retrievalAction.data(),acctId, foldId, descending));
     }
 }
@@ -596,14 +595,12 @@ void EmailAgent::retrieveMessageList(int accountId, int folderId, const uint min
     QMailFolderId foldId(folderId);
 
     if (acctId.isValid()) {
-        emit syncBegin();
         enqueue(new RetrieveMessageList(m_retrievalAction.data(),acctId, foldId, minimum));
     }
 }
 
 void EmailAgent::retrieveMessageRange(int messageId, uint minimum)
 {
-    emit syncBegin();
     QMailMessageId id(messageId);
     enqueue(new RetrieveMessageRange(m_retrievalAction.data(), id, minimum));
 }
@@ -613,7 +610,6 @@ void EmailAgent::synchronize(int accountId)
     QMailAccountId acctId(accountId);
 
     if (acctId.isValid()) {
-        emit syncBegin();
         enqueue(new Synchronize(m_retrievalAction.data(), acctId));
     }
 }
@@ -624,7 +620,6 @@ void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
 
     QMailAccount account(acctId);
     QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);
-    emit syncBegin();    
     if(foldId.isValid()) {
         enqueue(new ExportUpdates(m_retrievalAction.data(),acctId));
         enqueue(new RetrieveFolderList(m_retrievalAction.data(), acctId, QMailFolderId(), true));
@@ -698,8 +693,10 @@ void EmailAgent::executeCurrent()
 {
     Q_ASSERT (!m_currentAction.isNull());
 
-    if(!m_synchronizing)
+    if (!m_synchronizing) {
         m_synchronizing = true;
+        emit synchronizingChanged();
+    }
 
     //add network and qCop checks here.
     qDebug() << "Executing " << m_currentAction->description();
