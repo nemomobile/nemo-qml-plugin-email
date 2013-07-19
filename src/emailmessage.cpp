@@ -175,8 +175,13 @@ QString EmailMessage::fromDisplayName() const
 
 QString EmailMessage::htmlBody() const
 {
-    //TODO: reuse EmailMessageListModel::bodyHtmlText when moved
-    return QString();
+    // Fallback to plain message if no html body.
+    QMailMessagePartContainer *container = m_msg.findHtmlContainer();
+    if (contentType() == EmailMessage::HTML && container) {
+        return container->body().data();
+    } else {
+        return body();
+    }
 }
 
 QString EmailMessage::inReplyTo() const
@@ -288,12 +293,6 @@ void EmailMessage::setFrom(const QString &sender)
     }
     emit fromChanged();
     emit accountIdChanged();
-}
-
-void EmailMessage::setHtmlBody(const QString &htmlBody)
-{
-    // Signals are only emited when message is constructed
-    Q_UNUSED(htmlBody);
 }
 
 void EmailMessage::setInReplyTo(const QString &messageId)

@@ -34,7 +34,7 @@ public:
     Q_PROPERTY(QString from READ from WRITE setFrom NOTIFY fromChanged)
     Q_PROPERTY(QString fromAddress READ fromAddress NOTIFY fromChanged)
     Q_PROPERTY(QString fromDisplayName READ fromDisplayName NOTIFY fromChanged)
-    Q_PROPERTY(QString htmlBody READ htmlBody WRITE setHtmlBody NOTIFY htmlBodyChanged)
+    Q_PROPERTY(QString htmlBody READ htmlBody NOTIFY htmlBodyChanged FINAL)
     Q_PROPERTY(QString inReplyTo READ inReplyTo WRITE setInReplyTo NOTIFY inReplyToChanged)
     Q_PROPERTY(int messageId READ messageId WRITE setMessageId NOTIFY messageIdChanged)
     Q_PROPERTY(int numberOfAttachments READ numberOfAttachments NOTIFY attachmentsChanged)
@@ -79,7 +79,6 @@ public:
     void setBody(const QString &body);
     void setCc(const QStringList &ccList);
     void setFrom(const QString &sender);
-    void setHtmlBody(const QString &htmlBody);
     void setInReplyTo(const QString &messageId);
     void setMessageId(int messageId);
     void setPriority(Priority priority);
