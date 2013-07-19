@@ -16,6 +16,8 @@ License:    BSD
 URL:        https://github.com/nemomobile/nemo-qml-plugin-email
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  nemo-qml-plugin-email.yaml
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(QtCore) >= 4.7.0
 BuildRequires:  pkgconfig(QtDeclarative)
 BuildRequires:  pkgconfig(qmfclient)
@@ -24,6 +26,14 @@ Provides:   nemo-qml-plugins-email > 0.3.10
 Obsoletes:   nemo-qml-plugins-email <= 0.3.10
 
 %description
+%{summary}.
+
+%package devel
+Summary:    Nemo email plugin support for C++ applications
+Group:      System/Libraries
+Requires:   %{name} = %{version}-%{release}
+
+%description devel
 %{summary}.
 
 
@@ -54,9 +64,23 @@ rm -rf %{buildroot}
 # << install post
 
 
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root,-)
+%{_libdir}/libnemoemail.so.*
 %{_libdir}/qt4/imports/org/nemomobile/email/libnemoemail.so
 %{_libdir}/qt4/imports/org/nemomobile/email/qmldir
 # >> files
 # << files
+
+%files devel
+%defattr(-,root,root,-)
+%{_libdir}/libnemoemail.so
+%{_libdir}/libnemoemail.prl
+%{_includedir}/nemoemail/*.h
+%{_libdir}/pkgconfig/nemoemail.pc
+# >> files devel
+# << files devel

@@ -20,5 +20,16 @@ Provides:
 Obsoletes:
     - nemo-qml-plugins-email <= 0.3.10
 Files:
+    - "%{_libdir}/libnemoemail.so.*"
     - "%{_libdir}/qt4/imports/org/nemomobile/email/libnemoemail.so"
     - "%{_libdir}/qt4/imports/org/nemomobile/email/qmldir"
+SubPackages:
+    - Name: devel
+      Summary: Nemo email plugin support for C++ applications
+      Group: System/Libraries
+      Description: "%{summary}."
+      Files:
+          - "%{_libdir}/libnemoemail.so"
+          - "%{_libdir}/libnemoemail.prl"
+          - "%{_includedir}/nemoemail/*.h"
+          - "%{_libdir}/pkgconfig/nemoemail.pc"
