@@ -13,7 +13,7 @@
 #include <QObject>
 #include <qmailserviceaction.h>
 
-class EmailAction : public QObject
+class Q_DECL_EXPORT EmailAction : public QObject
 {
      Q_OBJECT
 

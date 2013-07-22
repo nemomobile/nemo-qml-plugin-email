@@ -19,7 +19,7 @@
 #include <qmailaccount.h>
 
 
-class EmailMessageListModel : public QMailMessageListModel
+class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
 {
     Q_OBJECT
     Q_ENUMS(Priority)

@@ -14,7 +14,7 @@
 
 #include <QAbstractListModel>
 
-class FolderListModel : public QAbstractListModel
+class Q_DECL_EXPORT FolderListModel : public QAbstractListModel
 {
     Q_OBJECT
 
