@@ -17,5 +17,16 @@ PkgConfigBR:
     - qmfclient5
     - qmfmessageserver5
 Files:
+    - "%{_libdir}/libnemoemail-qt5.so.*"
     - "%{_libdir}/qt5/qml/org/nemomobile/email/libnemoemail.so"
     - "%{_libdir}/qt5/qml/org/nemomobile/email/qmldir"
+SubPackages:
+    - Name: devel
+      Summary: Nemo email plugin support for C++ applications
+      Group: System/Libraries
+      Description: "%{summary}."
+      Files:
+          - "%{_libdir}/libnemoemail-qt5.so"
+          - "%{_libdir}/libnemoemail-qt5.prl"
+          - "%{_includedir}/nemoemail-qt5/*.h"
+          - "%{_libdir}/pkgconfig/nemoemail-qt5.pc"

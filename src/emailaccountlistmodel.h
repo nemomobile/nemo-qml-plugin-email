@@ -15,7 +15,7 @@
 #include <qmailaccountlistmodel.h>
 #include <qmailaccount.h>
 
-class EmailAccountListModel : public QMailAccountListModel
+class Q_DECL_EXPORT EmailAccountListModel : public QMailAccountListModel
 {
     Q_OBJECT
     Q_PROPERTY(int numberOfAccounts READ numberOfAccounts NOTIFY numberOfAccountsChanged)

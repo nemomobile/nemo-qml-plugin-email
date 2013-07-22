@@ -60,6 +60,8 @@ class Q_DECL_EXPORT NemoEmailPlugin : public QDeclarativeExtensionPlugin
         Q_PLUGIN_METADATA(IID "org.nemomobile.email")
     #endif
 public:
+    NemoEmailPlugin(){}
+
     virtual ~NemoEmailPlugin() {}
 
     void initializeEngine(QDeclarativeEngine *engine, const char *uri)

@@ -14,7 +14,7 @@
 #include <qmailaccount.h>
 #include <qmailserviceconfiguration.h>
 
-class EmailAccountSettingsModel : public QAbstractListModel {
+class Q_DECL_EXPORT EmailAccountSettingsModel : public QAbstractListModel {
     Q_OBJECT
 public:
     enum AccountListRoles {

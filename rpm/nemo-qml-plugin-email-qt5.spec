@@ -9,20 +9,30 @@ Name:       nemo-qml-plugin-email-qt5
 # << macros
 
 Summary:    Email plugin for Nemo Mobile
-Version:    0.0.5
+Version:    0.0.0
 Release:    1
 Group:      System/Libraries
 License:    BSD
 URL:        https://github.com/nemomobile/nemo-qml-plugin-email
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  nemo-qml-plugin-email-qt5.yaml
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
-BuildRequires: 	pkgconfig(Qt5Network)
+BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(qmfclient5)
 BuildRequires:  pkgconfig(qmfmessageserver5)
 
 %description
+%{summary}.
+
+%package devel
+Summary:    Nemo email plugin support for C++ applications
+Group:      System/Libraries
+Requires:   %{name} = %{version}-%{release}
+
+%description devel
 %{summary}.
 
 
@@ -36,7 +46,6 @@ BuildRequires:  pkgconfig(qmfmessageserver5)
 # >> build pre
 # << build pre
 
-
 %qmake5
 
 # >> build post
@@ -46,15 +55,30 @@ BuildRequires:  pkgconfig(qmfmessageserver5)
 rm -rf %{buildroot}
 # >> install pre
 # << install pre
+
 %qmake5_install
 
 # >> install post
 # << install post
 
 
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root,-)
+%{_libdir}/libnemoemail-qt5.so.*
 %{_libdir}/qt5/qml/org/nemomobile/email/libnemoemail.so
 %{_libdir}/qt5/qml/org/nemomobile/email/qmldir
 # >> files
 # << files
+
+%files devel
+%defattr(-,root,root,-)
+%{_libdir}/libnemoemail-qt5.so
+%{_libdir}/libnemoemail-qt5.prl
+%{_includedir}/nemoemail-qt5/*.h
+%{_libdir}/pkgconfig/nemoemail-qt5.pc
+# >> files devel
+# << files devel
