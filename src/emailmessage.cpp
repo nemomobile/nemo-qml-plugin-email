@@ -20,7 +20,6 @@
 EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
     , m_newMessage(true)
-    , m_textOnly(true)
 {
     setPriority(NormalPriority);
 }
@@ -140,6 +139,20 @@ QStringList EmailMessage::cc() const
     return QMailAddress::toStringList(m_msg.cc());
 }
 
+EmailMessage::ContentType EmailMessage::contentType() const
+{
+    // Treat only "text/plain" and invalid message as Plain and others as HTML.
+    if (m_id.isValid()) {
+        QMailMessageContentType messageContentType = m_msg.contentType();
+        if (messageContentType.subType() == "plain") {
+            return EmailMessage::Plain;
+        } else {
+            return EmailMessage::HTML;
+        }
+    }
+    return EmailMessage::Plain;
+}
+
 QDateTime EmailMessage::date() const
 {
     return (m_msg.date().toLocalTime());
@@ -162,8 +175,13 @@ QString EmailMessage::fromDisplayName() const
 
 QString EmailMessage::htmlBody() const
 {
-    //TODO: reuse EmailMessageListModel::bodyHtmlText when moved
-    return QString();
+    // Fallback to plain message if no html body.
+    QMailMessagePartContainer *container = m_msg.findHtmlContainer();
+    if (contentType() == EmailMessage::HTML && container) {
+        return container->body().data();
+    } else {
+        return body();
+    }
 }
 
 QString EmailMessage::inReplyTo() const
@@ -277,13 +295,6 @@ void EmailMessage::setFrom(const QString &sender)
     emit accountIdChanged();
 }
 
-void EmailMessage::setHtmlBody(const QString &htmlBody)
-{
-    // Signals are only emited when message is constructed
-    // check also if m_textOnly is needed
-    Q_UNUSED(htmlBody);
-}
-
 void EmailMessage::setInReplyTo(const QString &messageId)
 {
     m_msg.setInReplyTo(messageId);
@@ -393,7 +404,7 @@ QStringList EmailMessage::to()
 void EmailMessage::buildMessage()
 {
     QMailMessageContentType type;
-    if (m_textOnly)
+    if (contentType() == EmailMessage::Plain)
         type.setType("text/plain; charset=UTF-8");
     else
         type.setType("text/html; charset=UTF-8");
@@ -432,7 +443,7 @@ void EmailMessage::emitSignals()
         emit attachmentsChanged();
     }
 
-    if (!m_textOnly)
+    if (contentType() == EmailMessage::HTML)
         emit htmlBodyChanged();
 
     if (m_newMessage)
