@@ -14,7 +14,7 @@
 #include <qmailaccount.h>
 #include <qmailstore.h>
 
-class EmailMessage : public QObject
+class Q_DECL_EXPORT EmailMessage : public QObject
 {
     Q_OBJECT
     Q_ENUMS(Priority)

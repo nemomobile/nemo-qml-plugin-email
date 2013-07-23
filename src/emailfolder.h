@@ -13,7 +13,7 @@
 #include <QObject>
 #include <qmailfolder.h>
 
-class EmailFolder : public QObject
+class Q_DECL_EXPORT EmailFolder : public QObject
 {
     Q_OBJECT
 public:
