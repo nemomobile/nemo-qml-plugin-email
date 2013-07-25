@@ -79,6 +79,8 @@ signals:
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
     void attachmentDownloadActivityChanged(QMailServiceAction::Activity activity);
+    void onIpcConnectionEstablished();
+    void onMessageServerProcessError(QProcess::ProcessError error);
     void onStandardFoldersCreated(const QMailAccountId &accountId);
     void progressChanged(uint value, uint total);
 
@@ -89,6 +91,8 @@ private:
     bool m_transmitting;
     bool m_cancelling;
     bool m_synchronizing;
+    bool m_enqueing;
+    bool m_waitForIpc;
 
     QMailAccountIdList m_enabledAccounts;
 
@@ -99,7 +103,7 @@ private:
     QMailMessageId m_messageId;
     QMailMessagePart m_attachmentPart;
 
-    QProcess m_messageServerProcess;
+    QProcess* m_messageServerProcess;
 
     QList<QSharedPointer<EmailAction> > m_actionQueue;
     QSharedPointer<EmailAction> m_currentAction;

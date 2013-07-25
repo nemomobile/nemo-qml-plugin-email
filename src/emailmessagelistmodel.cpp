@@ -83,8 +83,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
-
-    EmailAgent::instance()->initMailServer();
     m_mailAccountIds = QMailStore::instance()->queryAccounts(
             QMailAccountKey::status(QMailAccount::Enabled, QMailDataComparator::Includes),
             QMailAccountSortKey::name());
