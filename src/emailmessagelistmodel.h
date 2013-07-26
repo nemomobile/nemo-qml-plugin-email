@@ -141,7 +141,6 @@ private:
     bool m_filterUnread;
     QProcess m_msgAccount;
     QMailFolderId m_currentFolderId;
-    QProcess m_messageServerProcess;
     QMailAccountIdList m_mailAccountIds;
     QMailRetrievalAction *m_retrievalAction;
     QString m_search;

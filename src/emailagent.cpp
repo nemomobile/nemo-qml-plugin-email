@@ -52,10 +52,16 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_transmitting(false)
     , m_cancelling(false)
     , m_synchronizing(false)
+    , m_enqueing(false)
+    , m_waitForIpc(false)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
 {
+
+    connect(QMailStore::instance(), SIGNAL(ipcConnectionEstablished()),
+            this, SLOT(onIpcConnectionEstablished()));
+
     initMailServer();
     setupAccountFlags();
 
@@ -103,9 +109,11 @@ void EmailAgent::initMailServer()
         return;
     }
     QMail::fileUnlock(id);
-
-    m_messageServerProcess.start(MESSAGESERVER);
-    m_messageServerProcess.waitForStarted();
+    qDebug() << Q_FUNC_INFO << "Starting messageserver process...";
+    m_messageServerProcess = new QProcess(this);
+    connect(m_messageServerProcess, SIGNAL(error(QProcess::ProcessError)),
+            this, SLOT(onMessageServerProcessError(QProcess::ProcessError)));
+    m_messageServerProcess->startDetached(MESSAGESERVER);
     return;
 }
 
@@ -129,7 +137,9 @@ void EmailAgent::moveMessages(const QMailMessageIdList &ids, const QMailFolderId
     QMailMessageId id(ids[0]);
     QMailAccountId accountId = accountForMessageId(id);
 
+    m_enqueing = true;
     enqueue(new MoveToFolder(m_storageAction.data(), ids, destinationId));
+    m_enqueing = false;
     enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
 }
 
@@ -181,7 +191,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 qDebug() << "Error: Send failed";
             }
 
-             m_currentAction = getNext();
+            m_currentAction = getNext();
             emit error(status.accountId, status.text, status.errorCode);
 
             if (m_currentAction.isNull()) {
@@ -255,6 +265,29 @@ void EmailAgent::attachmentDownloadActivityChanged(QMailServiceAction::Activity 
             emit attachmentDownloadCompleted();
         }
     }
+}
+
+void EmailAgent::onIpcConnectionEstablished()
+{
+    if (m_waitForIpc) {
+        m_waitForIpc = false;
+
+        if (m_currentAction.isNull())
+            m_currentAction = getNext();
+
+        if (m_currentAction.isNull()) {
+            qDebug() << "Ipc connection established, no action in the queue.";
+        } else {
+            executeCurrent();
+        }
+    }
+}
+
+void EmailAgent::onMessageServerProcessError(QProcess::ProcessError error)
+{
+    QString errorMsg(QString("Could not start messageserver process, unable to communicate with the remove servers.\nQProcess exit with error: (%1)")
+                     .arg(static_cast<int>(error)));
+    qFatal(errorMsg.toLatin1());
 }
 
 void EmailAgent::onStandardFoldersCreated(const QMailAccountId &accountId)
@@ -384,8 +417,10 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             enqueue(new DeleteMessages(m_storageAction.data(), idsToRemove));
     }
     else {
+        m_enqueing = true;
         enqueue(new MoveToStandardFolder(m_storageAction.data(), ids, QMailFolder::TrashFolder));
         enqueue(new FlagMessages(m_storageAction.data(), ids, QMailMessage::Trash,0));
+        m_enqueing = false;
         enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
     }
 }
@@ -621,15 +656,19 @@ void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
     QMailAccount account(acctId);
     QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);
     if(foldId.isValid()) {
+        m_enqueing = true;
         enqueue(new ExportUpdates(m_retrievalAction.data(),acctId));
         enqueue(new RetrieveFolderList(m_retrievalAction.data(), acctId, QMailFolderId(), true));
+        m_enqueing = false;
         enqueue(new RetrieveMessageList(m_retrievalAction.data(), acctId, foldId, minimum));
     }
     //Account was never synced, retrieve list of folders and come back here.
     else {
         connect(this, SIGNAL(standardFoldersCreated(const QMailAccountId &)),
                 this, SLOT(onStandardFoldersCreated(const QMailAccountId &)));
+        m_enqueing = true;
         enqueue(new RetrieveFolderList(m_retrievalAction.data(), acctId, QMailFolderId(), true));
+        m_enqueing = false;
         enqueue(new CreateStandardFolders(m_retrievalAction.data(), acctId));
     }
 }
@@ -677,9 +716,9 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
         action->setId(newAction());
         m_actionQueue.append(action);
 
-        if (m_currentAction.isNull()) {
-            // Nothin is running, start this one immdetiately.
-            m_currentAction = action;
+        if (!m_enqueing && m_currentAction.isNull()) {
+            // Nothing is running, start first action.
+            m_currentAction = getNext();
             executeCurrent();
         }
     }
@@ -693,15 +732,21 @@ void EmailAgent::executeCurrent()
 {
     Q_ASSERT (!m_currentAction.isNull());
 
-    if (!m_synchronizing) {
-        m_synchronizing = true;
-        emit synchronizingChanged();
+    if (!QMailStore::instance()->isIpcConnectionEstablished()) {
+        qWarning() << "Ipc connection not established, can't execute service action";
+        m_waitForIpc = true;
+    } else {
+
+        if (!m_synchronizing) {
+            m_synchronizing = true;
+            emit synchronizingChanged();
+        }
+
+        //add network checks here.
+        qDebug() << "Executing " << m_currentAction->description();
+
+        m_currentAction->execute();
     }
-
-    //add network and qCop checks here.
-    qDebug() << "Executing " << m_currentAction->description();
-
-    m_currentAction->execute();
 }
 
 QSharedPointer<EmailAction> EmailAgent::getNext()
