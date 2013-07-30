@@ -322,12 +322,18 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
                                                          QMailDataComparator::Includes);
     m_enabledAccounts = QMailStore::instance()->queryAccounts(enabledAccountKey);
 
-    foreach (QMailAccountId accountId, m_enabledAccounts) {
-        if (syncOnlyInbox) {
-            synchronizeInbox(accountId.toULongLong(), minimum);
-        }
-        else {
-            enqueue(new Synchronize(m_retrievalAction.data(), accountId));
+    if (m_enabledAccounts.isEmpty()) {
+        qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
+        emit synchronizingChanged();
+        return;
+    } else {
+        foreach (QMailAccountId accountId, m_enabledAccounts) {
+            if (syncOnlyInbox) {
+                synchronizeInbox(accountId.toULongLong(), minimum);
+            }
+            else {
+                enqueue(new Synchronize(m_retrievalAction.data(), accountId));
+            }
         }
     }
 }
