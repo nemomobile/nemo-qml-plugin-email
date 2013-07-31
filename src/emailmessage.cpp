@@ -143,14 +143,13 @@ EmailMessage::ContentType EmailMessage::contentType() const
 {
     // Treat only "text/plain" and invalid message as Plain and others as HTML.
     if (m_id.isValid()) {
-        QMailMessageContentType messageContentType = m_msg.contentType();
-        if (messageContentType.subType() == "plain") {
-            return EmailMessage::Plain;
-        } else {
+        if (m_msg.findHtmlContainer()) {
             return EmailMessage::HTML;
+        } else {
+            return EmailMessage::Plain;
         }
     }
-    return EmailMessage::Plain;
+    return EmailMessage::HTML;
 }
 
 QDateTime EmailMessage::date() const
