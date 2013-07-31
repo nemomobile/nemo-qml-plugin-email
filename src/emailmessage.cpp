@@ -144,7 +144,8 @@ EmailMessage::ContentType EmailMessage::contentType() const
     // Treat only "text/plain" and invalid message as Plain and others as HTML.
     if (m_id.isValid()) {
         QMailMessageContentType messageContentType = m_msg.contentType();
-        if (messageContentType.subType() == "plain") {
+        if ((messageContentType.type() == "text" && messageContentType.subType() == "plain") ||
+                (messageContentType.type() == "multipart" && messageContentType.subType() == "mixed")) {
             return EmailMessage::Plain;
         } else {
             return EmailMessage::HTML;
