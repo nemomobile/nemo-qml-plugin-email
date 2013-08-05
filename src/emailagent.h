@@ -80,7 +80,7 @@ signals:
     void progressUpdate(int percent);
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);
-    void synchronizingChanged(Status status);
+    void synchronizingChanged(EmailAgent::Status status);
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
