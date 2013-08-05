@@ -21,7 +21,7 @@
 class Q_DECL_EXPORT EmailAgent : public QObject
 {
     Q_OBJECT
-
+    Q_ENUMS(Status)
 public:
     static EmailAgent *instance();
 
@@ -29,6 +29,12 @@ public:
     ~EmailAgent();
 
     Q_PROPERTY(bool synchronizing READ synchronizing NOTIFY synchronizingChanged)
+
+    enum Status {
+        Synchronizing = 0,
+        Completed,
+        Error
+    };
 
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     void exportUpdates(const QMailAccountId accountId);
@@ -39,7 +45,7 @@ public:
     quint64 newAction();
     void sendMessages(const QMailAccountId &accountId);
     void setupAccountFlags();
-    int standardFolderId(int accountId, QMailFolder::StandardFolder folder);
+    int standardFolderId(int accountId, QMailFolder::StandardFolder folder) const;
 
     Q_INVOKABLE void accountsSync(const bool syncOnlyInbox = false, const uint minimum = 20);
     Q_INVOKABLE void cancelSync();
@@ -74,7 +80,7 @@ signals:
     void progressUpdate(int percent);
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);
-    void synchronizingChanged();
+    void synchronizingChanged(Status status);
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);

@@ -175,7 +175,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         // don't try to synchronise extra accounts if the user cancelled the sync
         if (m_cancelling) {
             m_synchronizing = false;
-            emit synchronizingChanged();
+            emit synchronizingChanged(EmailAgent::Error);
             m_transmitting = false;
             m_cancelling = false;
             m_actionQueue.clear();
@@ -197,7 +197,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             if (m_currentAction.isNull()) {
                 qDebug() << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
-                emit synchronizingChanged();
+                emit synchronizingChanged(EmailAgent::Error);
             }
             else {
                 executeCurrent();
@@ -231,7 +231,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction.isNull()) {
             qDebug() << "Sync completed.";
             m_synchronizing = false;
-            emit synchronizingChanged();
+            emit synchronizingChanged(EmailAgent::Completed);
         }
         else {
             executeCurrent();
@@ -324,7 +324,8 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
 
     if (m_enabledAccounts.isEmpty()) {
         qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
-        emit synchronizingChanged();
+        m_synchronizing = false;
+        emit synchronizingChanged(EmailAgent::Error);
         return;
     } else {
         foreach (QMailAccountId accountId, m_enabledAccounts) {
@@ -489,7 +490,7 @@ QString EmailAgent::signatureForAccount(int accountId)
     return QString();
 }
 
-int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder folder)
+int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder folder) const
 {
     QMailAccountId acctId(accountId);
     if (acctId.isValid()) {
@@ -745,7 +746,7 @@ void EmailAgent::executeCurrent()
 
         if (!m_synchronizing) {
             m_synchronizing = true;
-            emit synchronizingChanged();
+            emit synchronizingChanged(EmailAgent::Synchronizing);
         }
 
         //add network checks here.
