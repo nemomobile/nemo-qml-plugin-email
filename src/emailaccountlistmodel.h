@@ -55,16 +55,15 @@ public slots:
     Q_INVOKABLE bool standardFoldersRetrieved(int idx);
 
 signals:
-    void accountsAdded(QVariantList accountIds);
-    void accountsRemoved(QVariantList accountIds);
-    void accountsUpdated(QVariantList accountIds);
+    void accountsAdded();
+    void accountsRemoved();
+    void accountsUpdated();
     void modelReset();
     void numberOfAccountsChanged();
 
 private slots:
-    void onAccountsAdded(const QMailAccountIdList &);
-    void onAccountsRemoved(const QMailAccountIdList &);
-    void onAccountsUpdated(const QMailAccountIdList &);
+    void onAccountsAdded(const QModelIndex &parent, int start, int end);
+    void onAccountsRemoved(const QModelIndex &parent, int start, int end);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:
