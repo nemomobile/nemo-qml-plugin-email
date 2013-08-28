@@ -123,6 +123,7 @@ void EmailAccountListModel::onAccountsAdded(const QModelIndex &parent, int start
     Q_UNUSED(end);
 
     emit accountsAdded();
+    emit numberOfAccountsChanged();
 }
 
 void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int start, int end)
@@ -132,6 +133,7 @@ void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int sta
     Q_UNUSED(end);
 
     emit accountsRemoved();
+    emit numberOfAccountsChanged();
 }
 
 int EmailAccountListModel::numberOfAccounts() const
