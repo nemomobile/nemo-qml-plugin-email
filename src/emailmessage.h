@@ -27,7 +27,7 @@ public:
     Q_PROPERTY(int accountId READ accountId NOTIFY accountIdChanged)
     Q_PROPERTY(QStringList attachments READ attachments WRITE setAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QStringList bcc READ bcc WRITE setBcc NOTIFY bccChanged)
-    Q_PROPERTY(QString body READ body WRITE setBody NOTIFY storedMessageChanged)
+    Q_PROPERTY(QString body READ body WRITE setBody NOTIFY bodyChanged)
     Q_PROPERTY(QStringList cc READ cc WRITE setCc NOTIFY ccChanged)
     Q_PROPERTY(ContentType contentType READ contentType NOTIFY storedMessageChanged FINAL)
     Q_PROPERTY(QDateTime date READ date NOTIFY storedMessageChanged)
@@ -110,6 +110,7 @@ signals:
     void subjectChanged();
     void storedMessageChanged();
     void toChanged();
+    void bodyChanged();
 
 private slots:
     void onSendCompleted();

@@ -131,7 +131,7 @@ QStringList EmailMessage::bcc() const
 
 QString EmailMessage::body() const
 {
-    return EmailAgent::instance()->bodyPlainText(m_msg);
+    return m_bodyText;
 }
 
 QStringList EmailMessage::cc() const
@@ -266,8 +266,10 @@ void EmailMessage::setBcc(const QStringList &bccList)
 
 void EmailMessage::setBody(const QString &body)
 {
-    // Signals are only emited when message is constructed
-    m_bodyText = body;
+    if (m_bodyText != body) {
+        m_bodyText = body;
+        emit bodyChanged();
+    }
 }
 
 void EmailMessage::setCc(const QStringList &ccList)
@@ -312,6 +314,7 @@ void EmailMessage::setMessageId(int messageId)
             m_msg = QMailMessage();
             qWarning() << "Invalid message id " << msgId.toULongLong();
         }
+        m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
 
         // Message loaded from the store (or a empty message), all properties changes
         emit accountIdChanged();
@@ -321,6 +324,7 @@ void EmailMessage::setMessageId(int messageId)
         emit dateChanged();
         emit fromChanged();
         emit htmlBodyChanged();
+        emit bodyChanged();
         emit inReplyToChanged();
         emit messageIdChanged();
         emit priorityChanged();
