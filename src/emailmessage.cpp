@@ -407,11 +407,14 @@ QStringList EmailMessage::to()
 void EmailMessage::buildMessage()
 {
     QMailMessageContentType type;
+    type.setType("text/plain; charset=UTF-8");
+    // Sending only supports plain text at the moment
+    /*
     if (contentType() == EmailMessage::Plain)
         type.setType("text/plain; charset=UTF-8");
     else
         type.setType("text/html; charset=UTF-8");
-
+    */
     if (m_attachments.size() == 0)
         m_msg.setBody(QMailMessageBody::fromData(m_bodyText, type, QMailMessageBody::Base64));
     else {
