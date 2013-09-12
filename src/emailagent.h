@@ -22,6 +22,7 @@ class Q_DECL_EXPORT EmailAgent : public QObject
 {
     Q_OBJECT
     Q_ENUMS(Status)
+    Q_ENUMS(AttachmentStatus)
 public:
     static EmailAgent *instance();
 
@@ -36,6 +37,17 @@ public:
         Error
     };
 
+    enum AttachmentStatus {
+        Idle = 0,
+        Queued,
+        Downloaded,
+        Downloading,
+        Failed
+    };
+
+    EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString& attachmentLocation);
+    int attachmentDownloadProgress(const QString& attachmentLocation);
+    QString attachmentName(const QMailMessagePart &part) const;
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
@@ -53,7 +65,7 @@ public:
     Q_INVOKABLE void deleteFolder(int folderId);
     Q_INVOKABLE void deleteMessage(int messageId);
     Q_INVOKABLE void deleteMessages(const QMailMessageIdList &ids);
-    Q_INVOKABLE void downloadAttachment(int messageId, const QString &attachmentDisplayName);
+    Q_INVOKABLE void downloadAttachment(int messageId, const QString &attachmentlocation);
     Q_INVOKABLE void getMoreMessages(int folderId, uint minimum = 20);
     Q_INVOKABLE QString signatureForAccount(int accountId);
     Q_INVOKABLE int inboxFolderId(int accountId);
@@ -73,11 +85,11 @@ public:
     Q_INVOKABLE void synchronizeInbox(int accountId, const uint minimum = 20);
 
 signals:
-    void attachmentDownloadCompleted();
-    void attachmentDownloadStarted();
+    void attachmentDownloadProgressChanged(const QString &attachmentDisplayName, int progress);
+    void attachmentDownloadStatusChanged(const QString &attachmentDisplayName, EmailAgent::AttachmentStatus status);
     void error(const QMailAccountId &accountId, const QString &message, int code);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
-    void progressUpdate(int percent);
+    void progressUpdated(int percent);
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);
     void synchronizingChanged(EmailAgent::Status status);
@@ -107,18 +119,22 @@ private:
     QScopedPointer<QMailTransmitAction> const m_transmitAction;
     QMailRetrievalAction *m_attachmentRetrievalAction;
     QMailMessageId m_messageId;
-    QMailMessagePart m_attachmentPart;
 
     QProcess* m_messageServerProcess;
 
     QList<QSharedPointer<EmailAction> > m_actionQueue;
     QSharedPointer<EmailAction> m_currentAction;
+    struct AttachmentInfo { AttachmentStatus status; int progress;};
+    // Holds a list of the attachments currently dowloading or queued for download
+    QHash<QString, AttachmentInfo> m_attachmentDownloadQueue;
 
     bool actionInQueue(QSharedPointer<EmailAction> action) const;
     void dequeue();
     void enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
+    void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
+    void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
 };
 
 #endif

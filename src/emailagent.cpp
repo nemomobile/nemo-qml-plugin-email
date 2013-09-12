@@ -71,6 +71,9 @@ EmailAgent::EmailAgent(QObject *parent)
     connect(m_retrievalAction.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
             this, SLOT(activityChanged(QMailServiceAction::Activity)));
 
+    connect(m_retrievalAction.data(), SIGNAL(progressChanged(uint, uint)),
+            this, SLOT(progressChanged(uint,uint)));
+
     connect(m_storageAction.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
             this, SLOT(activityChanged(QMailServiceAction::Activity)));
 
@@ -82,6 +85,42 @@ EmailAgent::EmailAgent(QObject *parent)
 
 EmailAgent::~EmailAgent()
 {
+}
+
+int EmailAgent::attachmentDownloadProgress(const QString &attachmentLocation)
+{
+    if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
+        AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
+        return attInfo.progress;
+    }
+    return 0;
+}
+
+EmailAgent::AttachmentStatus EmailAgent::attachmentDownloadStatus(const QString &attachmentLocation)
+{
+    if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
+        AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
+        return attInfo.status;
+    }
+    return Idle;
+}
+
+QString EmailAgent::attachmentName(const QMailMessagePart &part) const
+{
+    bool isRFC822 = (part.contentType().type().toLower() == "message") &&
+        (part.contentType().subType().toLower() == "rfc822");
+    if (isRFC822) {
+        bool noName = (part.contentDisposition().parameter("name").isEmpty() &&
+                       part.contentDisposition().parameter("filename").isEmpty() &&
+                       part.contentType().name().isEmpty());
+        if (noName) {
+            // Show email subject of attached message as attachment name
+            QMailMessage msg = QMailMessage::fromRfc2822(part.body().data(QMailMessageBody::Decoded));
+            if (!msg.subject().isEmpty())
+                return msg.subject();
+        }
+    }
+    return part.displayName();
 }
 
 QString EmailAgent::bodyPlainText(const QMailMessage &mailMsg) const
@@ -191,6 +230,12 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 qDebug() << "Error: Send failed";
             }
 
+            if(m_currentAction->type() == EmailAction::RetrieveMessagePart) {
+                RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
+                updateAttachmentDowloadStatus(messagePartAction->partLocation(), Failed);
+                qDebug() << "Attachment dowload failed for " << messagePartAction->partLocation();
+            }
+
             m_currentAction = getNext();
             emit error(status.accountId, status.text, status.errorCode);
 
@@ -222,8 +267,14 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             emit standardFoldersCreated(m_currentAction->accountId());
         }
 
-        if(m_currentAction->type() == EmailAction::RetrieveFolderList) {
+        if (m_currentAction->type() == EmailAction::RetrieveFolderList) {
             emit folderRetrievalCompleted(m_currentAction->accountId());
+        }
+
+        if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
+            RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
+            updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloaded);
+            qDebug() << "Attachment dowload completed for " << messagePartAction->partLocation();
         }
 
         m_currentAction = getNext();
@@ -242,28 +293,6 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         //emit acctivity changed here
         qDebug() << "Activity State Changed:" << activity;
         break;
-    }
-}
-
-void EmailAgent::attachmentDownloadActivityChanged(QMailServiceAction::Activity activity)
-{
-    if (QMailServiceAction *action = static_cast<QMailServiceAction*>(sender())) {
-        if (activity == QMailServiceAction::Successful) {
-            if (action == m_attachmentRetrievalAction) {
-                QMailMessage message(m_messageId);
-                for (uint i = 1; i < message.partCount(); ++i) {
-                    const QMailMessagePart &sourcePart(message.partAt(i));
-                    if (sourcePart.location().toString(false) == m_attachmentPart.location().toString(false)) {
-                        QString downloadFolder = QDir::homePath() + "/Downloads/";
-                        sourcePart.writeBodyTo(downloadFolder);
-                        emit attachmentDownloadCompleted();
-                    }
-                }
-            }
-        }
-        else if (activity == QMailServiceAction::Failed) {
-            emit attachmentDownloadCompleted();
-        }
     }
 }
 
@@ -305,9 +334,16 @@ void EmailAgent::onStandardFoldersCreated(const QMailAccountId &accountId)
 
 void EmailAgent::progressChanged(uint value, uint total)
 {
-    qDebug() << "progress " << value << " of " << total;
-    int percent = (value * 100) / total;
-    emit progressUpdate (percent);
+    if (value < total) {
+        int percent = (value * 100) / total;
+        emit progressUpdated(percent);
+
+        // Attachment download, do not spam the UI check should be done here
+        if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
+            RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
+            updateAttachmentDowloadProgress(messagePartAction->partLocation(), percent);
+        }
+    }
 }
 
 // ############# Invokable API ########################
@@ -432,38 +468,30 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
     }
 }
 
-void EmailAgent::downloadAttachment(int messageId, const QString &attachmentDisplayName)
+void EmailAgent::downloadAttachment(int messageId, const QString &attachmentlocation)
 {
     m_messageId = QMailMessageId(messageId);
     QMailMessage message (m_messageId);
 
-    emit attachmentDownloadStarted();
-    qDebug()<<"PartsCount: "<<message.partCount();
-    qDebug()<<"attachmentDisplayName: "<<attachmentDisplayName;
-
     for (uint i = 1; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
-        if (attachmentDisplayName == sourcePart.displayName()) {
+        if (attachmentlocation == sourcePart.location().toString(true)) {
             QMailMessagePart::Location location = sourcePart.location();
             location.setContainingMessageId(m_messageId);
             if (sourcePart.hasBody()) {
+                // TODO move saving logic to separated function
                 // The content has already been downloaded to local device.
                 QString downloadFolder = QDir::homePath() + "/Downloads/";
                 QFile f(downloadFolder+sourcePart.displayName());
                 if (f.exists())
                     f.remove();
                 sourcePart.writeBodyTo(downloadFolder);
-                emit attachmentDownloadCompleted();
+                qDebug() << "Part already downloaded!";
                 return;
+            } else {
+                qDebug() << "Start Dowload for: " << attachmentlocation;
+                enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location));
             }
-            m_attachmentPart = sourcePart;
-            m_attachmentRetrievalAction = new QMailRetrievalAction(this);
-            connect (m_attachmentRetrievalAction, SIGNAL(activityChanged(QMailServiceAction::Activity)),
-                     this, SLOT(attachmentDownloadActivityChanged(QMailServiceAction::Activity)));
-            connect(m_attachmentRetrievalAction, SIGNAL(progressChanged(uint, uint)),
-                    this, SLOT(progressChanged(uint,uint)));
-
-            m_attachmentRetrievalAction->retrieveMessagePart(location);
         }
     }
 }
@@ -721,6 +749,17 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
     if (!foundAction) {
         // It's a new action.
         action->setId(newAction());
+
+        // Attachment dowload
+        if (action->type() == EmailAction::RetrieveMessagePart) {
+            RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(action.data());
+            AttachmentInfo attInfo;
+            attInfo.status = Queued;
+            attInfo.progress = 0;
+            m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
+            emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+        }
+
         m_actionQueue.append(action);
 
         if (!m_enqueing && m_currentAction.isNull()) {
@@ -752,6 +791,12 @@ void EmailAgent::executeCurrent()
         //add network checks here.
         qDebug() << "Executing " << m_currentAction->description();
 
+        // Attachment download
+        if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
+            RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
+            updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloading);
+        }
+
         m_currentAction->execute();
     }
 }
@@ -764,3 +809,35 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
     return m_actionQueue.first();
 }
 
+void EmailAgent::updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status)
+{
+    if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
+        if (status == Failed) {
+            emit attachmentDownloadStatusChanged(attachmentLocation, status);
+            emit attachmentDownloadProgressChanged(attachmentLocation, 0);
+            m_attachmentDownloadQueue.remove(attachmentLocation);
+        } else if (status == Downloaded) {
+            emit attachmentDownloadStatusChanged(attachmentLocation, status);
+            emit attachmentDownloadProgressChanged(attachmentLocation, 100);
+            m_attachmentDownloadQueue.remove(attachmentLocation);
+        } else {
+            AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
+            attInfo.status = status;
+            m_attachmentDownloadQueue.insert(attachmentLocation, attInfo);
+            emit attachmentDownloadStatusChanged(attachmentLocation, status);
+        }
+    }
+}
+
+void EmailAgent::updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress)
+{
+    if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
+        AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
+        // Avoid reporting progress too often
+        if (progress >= attInfo.progress + 5) {
+            attInfo.progress = progress;
+            m_attachmentDownloadQueue.insert(attachmentLocation, attInfo);
+            emit attachmentDownloadProgressChanged(attachmentLocation, progress);
+        }
+    }
+}
