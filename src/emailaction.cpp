@@ -493,7 +493,7 @@ RetrieveMessagePart::RetrieveMessagePart(QMailRetrievalAction *retrievalAction,
 {
     _description = QString("retrieve-message-part:partLocation-id=%1")
             .arg(_partLocation.toString(true));
-    _type = EmailAction::Retrieve;
+    _type = EmailAction::RetrieveMessagePart;
 }
 
 RetrieveMessagePart::~RetrieveMessagePart()
@@ -503,6 +503,11 @@ RetrieveMessagePart::~RetrieveMessagePart()
 void RetrieveMessagePart::execute()
 {
      _retrievalAction->retrieveMessagePart(_partLocation);
+}
+
+QString RetrieveMessagePart::partLocation() const
+{
+    return _partLocation.toString(true);
 }
 
 QMailServiceAction* RetrieveMessagePart::serviceAction() const
