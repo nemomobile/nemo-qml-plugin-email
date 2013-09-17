@@ -22,6 +22,7 @@ public:
         Export = 0,
         Retrieve,
         RetrieveFolderList,
+        RetrieveMessagePart,
         Send,
         StandardFolders,
         Storage,
@@ -255,6 +256,7 @@ public:
     ~RetrieveMessagePart();
     void execute();
     QMailServiceAction* serviceAction() const;
+    QString partLocation() const;
 
 private:
     QMailRetrievalAction* _retrievalAction;
