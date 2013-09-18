@@ -31,14 +31,16 @@ public:
         MimeType = Qt::UserRole + 4,
         Size = Qt::UserRole + 5,
         StatusInfo = Qt::UserRole + 6,
-        ProgressInfo = Qt::UserRole + 7,
-        Index = Qt::UserRole + 8
+        Url = Qt::UserRole + 7,
+        ProgressInfo = Qt::UserRole + 8,
+        Index = Qt::UserRole + 9
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
     QModelIndex indexFromLocation(const QString &location);
+    QString attachmentUrl(const QMailMessage message, const QString &attachmentLocation);
 
     int messageId() const;
     void setMessageId(int id);
@@ -54,12 +56,21 @@ signals:
 private slots:
     void onAttachmentDownloadStatusChanged(const QString &attachmentLocation, EmailAgent::AttachmentStatus status);
     void onAttachmentDownloadProgressChanged(const QString &attachmentLocation, int progress);
+    void onAttachmentUrlChanged(const QString &attachmentLocation, const QString &url);
 
 private:
     QHash<int, QByteArray> roles;
     QMailMessageId m_messageId;
     QMailMessage m_message;
-    struct Attachment { QModelIndex index; QMailMessagePart part; QString location; EmailAgent::AttachmentStatus status; int progressInfo;};
+    struct Attachment {
+        QModelIndex index;
+        QMailMessagePart part;
+        QString location;
+        EmailAgent::AttachmentStatus status;
+        QString url;
+        int progressInfo;
+    };
+
     QList<Attachment*> m_attachmentsList;
 
     void resetModel();

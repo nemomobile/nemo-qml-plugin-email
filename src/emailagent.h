@@ -75,8 +75,6 @@ public:
     Q_INVOKABLE void markMessageAsRead(int messageId);
     Q_INVOKABLE void markMessageAsUnread(int messageId);
     Q_INVOKABLE void moveMessage(int messageId, int destinationId);
-    Q_INVOKABLE bool openAttachment(const QString& attachmentDisplayName);
-    Q_INVOKABLE void openBrowser(const QString& url);
     Q_INVOKABLE void renameFolder(int folderId, const QString &name);
     Q_INVOKABLE void retrieveFolderList(int accountId, int folderId = 0, const bool descending = true);
     Q_INVOKABLE void retrieveMessageList(int accountId, int folderId, const uint minimum = 20);
@@ -85,8 +83,9 @@ public:
     Q_INVOKABLE void synchronizeInbox(int accountId, const uint minimum = 20);
 
 signals:
-    void attachmentDownloadProgressChanged(const QString &attachmentDisplayName, int progress);
-    void attachmentDownloadStatusChanged(const QString &attachmentDisplayName, EmailAgent::AttachmentStatus status);
+    void attachmentDownloadProgressChanged(const QString &attachmentLocation, int progress);
+    void attachmentDownloadStatusChanged(const QString &attachmentLocation, EmailAgent::AttachmentStatus status);
+    void attachmentUrlChanged(const QString &attachmentLocation, const QString &url);
     void error(const QMailAccountId &accountId, const QString &message, int code);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
     void progressUpdated(int percent);
@@ -133,6 +132,7 @@ private:
     void enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
+    void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentlocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
 };

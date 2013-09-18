@@ -8,6 +8,8 @@
  */
 
 #include <QVector>
+#include <QDir>
+#include <QFile>
 
 #include "attachmentlistmodel.h"
 #include "emailagent.h"
@@ -22,6 +24,7 @@ AttachmentListModel::AttachmentListModel(QObject *parent) :
     roles.insert(MimeType, "mimeType");
     roles.insert(Size, "size");
     roles.insert(StatusInfo, "statusInfo");
+    roles.insert(Url, "url");
     roles.insert(ProgressInfo, "progressInfo");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
@@ -32,6 +35,9 @@ AttachmentListModel::AttachmentListModel(QObject *parent) :
 
     connect(EmailAgent::instance(), SIGNAL(attachmentDownloadProgressChanged(QString,int)),
             this, SLOT(onAttachmentDownloadProgressChanged(QString,int)));
+
+    connect(EmailAgent::instance(), SIGNAL(attachmentUrlChanged(QString,QString)),
+            this, SLOT(onAttachmentUrlChanged(QString,QString)));
 }
 
 AttachmentListModel::~AttachmentListModel()
@@ -83,6 +89,8 @@ QVariant AttachmentListModel::data(const QModelIndex &index, int role) const
         return -1;
     } else if (role == StatusInfo) {
         return item->status;
+    } else if (role == Url) {
+        return item->url;
     } else if (role == ProgressInfo) {
         return item->progressInfo;
     }
@@ -114,20 +122,52 @@ QModelIndex AttachmentListModel::indexFromLocation(const QString &location)
 
 void AttachmentListModel::onAttachmentDownloadStatusChanged(const QString &attachmentLocation, EmailAgent::AttachmentStatus status)
 {
-    for (int i=0; i< m_attachmentsList.size();i++) {
+    for (int i=0; i< m_attachmentsList.size(); i++) {
         if (m_attachmentsList[i]->location == attachmentLocation) {
             m_attachmentsList[i]->status = status;
             emit dataChanged(m_attachmentsList[i]->index, m_attachmentsList[i]->index, QVector<int>() << StatusInfo);
+            return;
         }
     }
 }
 
 void AttachmentListModel::onAttachmentDownloadProgressChanged(const QString &attachmentLocation, int progress)
 {
-    for (int i=0; i< m_attachmentsList.size();i++) {
+    for (int i=0; i< m_attachmentsList.size(); i++) {
         if (m_attachmentsList[i]->location == attachmentLocation) {
             m_attachmentsList[i]->progressInfo = progress;
             emit dataChanged(m_attachmentsList[i]->index, m_attachmentsList[i]->index, QVector<int>() << ProgressInfo);
+            return;
+        }
+    }
+}
+
+void AttachmentListModel::onAttachmentUrlChanged(const QString &attachmentLocation, const QString &url)
+{
+    for (int i=0; i< m_attachmentsList.size(); i++) {
+        if (m_attachmentsList[i]->location == attachmentLocation) {
+            if (m_attachmentsList[i]->url != url) {
+                m_attachmentsList[i]->url = url;
+                emit dataChanged(m_attachmentsList[i]->index, m_attachmentsList[i]->index, QVector<int>() << Url);
+                return;
+            }
+        }
+    }
+}
+
+QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QString &attachmentLocation)
+{
+    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentLocation;
+    for (uint i = 1; i < message.partCount(); i++) {
+        QMailMessagePart sourcePart = message.partAt(i);
+        if (attachmentLocation == sourcePart.location().toString(true)) {
+            QString tempPath = temporaryFolder + "/" + sourcePart.displayName();
+            QFile f(tempPath);
+            if (f.exists()) {
+                return tempPath;
+            } else {
+                return QString();
+            }
         }
     }
 }
@@ -155,7 +195,21 @@ void AttachmentListModel::resetModel()
             item->location = location.toString(true);
             item->part = m_message.partAt(location);
             item->status = EmailAgent::instance()->attachmentDownloadStatus(item->location);
-            item->progressInfo = EmailAgent::instance()->attachmentDownloadProgress(item->location);
+            // if attachment is in the queue for download we will get a url update later
+            if (item->status == EmailAgent::Idle) {
+                item->url = attachmentUrl(m_message, item->location);
+                // Update status and progress if attachment exists
+                if (!item->url.isEmpty()) {
+                    item->status = EmailAgent::Downloaded;
+                    item->progressInfo = 100;
+                    qDebug() << "Attachment is already downloaded!! at: " << item->url;
+                } else {
+                    item->progressInfo = 0;
+                }
+            } else {
+                item->url = QString();
+                item->progressInfo = EmailAgent::instance()->attachmentDownloadProgress(item->location);
+            }
             item->index = createIndex(i, 0, item);
             m_attachmentsList.append(item);
             i++;
