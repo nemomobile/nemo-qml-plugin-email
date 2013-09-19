@@ -38,11 +38,12 @@ public:
     };
 
     enum AttachmentStatus {
-        Idle = 0,
+        NotDownloaded = 0,
         Queued,
         Downloaded,
         Downloading,
-        Failed
+        Failed,
+        FailedToSave
     };
 
     EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString& attachmentLocation);
@@ -132,7 +133,7 @@ private:
     void enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
-    void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentlocation);
+    void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
 };
