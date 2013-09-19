@@ -166,6 +166,11 @@ QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QSt
             if (f.exists()) {
                 return tempPath;
             } else {
+                // we have the part downloaded locally but not in a file type yet
+                if (sourcePart.hasBody()) {
+                    QString path = sourcePart.writeBodyTo(temporaryFolder);
+                    return path;
+                }
                 return QString();
             }
         }
@@ -202,7 +207,6 @@ void AttachmentListModel::resetModel()
                 if (!item->url.isEmpty()) {
                     item->status = EmailAgent::Downloaded;
                     item->progressInfo = 100;
-                    qDebug() << "Attachment is already downloaded!! at: " << item->url;
                 } else {
                     item->progressInfo = 0;
                 }

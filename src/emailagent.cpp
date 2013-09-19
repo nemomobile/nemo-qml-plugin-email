@@ -747,29 +747,29 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
     return m_actionQueue.first();
 }
 
-void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentlocation)
+void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation)
 {
-    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentlocation;
+    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentLocation;
 
     // Message and part structure can be updated during attachment download
     // is safer to reload everything
     QMailMessage message (messageId);
     for (uint i = 1; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
-        if (attachmentlocation == sourcePart.location().toString(true)) {
+        if (attachmentLocation == sourcePart.location().toString(true)) {
             QString tempPath = temporaryFolder + "/" + sourcePart.displayName();
             QFile f(tempPath);
 
             if (f.exists()) {
-                emit attachmentUrlChanged(attachmentlocation, tempPath);
-                updateAttachmentDowloadStatus(attachmentlocation, Downloaded);
+                emit attachmentUrlChanged(attachmentLocation, temporaryFolder);
+                updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
             } else {
                 QString path = sourcePart.writeBodyTo(temporaryFolder);
                 if (!path.isEmpty()) {
-                    emit attachmentUrlChanged(attachmentlocation, path);
-                    updateAttachmentDowloadStatus(attachmentlocation, Downloaded);
+                    emit attachmentUrlChanged(attachmentLocation, path);
+                    updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
                 } else {
-                    updateAttachmentDowloadStatus(attachmentlocation, Failed);
+                    updateAttachmentDowloadStatus(attachmentLocation, FailedToSave);
                 }
             }
         }
