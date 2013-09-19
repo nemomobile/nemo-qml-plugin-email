@@ -488,6 +488,7 @@ QMailServiceAction* RetrieveMessageLists::serviceAction() const
 RetrieveMessagePart::RetrieveMessagePart(QMailRetrievalAction *retrievalAction,
                                          const QMailMessagePartContainer::Location &partLocation)
     : EmailAction()
+    , _messageId(partLocation.containingMessageId())
     , _retrievalAction(retrievalAction)
     , _partLocation(partLocation)
 {
@@ -503,6 +504,11 @@ RetrieveMessagePart::~RetrieveMessagePart()
 void RetrieveMessagePart::execute()
 {
      _retrievalAction->retrieveMessagePart(_partLocation);
+}
+
+QMailMessageId RetrieveMessagePart::messageId() const
+{
+    return _messageId;
 }
 
 QString RetrieveMessagePart::partLocation() const
