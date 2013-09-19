@@ -273,8 +273,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
 
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
-            updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloaded);
-            qDebug() << "Attachment dowload completed for " << messagePartAction->partLocation();
+            saveAttachmentToTemporaryFile(messagePartAction->messageId(), messagePartAction->partLocation());
         }
 
         m_currentAction = getNext();
@@ -479,15 +478,7 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
             QMailMessagePart::Location location = sourcePart.location();
             location.setContainingMessageId(m_messageId);
             if (sourcePart.hasBody()) {
-                // TODO move saving logic to separated function
-                // The content has already been downloaded to local device.
-                QString downloadFolder = QDir::homePath() + "/Downloads/";
-                QFile f(downloadFolder+sourcePart.displayName());
-                if (f.exists())
-                    f.remove();
-                sourcePart.writeBodyTo(downloadFolder);
-                qDebug() << "Part already downloaded!";
-                return;
+                saveAttachmentToTemporaryFile(m_messageId, attachmentlocation);
             } else {
                 qDebug() << "Start Dowload for: " << attachmentlocation;
                 enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location));
@@ -580,59 +571,6 @@ void EmailAgent::moveMessage(int messageId, int destinationId)
     msgIdList << msgId;
     QMailFolderId destId(destinationId);
     moveMessages(msgIdList, destId);
-}
-
-bool EmailAgent::openAttachment(const QString & uri)
-{
-    bool status = true;
-
-    // let's determine the file type
-    QString filePath = QDir::homePath() + "/Downloads/" + uri;
-
-    QProcess fileProcess;
-    fileProcess.start("file", QStringList() << "-b" << filePath);
-    if (!fileProcess.waitForFinished())
-        return false;
-
-    QString s(fileProcess.readAll());
-    QStringList parameters;
-    parameters << "--opengl" << "--fullscreen";
-    if (s.contains("video", Qt::CaseInsensitive)) {
-        parameters << "--app" << "meego-app-video";
-        parameters << "--cmd" << "playVideo";
-    }
-    else if (s.contains("image", Qt::CaseInsensitive)) {
-        parameters << "--app" << "meego-app-photos";
-        parameters << "--cmd" << "showPhoto";
-    }
-    else if (s.contains("audio", Qt::CaseInsensitive)) {
-        parameters << "--app" << "meego-app-music";
-        parameters << "--cmd" << "playSong";
-    }
-    else if (s.contains("Ogg data", Qt::CaseInsensitive)) {
-        // Fix Me:  need more research on Ogg format. For now, default to video.
-        parameters << "--app" << "meego-app-video";
-        parameters << "--cmd" << "video";
-    }
-    else {
-        // Unsupported file type.
-        return false;
-    }
-
-    QString executable("meego-qml-launcher");
-    filePath.prepend("file://");
-    parameters << "--cdata" << filePath;
-    QProcess::startDetached(executable, parameters);
-
-    return status;
-}
-
-void EmailAgent::openBrowser(const QString & url)
-{
-    QString executable("xdg-open");
-    QStringList parameters;
-    parameters << url;
-    QProcess::startDetached(executable, parameters);
 }
 
 void EmailAgent::renameFolder(int folderId, const QString &name)
@@ -807,6 +745,35 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
         return QSharedPointer<EmailAction>();
 
     return m_actionQueue.first();
+}
+
+void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentlocation)
+{
+    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentlocation;
+
+    // Message and part structure can be updated during attachment download
+    // is safer to reload everything
+    QMailMessage message (messageId);
+    for (uint i = 1; i < message.partCount(); i++) {
+        QMailMessagePart sourcePart = message.partAt(i);
+        if (attachmentlocation == sourcePart.location().toString(true)) {
+            QString tempPath = temporaryFolder + "/" + sourcePart.displayName();
+            QFile f(tempPath);
+
+            if (f.exists()) {
+                emit attachmentUrlChanged(attachmentlocation, tempPath);
+                updateAttachmentDowloadStatus(attachmentlocation, Downloaded);
+            } else {
+                QString path = sourcePart.writeBodyTo(temporaryFolder);
+                if (!path.isEmpty()) {
+                    emit attachmentUrlChanged(attachmentlocation, path);
+                    updateAttachmentDowloadStatus(attachmentlocation, Downloaded);
+                } else {
+                    updateAttachmentDowloadStatus(attachmentlocation, Failed);
+                }
+            }
+        }
+    }
 }
 
 void EmailAgent::updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status)

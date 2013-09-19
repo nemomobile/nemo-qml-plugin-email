@@ -255,10 +255,12 @@ public:
                         const QMailMessagePart::Location &partLocation);
     ~RetrieveMessagePart();
     void execute();
+    QMailMessageId messageId() const;
     QMailServiceAction* serviceAction() const;
     QString partLocation() const;
 
 private:
+    QMailMessageId _messageId;
     QMailRetrievalAction* _retrievalAction;
     QMailMessagePart::Location _partLocation;
 };
