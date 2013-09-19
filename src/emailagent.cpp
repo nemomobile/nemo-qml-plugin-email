@@ -102,7 +102,7 @@ EmailAgent::AttachmentStatus EmailAgent::attachmentDownloadStatus(const QString 
         AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
         return attInfo.status;
     }
-    return Idle;
+    return NotDownloaded;
 }
 
 QString EmailAgent::attachmentName(const QMailMessagePart &part) const

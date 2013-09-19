@@ -38,7 +38,7 @@ public:
     };
 
     enum AttachmentStatus {
-        Idle = 0,
+        NotDownloaded = 0,
         Queued,
         Downloaded,
         Downloading,

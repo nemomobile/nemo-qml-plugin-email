@@ -196,7 +196,7 @@ void AttachmentListModel::resetModel()
             item->part = m_message.partAt(location);
             item->status = EmailAgent::instance()->attachmentDownloadStatus(item->location);
             // if attachment is in the queue for download we will get a url update later
-            if (item->status == EmailAgent::Idle) {
+            if (item->status == EmailAgent::NotDownloaded) {
                 item->url = attachmentUrl(m_message, item->location);
                 // Update status and progress if attachment exists
                 if (!item->url.isEmpty()) {
