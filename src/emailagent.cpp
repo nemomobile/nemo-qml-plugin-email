@@ -487,6 +487,15 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
     }
 }
 
+void EmailAgent::exportUpdates(int accountId)
+{
+    QMailAccountId acctId(accountId);
+
+    if (acctId.isValid()) {
+        enqueue(new ExportUpdates(m_retrievalAction.data(),acctId));;
+    }
+}
+
 void EmailAgent::getMoreMessages(int folderId, uint minimum)
 {
     QMailFolderId foldId(folderId);
