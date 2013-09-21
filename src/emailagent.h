@@ -97,7 +97,6 @@ signals:
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
-    void attachmentDownloadActivityChanged(QMailServiceAction::Activity activity);
     void onIpcConnectionEstablished();
     void onMessageServerProcessError(QProcess::ProcessError error);
     void onStandardFoldersCreated(const QMailAccountId &accountId);
