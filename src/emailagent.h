@@ -52,6 +52,7 @@ public:
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
+    bool ipcConnected();
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
@@ -90,6 +91,7 @@ signals:
     void attachmentUrlChanged(const QString &attachmentLocation, const QString &url);
     void error(const QMailAccountId &accountId, const QString &message, int code);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
+    void ipcConnectionEstablished();
     void progressUpdated(int percent);
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);

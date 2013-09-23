@@ -53,7 +53,6 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_cancelling(false)
     , m_synchronizing(false)
     , m_enqueing(false)
-    , m_waitForIpc(false)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
@@ -81,6 +80,8 @@ EmailAgent::EmailAgent(QObject *parent)
             this, SLOT(activityChanged(QMailServiceAction::Activity)));
 
     m_instance = this;
+
+    m_waitForIpc = !QMailStore::instance()->isIpcConnectionEstablished();
 }
 
 EmailAgent::~EmailAgent()
@@ -154,6 +155,11 @@ void EmailAgent::initMailServer()
             this, SLOT(onMessageServerProcessError(QProcess::ProcessError)));
     m_messageServerProcess->startDetached(MESSAGESERVER);
     return;
+}
+
+bool EmailAgent::ipcConnected()
+{
+    return !m_waitForIpc;
 }
 
 bool EmailAgent::synchronizing() const
@@ -299,6 +305,7 @@ void EmailAgent::onIpcConnectionEstablished()
 {
     if (m_waitForIpc) {
         m_waitForIpc = false;
+        emit ipcConnectionEstablished();
 
         if (m_currentAction.isNull())
             m_currentAction = getNext();
