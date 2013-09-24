@@ -38,6 +38,7 @@ public:
     ActionType type() const;
     quint64 id() const;
     void setId(const quint64 id);
+    bool needsNetworkConnection() const { return _onlineAction; }
 
 protected:
     EmailAction(bool onlineAction = true);
@@ -48,7 +49,6 @@ protected:
 
 private:
     bool _onlineAction;
-    bool needsNetworkConnection() const { return _onlineAction; }
 };
 
 class CreateStandardFolders : public EmailAction

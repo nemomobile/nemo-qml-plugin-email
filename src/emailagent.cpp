@@ -53,9 +53,12 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_cancelling(false)
     , m_synchronizing(false)
     , m_enqueing(false)
+    , m_backgroundProcess(false)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
+    , m_nmanager(new QNetworkConfigurationManager(this))
+    , m_networkSession(0)
 {
 
     connect(QMailStore::instance(), SIGNAL(ipcConnectionEstablished()),
@@ -79,9 +82,11 @@ EmailAgent::EmailAgent(QObject *parent)
     connect(m_transmitAction.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
             this, SLOT(activityChanged(QMailServiceAction::Activity)));
 
-    m_instance = this;
+    connect(m_nmanager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineStateChanged(bool)));
 
     m_waitForIpc = !QMailStore::instance()->isIpcConnectionEstablished();
+    m_instance = this;
+
 }
 
 EmailAgent::~EmailAgent()
@@ -131,6 +136,16 @@ QString EmailAgent::bodyPlainText(const QMailMessage &mailMsg) const
     }
 
     return QString();
+}
+
+bool EmailAgent::backgroundProcess() const
+{
+    return m_backgroundProcess;
+}
+
+void EmailAgent::setBackgroundProcess(const bool isBackgroundProcess)
+{
+    m_backgroundProcess = isBackgroundProcess;
 }
 
 void EmailAgent::exportUpdates(const QMailAccountId accountId)
@@ -311,7 +326,7 @@ void EmailAgent::onIpcConnectionEstablished()
             m_currentAction = getNext();
 
         if (m_currentAction.isNull()) {
-            qDebug() << "Ipc connection established, no action in the queue.";
+            qDebug() << "Ipc connection established, but no action in the queue.";
         } else {
             executeCurrent();
         }
@@ -323,6 +338,42 @@ void EmailAgent::onMessageServerProcessError(QProcess::ProcessError error)
     QString errorMsg(QString("Could not start messageserver process, unable to communicate with the remove servers.\nQProcess exit with error: (%1)")
                      .arg(static_cast<int>(error)));
     qFatal(errorMsg.toLatin1());
+}
+
+void EmailAgent::onNetworkSessionClosed()
+{
+    terminateNetworkSession();
+}
+
+void EmailAgent::onNetworkSessionError(QNetworkSession::SessionError errorCode)
+{
+    Q_UNUSED(errorCode);
+    terminateNetworkSession();
+
+    // check if we have a running action and cancel it
+    if (!m_currentAction.isNull() && m_currentAction->needsNetworkConnection()) {
+
+        if (((m_currentAction->serviceAction())->activity() == QMailServiceAction::Pending ||
+             (m_currentAction->serviceAction())->activity() == QMailServiceAction::InProgress)) {
+            (m_currentAction->serviceAction())->cancelOperation();
+        }
+    }
+}
+
+void EmailAgent::onOnlineStateChanged(bool isOnline)
+{
+    qDebug() << Q_FUNC_INFO << "Online State changed, device is now connected ? " << isOnline;
+    m_goingOnline = false;
+    if (isOnline) {
+        if (m_currentAction.isNull())
+            m_currentAction = getNext();
+
+        if (m_currentAction.isNull()) {
+            qDebug() << "Network connection established, but no action in the queue.";
+        } else {
+            executeCurrent();
+        }
+    }
 }
 
 void EmailAgent::onStandardFoldersCreated(const QMailAccountId &accountId)
@@ -698,7 +749,10 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
     QSharedPointer<EmailAction> action(actionPointer);
     bool foundAction = actionInQueue(action);
 
-   // Add checks for network availablity if online action
+    // Check if action neeeds connectivity and if we are not running from a background process
+    if(action->needsNetworkConnection() && !backgroundProcess() && !isOnline()) {
+        goOnline();
+    }
 
     if (!foundAction) {
         // It's a new action.
@@ -735,6 +789,8 @@ void EmailAgent::executeCurrent()
     if (!QMailStore::instance()->isIpcConnectionEstablished()) {
         qWarning() << "Ipc connection not established, can't execute service action";
         m_waitForIpc = true;
+    } else if (m_currentAction->needsNetworkConnection() && !isOnline()) {
+        qDebug() << "Current action not executed, waiting for newtwork";
     } else {
 
         if (!m_synchronizing) {
@@ -742,7 +798,6 @@ void EmailAgent::executeCurrent()
             emit synchronizingChanged(EmailAgent::Synchronizing);
         }
 
-        //add network checks here.
         qDebug() << "Executing " << m_currentAction->description();
 
         // Attachment download
@@ -750,7 +805,6 @@ void EmailAgent::executeCurrent()
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
             updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloading);
         }
-
         m_currentAction->execute();
     }
 }
@@ -761,6 +815,53 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
         return QSharedPointer<EmailAction>();
 
     return m_actionQueue.first();
+}
+
+bool EmailAgent::isOnline()
+{
+    return m_nmanager->isOnline();
+}
+
+void EmailAgent::goOnline()
+{
+    if (!m_goingOnline) {
+        terminateNetworkSession();
+        m_goingOnline = true;
+        QNetworkConfiguration defaultConfig = m_nmanager->defaultConfiguration();
+
+        // If default configuration is not valid, look for a valid one
+        if (!defaultConfig.isValid()) {
+            foreach (const QNetworkConfiguration& cfg, m_nmanager->allConfigurations()) {
+                if (cfg.isValid()) {
+                    defaultConfig = cfg;
+                    break;
+                }
+            }
+
+            if (!defaultConfig.isValid()){
+                qWarning() << Q_FUNC_INFO << "No valid  network configuration found.";
+                m_goingOnline = false;
+                return;
+            }
+        }
+
+        m_networkSession = new QNetworkSession(defaultConfig);
+        connect(m_networkSession, SIGNAL(error(QNetworkSession::SessionError)),
+                this, SLOT(onNetworkSessionError(QNetworkSession::SessionError)));
+        connect(m_networkSession, SIGNAL(closed()), this, SLOT(onNetworkSessionClosed()));
+
+        m_networkSession->open();
+    }
+}
+
+void EmailAgent::terminateNetworkSession()
+{
+    if (m_networkSession) {
+        disconnect(m_networkSession, 0, 0, 0);
+        m_networkSession->deleteLater();
+        m_networkSession = 0;
+    }
+    m_goingOnline = false;
 }
 
 void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation)
