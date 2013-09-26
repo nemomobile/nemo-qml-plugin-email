@@ -112,7 +112,7 @@ QMailAccountId CreateStandardFolders::accountId() const
   DeleteMessages
 */
 DeleteMessages::DeleteMessages(QMailStorageAction* storageAction, const QMailMessageIdList &ids)
-    : EmailAction()
+    : EmailAction(false)
     , _storageAction(storageAction)
     , _ids(ids)
 {
@@ -166,7 +166,7 @@ QMailServiceAction* ExportUpdates::serviceAction() const
 */
 FlagMessages::FlagMessages(QMailStorageAction* storageAction, const QMailMessageIdList &ids,
                            quint64 setMask, quint64 unsetMask)
-    : EmailAction()
+    : EmailAction(false)
     , _storageAction(storageAction)
     , _ids(ids)
     , _setMask(setMask)
@@ -198,7 +198,7 @@ QMailServiceAction* FlagMessages::serviceAction() const
 
 MoveToFolder::MoveToFolder(QMailStorageAction *storageAction, const QMailMessageIdList &ids,
                            const QMailFolderId &folderId)
-    : EmailAction()
+    : EmailAction(false)
     , _storageAction(storageAction)
     , _ids(ids)
     , _destinationFolder(folderId)
@@ -228,7 +228,7 @@ QMailServiceAction* MoveToFolder::serviceAction() const
 */
 MoveToStandardFolder::MoveToStandardFolder(QMailStorageAction *storageAction,
                                            const QMailMessageIdList &ids, QMailFolder::StandardFolder standardFolder)
-    : EmailAction()
+    : EmailAction(false)
     , _storageAction(storageAction)
     , _ids(ids)
     , _standardFolder(standardFolder)

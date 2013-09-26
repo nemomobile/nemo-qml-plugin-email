@@ -11,6 +11,8 @@
 
 #include <QProcess>
 #include <QTimer>
+#include <QNetworkConfigurationManager>
+#include <QNetworkSession>
 
 #include <qmailaccount.h>
 #include <qmailstore.h>
@@ -50,6 +52,8 @@ public:
     int attachmentDownloadProgress(const QString& attachmentLocation);
     QString attachmentName(const QMailMessagePart &part) const;
     QString bodyPlainText(const QMailMessage &mailMsg) const;
+    bool backgroundProcess() const;
+    void setBackgroundProcess(const bool isBackgroundProcess);
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
     bool ipcConnected();
@@ -101,6 +105,9 @@ private slots:
     void activityChanged(QMailServiceAction::Activity activity);
     void onIpcConnectionEstablished();
     void onMessageServerProcessError(QProcess::ProcessError error);
+    void onNetworkSessionClosed();
+    void onNetworkSessionError(QNetworkSession::SessionError errorCode);
+    void onOnlineStateChanged(bool isOnline);
     void onStandardFoldersCreated(const QMailAccountId &accountId);
     void progressChanged(uint value, uint total);
 
@@ -112,7 +119,9 @@ private:
     bool m_cancelling;
     bool m_synchronizing;
     bool m_enqueing;
+    bool m_backgroundProcess;
     bool m_waitForIpc;
+    bool m_goingOnline;
 
     QMailAccountIdList m_enabledAccounts;
 
@@ -123,6 +132,8 @@ private:
     QMailMessageId m_messageId;
 
     QProcess* m_messageServerProcess;
+    QNetworkConfigurationManager *m_nmanager;
+    QNetworkSession *m_networkSession;
 
     QList<QSharedPointer<EmailAction> > m_actionQueue;
     QSharedPointer<EmailAction> m_currentAction;
@@ -135,6 +146,9 @@ private:
     void enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
+    bool isOnline();
+    void goOnline();
+    void terminateNetworkSession();
     void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
