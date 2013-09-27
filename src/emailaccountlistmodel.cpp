@@ -24,6 +24,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(LastSynchronized, "lastSynchronized");
     roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
     roles.insert(Signature, "signature");
+    roles.insert(IconPath, "iconPath");
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -105,6 +106,10 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 
     if (role == Signature) {
         return account.signature();
+    }
+
+    if (role == IconPath) {
+        return account.iconPath();
     }
 
     return QVariant();
