@@ -33,7 +33,8 @@ public:
         LastSynchronized = Qt::UserRole + 9,
         StandardFoldersRetrieved = Qt::UserRole + 10,
         Signature = Qt::UserRole + 11,
-        Index = Qt::UserRole + 12
+        IconPath = Qt::UserRole + 12,
+        Index = Qt::UserRole + 13
     };
 
     virtual QVariant data(const QModelIndex &index, int role) const;
