@@ -1,6 +1,12 @@
 TEMPLATE = subdirs
-SUBDIRS = src src/plugin
 
-src/plugin.depends = src
+src.subdir = src
+src.target = sub-src
+
+plugins.subdir = src/plugin
+plugins.target = sub-plugin
+plugins.depends = sub-src
+
+SUBDIRS = src plugins
 
 OTHER_FILES += rpm/*
