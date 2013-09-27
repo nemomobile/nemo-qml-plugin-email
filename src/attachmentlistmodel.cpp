@@ -175,6 +175,7 @@ QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QSt
             }
         }
     }
+    return QString();
 }
 
 int AttachmentListModel::messageId() const
