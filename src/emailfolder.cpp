@@ -9,10 +9,14 @@
 
 #include "emailfolder.h"
 
+#include <qmailstore.h>
+
 EmailFolder::EmailFolder(QObject *parent) :
     QObject(parent)
   , m_folder(QMailFolder())
 {
+    connect(QMailStore::instance(), SIGNAL(foldersUpdated(const QMailFolderIdList &)), this,
+                          SLOT(onFoldersUpdated(const QMailFolderIdList &)));
 }
 
 EmailFolder::~EmailFolder()
@@ -59,6 +63,12 @@ int EmailFolder::serverUnreadCount() const
     return m_folder.serverUnreadCount();
 }
 
+void EmailFolder::setDisplayName(const QString &displayName)
+{
+    m_folder.setDisplayName(displayName);
+    emit displayNameChanged();
+}
+
 void EmailFolder::setFolderId(int folderId)
 {
     QMailFolderId foldId(folderId);
@@ -72,5 +82,15 @@ void EmailFolder::setFolderId(int folderId)
 
         // Folder loaded from the store (or a empty folder), all properties changes
         emit folderIdChanged();
+    }
+}
+
+void EmailFolder::onFoldersUpdated(const QMailFolderIdList &ids)
+{
+    foreach (QMailFolderId folderId, ids) {
+        if (folderId == m_folder.id()) {
+            emit displayNameChanged();
+            return;
+        }
     }
 }

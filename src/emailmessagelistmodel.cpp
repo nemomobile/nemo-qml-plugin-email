@@ -83,12 +83,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
-    m_mailAccountIds = QMailStore::instance()->queryAccounts(
-            QMailAccountKey::status(QMailAccount::Enabled, QMailDataComparator::Includes),
-            QMailAccountSortKey::name());
-
-    QMailMessageKey accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds);
-    QMailMessageListModel::setKey(accountKey);
     m_key = key();
     m_sortKey = QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
     m_sortBy = Time;
@@ -291,12 +285,14 @@ void EmailMessageListModel::setSearch(const QString search)
     m_search = search;
 }
 
-void EmailMessageListModel::setFolderKey(int id)
+void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
 {
     m_currentFolderId = QMailFolderId(id);
     if (!m_currentFolderId.isValid())
         return;
-    QMailMessageKey folderKey = QMailMessageKey::parentFolderId(m_currentFolderId);
+    // Local folders (e.g outbox) can have messages from several accounts.
+    QMailMessageKey accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds) & messageKey;
+    QMailMessageKey folderKey = accountKey & QMailMessageKey::parentFolderId(m_currentFolderId);
     QMailMessageListModel::setKey(folderKey);
     m_key=key();
     QMailMessageListModel::setSortKey(m_sortKey);
@@ -334,7 +330,7 @@ void EmailMessageListModel::setAccountKey(int id)
     }
     QMailMessageListModel::setSortKey(m_sortKey);
 
-    m_key= key();
+    m_key = key();
 
     if (combinedInbox())
         setCombinedInbox(false);
@@ -343,8 +339,8 @@ void EmailMessageListModel::setAccountKey(int id)
 void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
 {
     QMailFolderId folderId;
-    foreach (const QMailFolderId &foldrId, folderIds) {
-        QMailFolder folder(foldrId);
+    foreach (const QMailFolderId &mailFolderId, folderIds) {
+        QMailFolder folder(mailFolderId);
         if(m_mailAccountIds.contains(folder.parentAccountId())) {
             QMailAccount account(folder.parentAccountId());
             folderId = account.standardFolder(QMailFolder::InboxFolder);

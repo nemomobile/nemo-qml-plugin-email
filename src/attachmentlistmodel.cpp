@@ -193,6 +193,7 @@ void AttachmentListModel::setMessageId(int id)
 void AttachmentListModel::resetModel()
 {
     beginResetModel();
+    qDeleteAll(m_attachmentsList.begin(), m_attachmentsList.end());
     m_attachmentsList.clear();
     if (m_messageId.isValid()) {
         int i=0;
