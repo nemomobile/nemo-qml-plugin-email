@@ -588,7 +588,7 @@ int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder fold
         }
     }
     qDebug() << "Error: Standard folder " << folder << " not found for account: " << accountId;
-    return -1;
+    return 0;
 }
 
 int EmailAgent::inboxFolderId(int accountId)
@@ -596,9 +596,29 @@ int EmailAgent::inboxFolderId(int accountId)
     return standardFolderId(accountId, QMailFolder::InboxFolder);
 }
 
+int EmailAgent::outboxFolderId(int accountId)
+{
+    return standardFolderId(accountId, QMailFolder::OutboxFolder);
+}
+
 int EmailAgent::draftsFolderId(int accountId)
 {
     return standardFolderId(accountId, QMailFolder::DraftsFolder);
+}
+
+int EmailAgent::sentFolderId(int accountId)
+{
+    return standardFolderId(accountId, QMailFolder::SentFolder);
+}
+
+int EmailAgent::trashFolderId(int accountId)
+{
+    return standardFolderId(accountId, QMailFolder::TrashFolder);
+}
+
+int EmailAgent::junkFolderId(int accountId)
+{
+    return standardFolderId(accountId, QMailFolder::JunkFolder);
 }
 
 bool EmailAgent::isAccountValid(int accountId)

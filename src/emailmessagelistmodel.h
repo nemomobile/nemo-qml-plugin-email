@@ -83,7 +83,7 @@ signals:
     void messageDownloadCompleted();
 
 public slots:
-    Q_INVOKABLE void setFolderKey(int id);
+    Q_INVOKABLE void setFolderKey(int id, QMailMessageKey messageKey = QMailMessageKey());
     Q_INVOKABLE void setAccountKey(int id);
     Q_INVOKABLE void sortBySender(int order = 0);
     Q_INVOKABLE void sortBySubject(int order = 0);

@@ -17,6 +17,7 @@
 class Q_DECL_EXPORT FolderListModel : public QAbstractListModel
 {
     Q_OBJECT
+    Q_ENUMS(FolderStandardType)
 
 public:
     explicit FolderListModel(QObject *parent = 0);
@@ -27,16 +28,31 @@ public:
         FolderId = Qt::UserRole + 2,
         FolderUnreadCount = Qt::UserRole + 3,
         FolderServerCount = Qt::UserRole + 4,
-        Index = Qt::UserRole + 5,
-        FolderNestingLevel = Qt::UserRole + 6
+        FolderNestingLevel = Qt::UserRole + 5,
+        FolderMessageKey = Qt::UserRole + 6,
+        FolderType = Qt::UserRole + 7,
+        Index = Qt::UserRole + 8
+    };
+
+    enum FolderStandardType {
+        NormalFolder = 0,
+        InboxFolder,
+        OutboxFolder,
+        SentFolder,
+        DraftsFolder,
+        TrashFolder,
+        JunkFolder
     };
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
 
-
-    Q_INVOKABLE int folderId(int index);
+    Q_INVOKABLE int folderId(int idx);
+    Q_INVOKABLE QVariant folderMessageKey(int idx);
+    Q_INVOKABLE QString folderName(int idx);
     Q_INVOKABLE QStringList folderNames();
+    Q_INVOKABLE QVariant folderType(int idx);
     Q_INVOKABLE int folderServerCount(int folderId);
     Q_INVOKABLE int folderUnreadCount(int folderId);
     Q_INVOKABLE int indexFromFolderId(int folderId);
@@ -49,13 +65,26 @@ protected:
 #endif
 
 private slots:
-    void onFoldersChanged(const QMailFolderIdList &);
+    void onFoldersChanged(const QMailFolderIdList &ids);
 
 private:
-    QHash<int, QByteArray> roles;
-    QMailFolderIdList m_mailFolderIds;
-    QMailAccountId m_accountId;
+    struct FolderItem {
+        QModelIndex index;
+        QMailFolderId folderId;
+        FolderStandardType folderType;
+        QMailMessageKey messageKey;
 
+        FolderItem(QModelIndex idx, QMailFolderId mailFolderId,
+                   FolderStandardType mailFolderType, QMailMessageKey folderMessageKey) :
+            index(idx), folderId(mailFolderId), folderType(mailFolderType), messageKey(folderMessageKey) {}
+    };
+
+    QHash<int, QByteArray> roles;
+    QMailAccountId m_accountId;
+    QList<FolderItem*> m_folderList;
+
+    FolderStandardType folderTypeFromId(const QMailFolderId &id) const;
+    QString localFolderName(const FolderStandardType folderType) const;
     void resetModel();
 };
 

@@ -76,7 +76,11 @@ public:
     Q_INVOKABLE void getMoreMessages(int folderId, uint minimum = 20);
     Q_INVOKABLE QString signatureForAccount(int accountId);
     Q_INVOKABLE int inboxFolderId(int accountId);
+    Q_INVOKABLE int outboxFolderId(int accountId);
     Q_INVOKABLE int draftsFolderId(int accountId);
+    Q_INVOKABLE int sentFolderId(int accountId);
+    Q_INVOKABLE int trashFolderId(int accountId);
+    Q_INVOKABLE int junkFolderId(int accountId);
     Q_INVOKABLE bool isAccountValid(int accountId);
     Q_INVOKABLE bool isMessageValid(int messageId);
     Q_INVOKABLE void markMessageAsRead(int messageId);
