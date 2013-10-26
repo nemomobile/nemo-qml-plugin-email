@@ -686,10 +686,9 @@ void EmailMessageListModel::setCombinedInbox(bool c)
     }
 
     m_mailAccountIds.clear();
-    m_mailAccountIds = QMailStore::instance()->queryAccounts(
-            QMailAccountKey::status(QMailAccount::Enabled, QMailDataComparator::Includes),
-            QMailAccountSortKey::name());
-
+    m_mailAccountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
+                                                             & QMailAccountKey::status(QMailAccount::Enabled),
+                                                             QMailAccountSortKey::name());
     if (c) {
         QMailFolderIdList folderIds;
         foreach (const QMailAccountId &accountId, m_mailAccountIds) {

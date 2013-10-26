@@ -280,8 +280,9 @@ void EmailMessage::setCc(const QStringList &ccList)
 
 void EmailMessage::setFrom(const QString &sender)
 {
-    QMailAccountIdList accountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::status(QMailAccount::Enabled,
-                                            QMailDataComparator::Includes), QMailAccountSortKey::name());
+    QMailAccountIdList accountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
+                                                                          & QMailAccountKey::status(QMailAccount::Enabled)
+                                                                          , QMailAccountSortKey::name());
     // look up the account id for the given sender
     foreach (QMailAccountId id, accountIds) {
         QMailAccount account(id);

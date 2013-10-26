@@ -409,11 +409,9 @@ void EmailAgent::progressChanged(uint value, uint total)
 void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
 {
     m_enabledAccounts.clear();
-    QMailAccountKey enabledAccountKey = QMailAccountKey::status(QMailAccount::Enabled |
-                                                         QMailAccount::CanRetrieve |
-                                                         QMailAccount::CanTransmit,
-                                                         QMailDataComparator::Includes);
-    m_enabledAccounts = QMailStore::instance()->queryAccounts(enabledAccountKey);
+    m_enabledAccounts = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
+                                                              & QMailAccountKey::status(QMailAccount::Enabled));
+    qDebug() << "Enabled accounts size is: " << m_enabledAccounts.count();
 
     if (m_enabledAccounts.isEmpty()) {
         qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";

@@ -35,7 +35,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
             this,SLOT(onAccountsRemoved(QModelIndex,int,int)));
 
     QMailAccountListModel::setSynchronizeEnabled(true);
-    QMailAccountListModel::setKey(QMailAccountKey::messageType(QMailMessage::Email) & QMailAccountKey::status(QMailAccount::Enabled));
+    QMailAccountListModel::setKey(QMailAccountKey::status(QMailAccount::Enabled));
 }
 
 EmailAccountListModel::~EmailAccountListModel()
