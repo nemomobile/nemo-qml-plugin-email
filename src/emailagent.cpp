@@ -351,12 +351,8 @@ void EmailAgent::onNetworkSessionError(QNetworkSession::SessionError errorCode)
     terminateNetworkSession();
 
     // check if we have a running action and cancel it
-    if (!m_currentAction.isNull() && m_currentAction->needsNetworkConnection()) {
-
-        if (((m_currentAction->serviceAction())->activity() == QMailServiceAction::Pending ||
-             (m_currentAction->serviceAction())->activity() == QMailServiceAction::InProgress)) {
-            (m_currentAction->serviceAction())->cancelOperation();
-        }
+    if (!m_currentAction.isNull() && m_currentAction->needsNetworkConnection() && m_currentAction->serviceAction()->isRunning()) {
+            m_currentAction->serviceAction()->cancelOperation();
     }
 }
 
@@ -441,9 +437,8 @@ void EmailAgent::cancelSync()
     m_actionQueue.clear();
 
     //cancel running action
-    if (((m_currentAction->serviceAction())->activity() == QMailServiceAction::Pending ||
-         (m_currentAction->serviceAction())->activity() == QMailServiceAction::InProgress)) {
-        (m_currentAction->serviceAction())->cancelOperation();
+    if (!m_currentAction.isNull() && m_currentAction->serviceAction()->isRunning()) {
+        m_currentAction->serviceAction()->cancelOperation();
     }
 }
 
@@ -810,7 +805,6 @@ void EmailAgent::executeCurrent()
     } else if (m_currentAction->needsNetworkConnection() && !isOnline()) {
         qDebug() << "Current action not executed, waiting for newtwork";
     } else {
-
         if (!m_synchronizing) {
             m_synchronizing = true;
             emit synchronizingChanged(EmailAgent::Synchronizing);
