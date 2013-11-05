@@ -80,6 +80,8 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSizeSectionRole] = "sizeSection";
     roles[MessageFolderIdRole] = "folderId";
     roles[MessageSortByRole] = "sortBy";
+    roles[MessageHasCalendarInvitationRole] = "hasCalendarInvitation";
+    roles[MessageCalendarInvitationRole] = "calendarInvitation";
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -265,6 +267,35 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         }
     } else if (role == MessageFolderIdRole) {
         return messageMetaData.parentFolderId().toULongLong();
+    } else if (role == MessageHasCalendarInvitationRole) {
+        if (messageMetaData.status() & QMailMessageMetaData::CalendarInvitation) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if (role == MessageCalendarInvitationRole) {
+        if (messageMetaData.status() & QMailMessageMetaData::CalendarInvitation) {
+            QMailMessage message (msgId);
+            QList<const QMailMessagePartContainer*> parts;
+            parts.append(&message);
+
+            while (!parts.isEmpty()) {
+                const QMailMessagePartContainer *part(parts.takeFirst());
+                if (part->multipartType() != QMailMessagePartContainer::MultipartNone) {
+                    for (uint i = 0; i < part->partCount(); ++i) {
+                        parts.append(&part->partAt(i));
+                    }
+                } else {
+                    const QMailMessageContentType &ct(part->contentType());
+                    if ((ct.type().toLower() == "text") && (ct.subType().toLower() == "calendar"))  {
+                        return part->body().data();
+                    }
+                }
+            }
+            return QString();
+        } else {
+            return QString();
+        }
     }
     return QMailMessageListModel::data(index, role);
 }
