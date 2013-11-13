@@ -88,6 +88,12 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     m_sortBy = Time;
     QMailMessageListModel::setSortKey(m_sortKey);
     m_selectedMsgIds.clear();
+
+    connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
+            this,SIGNAL(countChanged()));
+
+    connect(this, SIGNAL(rowsRemoved(QModelIndex,int,int)),
+            this,SIGNAL(countChanged()));
 }
 
 EmailMessageListModel::~EmailMessageListModel()
@@ -267,6 +273,11 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         return messageMetaData.parentFolderId().toULongLong();
     }
     return QMailMessageListModel::data(index, role);
+}
+
+int EmailMessageListModel::count() const
+{
+    return rowCount();
 }
 
 void EmailMessageListModel::setSearch(const QString search)
@@ -561,11 +572,6 @@ int EmailMessageListModel::accountId(int idx)
 QVariant EmailMessageListModel::priority(int idx)
 {
     return data(index(idx), MessagePriorityRole);
-}
-
-int EmailMessageListModel::messagesCount()
-{
-    return rowCount();
 }
 
 void EmailMessageListModel::deSelectAllMessages()
