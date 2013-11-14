@@ -25,6 +25,7 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_ENUMS(Priority)
     Q_ENUMS(Sort)
 
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
@@ -68,6 +69,7 @@ public:
     enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject};
 
     // property accessors.
+    int count() const;
     bool combinedInbox() const;
     void setCombinedInbox(bool c);
     bool filterUnread() const;
@@ -75,6 +77,7 @@ public:
     EmailMessageListModel::Sort sortBy() const;
 
 Q_SIGNALS:
+    void countChanged();
     void combinedInboxChanged();
     void filterUnreadChanged();
     void sortByChanged();
@@ -116,7 +119,6 @@ public slots:
     Q_INVOKABLE QString size(int index);
     Q_INVOKABLE int accountId(int index);
     Q_INVOKABLE QVariant priority(int index);
-    Q_INVOKABLE int messagesCount();
 
     Q_INVOKABLE void deSelectAllMessages();
     Q_INVOKABLE void selectMessage(int index);
