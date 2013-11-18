@@ -29,6 +29,55 @@ EmailMessage::~EmailMessage()
 }
 
 // ############ Slots ###############
+void EmailMessage::onMessagesDownloaded(const QMailMessageIdList &ids, bool success)
+{
+    foreach (const QMailMessageId id, ids) {
+        if (id == m_id) {
+            disconnect(EmailAgent::instance(), SIGNAL(messagesDownloaded(QMailMessageIdList,bool)),
+                    this, SLOT(onMessagesDownloaded(QMailMessageIdList,bool)));
+            if (success) {
+                // Reload the message
+                m_msg = QMailMessage(m_id);
+                m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
+                emitMessageReloadedSignals();
+            }
+            return;
+        }
+    }
+}
+
+void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success)
+{
+    if (messageId == m_id) {
+        // Reload the message
+        m_msg = QMailMessage(m_id);
+        // // Check if is the html text part first
+        if (QMailMessagePartContainer *container = m_msg.findHtmlContainer()) {
+            QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
+            if (location.toString(true) == partLocation) {
+                disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
+                        this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
+                if (success) {
+                    emit htmlBodyChanged();
+                }
+                return;
+            }
+        }
+        // Check if is the plain text part
+        if (QMailMessagePartContainer *container = m_msg.findPlainTextContainer()) {
+            QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
+            if (location.toString(true) == partLocation) {
+                m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
+                disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
+                        this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
+                if (success) {
+                    emit bodyChanged();
+                }
+            }
+        }
+    }
+}
+
 void EmailMessage::onSendCompleted()
 {
     emit sendCompleted();
@@ -129,9 +178,23 @@ QStringList EmailMessage::bcc() const
     return QMailAddress::toStringList(m_msg.bcc());
 }
 
-QString EmailMessage::body() const
+QString EmailMessage::body()
 {
-    return m_bodyText;
+    if (QMailMessagePartContainer *container = m_msg.findPlainTextContainer()) {
+        if (container->contentAvailable()) {
+            return m_bodyText;
+        } else {
+            if (m_msg.multipartType() == QMailMessage::MultipartNone) {
+                requestMessageDownload();
+            } else {
+                requestMessagePartDownload(container);
+            }
+            return QString();
+        }
+    } else {
+        qWarning() << "Couldn't find plain text part for message: " << m_id.toULongLong();
+        return QString();
+    }
 }
 
 QStringList EmailMessage::cc() const
@@ -172,12 +235,21 @@ QString EmailMessage::fromDisplayName() const
     return m_msg.from().name();
 }
 
-QString EmailMessage::htmlBody() const
+QString EmailMessage::htmlBody()
 {
     // Fallback to plain message if no html body.
     QMailMessagePartContainer *container = m_msg.findHtmlContainer();
     if (contentType() == EmailMessage::HTML && container) {
-        return container->body().data();
+        if (container->contentAvailable()) {
+            return container->body().data();
+        } else {
+            if (m_msg.multipartType() == QMailMessage::MultipartNone) {
+                requestMessageDownload();
+            } else {
+                requestMessagePartDownload(container);
+            }
+            return QString();
+        }
     } else {
         return body();
     }
@@ -315,26 +387,11 @@ void EmailMessage::setMessageId(int messageId)
             m_msg = QMailMessage();
             qWarning() << "Invalid message id " << msgId.toULongLong();
         }
+        // Construct initial plain text body, even if not entirely available.
         m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
 
         // Message loaded from the store (or a empty message), all properties changes
-        emit accountIdChanged();
-        emit attachmentsChanged();
-        emit bccChanged();
-        emit ccChanged();
-        emit dateChanged();
-        emit fromChanged();
-        emit htmlBodyChanged();
-        emit bodyChanged();
-        emit inReplyToChanged();
-        emit messageIdChanged();
-        emit priorityChanged();
-        emit readChanged();
-        emit recipientsChanged();
-        emit replyToChanged();
-        emit subjectChanged();
-        emit storedMessageChanged();
-        emit toChanged();
+        emitMessageReloadedSignals();
     }
 }
 
@@ -460,6 +517,27 @@ void EmailMessage::emitSignals()
     emit readChanged();
 }
 
+void EmailMessage::emitMessageReloadedSignals()
+{
+    emit accountIdChanged();
+    emit attachmentsChanged();
+    emit bccChanged();
+    emit ccChanged();
+    emit dateChanged();
+    emit fromChanged();
+    emit htmlBodyChanged();
+    emit bodyChanged();
+    emit inReplyToChanged();
+    emit messageIdChanged();
+    emit priorityChanged();
+    emit readChanged();
+    emit recipientsChanged();
+    emit replyToChanged();
+    emit subjectChanged();
+    emit storedMessageChanged();
+    emit toChanged();
+}
+
 void EmailMessage::processAttachments ()
 {
     QMailMessagePart attachmentPart;
@@ -487,4 +565,20 @@ void EmailMessage::processAttachments ()
                                                     QMailMessageBody::RequiresEncoding);
         m_msg.appendPart(attachmentPart);
     }
+}
+
+void EmailMessage::requestMessageDownload()
+{
+    connect(EmailAgent::instance(), SIGNAL(messagesDownloaded(QMailMessageIdList, bool)),
+            this, SLOT(onMessagesDownloaded(QMailMessageIdList, bool)));
+    EmailAgent::instance()->downloadMessages(QMailMessageIdList() << m_id, QMailRetrievalAction::Content);
+}
+
+void EmailMessage::requestMessagePartDownload(const QMailMessagePartContainer *container) const
+{
+    connect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString, bool)),
+            this, SLOT(onMessagePartDownloaded(QMailMessageId,QString, bool)));
+
+    QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
+    EmailAgent::instance()->downloadMessagePart(location);
 }

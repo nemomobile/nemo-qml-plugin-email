@@ -22,6 +22,7 @@ public:
         Export = 0,
         Retrieve,
         RetrieveFolderList,
+        RetrieveMessages,
         RetrieveMessagePart,
         Send,
         StandardFolders,
@@ -252,17 +253,19 @@ class RetrieveMessagePart : public EmailAction
 {
 public:
     RetrieveMessagePart(QMailRetrievalAction* retrievalAction,
-                        const QMailMessagePart::Location &partLocation);
+                        const QMailMessagePart::Location &partLocation, bool isAttachment);
     ~RetrieveMessagePart();
     void execute();
     QMailMessageId messageId() const;
     QMailServiceAction* serviceAction() const;
     QString partLocation() const;
+    bool isAttachment() const;
 
 private:
     QMailMessageId _messageId;
     QMailRetrievalAction* _retrievalAction;
     QMailMessagePart::Location _partLocation;
+    bool _isAttachment;
 };
 
 class RetrieveMessagePartRange : public EmailAction
@@ -304,6 +307,7 @@ public:
     ~RetrieveMessages();
     void execute();
     QMailServiceAction* serviceAction() const;
+    QMailMessageIdList messageIds() const;
 
 private:
     QMailRetrievalAction* _retrievalAction;

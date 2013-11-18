@@ -48,12 +48,14 @@ public:
         FailedToSave
     };
 
-    EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString& attachmentLocation);
-    int attachmentDownloadProgress(const QString& attachmentLocation);
+    EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString &attachmentLocation);
+    int attachmentDownloadProgress(const QString &attachmentLocation);
     QString attachmentName(const QMailMessagePart &part) const;
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     bool backgroundProcess() const;
     void setBackgroundProcess(const bool isBackgroundProcess);
+    void downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec);
+    void downloadMessagePart(const QMailMessagePartContainer::Location &location);
     void exportUpdates(const QMailAccountId accountId);
     void initMailServer();
     bool ipcConnected();
@@ -100,6 +102,8 @@ signals:
     void error(const QMailAccountId &accountId, const QString &message, int code);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
     void ipcConnectionEstablished();
+    void messagesDownloaded(const QMailMessageIdList &messageIds, bool success);
+    void messagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
     void progressUpdated(int percent);
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);

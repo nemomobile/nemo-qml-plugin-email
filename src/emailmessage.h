@@ -57,14 +57,14 @@ public:
     int accountId() const;
     QStringList attachments();
     QStringList bcc() const;
-    QString body() const;
+    QString body();
     QStringList cc() const;
     ContentType contentType() const;
     QDateTime date() const;
     QString from() const;
     QString fromAddress() const;
     QString fromDisplayName() const;
-    QString htmlBody() const;
+    QString htmlBody();
     QString inReplyTo() const;
     int messageId() const;
     int numberOfAttachments() const;
@@ -113,12 +113,17 @@ signals:
     void bodyChanged();
 
 private slots:
+    void onMessagesDownloaded(const QMailMessageIdList &ids, bool success);
+    void onMessagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
     void onSendCompleted();
 
 private:
     void buildMessage();
     void emitSignals();
+    void emitMessageReloadedSignals();
     void processAttachments();
+    void requestMessageDownload();
+    void requestMessagePartDownload(const QMailMessagePartContainer *container) const;
 
     QMailAccount m_account;
     QStringList m_attachments;

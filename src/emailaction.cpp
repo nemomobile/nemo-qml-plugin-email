@@ -486,11 +486,13 @@ QMailServiceAction* RetrieveMessageLists::serviceAction() const
   RetrieveMessagePart
 */
 RetrieveMessagePart::RetrieveMessagePart(QMailRetrievalAction *retrievalAction,
-                                         const QMailMessagePartContainer::Location &partLocation)
+                                         const QMailMessagePartContainer::Location &partLocation,
+                                         bool isAttachment)
     : EmailAction()
     , _messageId(partLocation.containingMessageId())
     , _retrievalAction(retrievalAction)
     , _partLocation(partLocation)
+    , _isAttachment(isAttachment)
 {
     _description = QString("retrieve-message-part:partLocation-id=%1")
             .arg(_partLocation.toString(true));
@@ -519,6 +521,11 @@ QString RetrieveMessagePart::partLocation() const
 QMailServiceAction* RetrieveMessagePart::serviceAction() const
 {
     return _retrievalAction;
+}
+
+bool RetrieveMessagePart::isAttachment() const
+{
+    return _isAttachment;
 }
 
 /*
@@ -594,7 +601,7 @@ RetrieveMessages::RetrieveMessages(QMailRetrievalAction *retrievalAction,
 {
     QString idsList = idListToString(_messageIds);
     _description = QString("retrieve-messages:message-ids=%1").arg(idsList);
-    _type = EmailAction::Retrieve;
+    _type = EmailAction::RetrieveMessages;
 }
 
 RetrieveMessages::~RetrieveMessages()
@@ -609,6 +616,11 @@ void RetrieveMessages::execute()
 QMailServiceAction* RetrieveMessages::serviceAction() const
 {
     return _retrievalAction;
+}
+
+QMailMessageIdList RetrieveMessages::messageIds() const
+{
+    return _messageIds;
 }
 
 /*
