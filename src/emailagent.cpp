@@ -148,6 +148,16 @@ void EmailAgent::setBackgroundProcess(const bool isBackgroundProcess)
     m_backgroundProcess = isBackgroundProcess;
 }
 
+void EmailAgent::downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec)
+{
+     enqueue(new RetrieveMessages(m_retrievalAction.data(), messageIds, spec));
+}
+
+void EmailAgent::downloadMessagePart(const QMailMessagePart::Location &location)
+{
+    enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, false));
+}
+
 void EmailAgent::exportUpdates(const QMailAccountId accountId)
 {
     enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
@@ -251,10 +261,21 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 qDebug() << "Error: Send failed";
             }
 
-            if(m_currentAction->type() == EmailAction::RetrieveMessagePart) {
+            if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
                 RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
-                updateAttachmentDowloadStatus(messagePartAction->partLocation(), Failed);
-                qDebug() << "Attachment dowload failed for " << messagePartAction->partLocation();
+                if (messagePartAction->isAttachment()) {
+                    updateAttachmentDowloadStatus(messagePartAction->partLocation(), Failed);
+                    qDebug() << "Attachment dowload failed for " << messagePartAction->partLocation();
+                } else {
+                    emit messagePartDownloaded(messagePartAction->messageId(), messagePartAction->partLocation(), false);
+                    qDebug() << "Failed to dowload message part!!";
+                }
+            }
+
+            if (m_currentAction->type() == EmailAction::RetrieveMessages) {
+                RetrieveMessages* retrieveMessagesAction = static_cast<RetrieveMessages *>(m_currentAction.data());
+                emit messagesDownloaded(retrieveMessagesAction->messageIds(), false);
+                qDebug() << "Failed to download messages";
             }
 
             m_currentAction = getNext();
@@ -294,7 +315,16 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
 
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
-            saveAttachmentToTemporaryFile(messagePartAction->messageId(), messagePartAction->partLocation());
+            if (messagePartAction->isAttachment()) {
+                saveAttachmentToTemporaryFile(messagePartAction->messageId(), messagePartAction->partLocation());
+            } else {
+                emit messagePartDownloaded(messagePartAction->messageId(), messagePartAction->partLocation(), true);
+            }
+        }
+
+        if (m_currentAction->type() == EmailAction::RetrieveMessages) {
+            RetrieveMessages* retrieveMessagesAction = static_cast<RetrieveMessages *>(m_currentAction.data());
+            emit messagesDownloaded(retrieveMessagesAction->messageIds(), true);
         }
 
         m_currentAction = getNext();
@@ -394,7 +424,9 @@ void EmailAgent::progressChanged(uint value, uint total)
         // Attachment download, do not spam the UI check should be done here
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
-            updateAttachmentDowloadProgress(messagePartAction->partLocation(), percent);
+            if (messagePartAction->isAttachment()) {
+                updateAttachmentDowloadProgress(messagePartAction->partLocation(), percent);
+            }
         }
     }
 }
@@ -532,7 +564,7 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
                 saveAttachmentToTemporaryFile(m_messageId, attachmentlocation);
             } else {
                 qDebug() << "Start Dowload for: " << attachmentlocation;
-                enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location));
+                enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, true));
             }
         }
     }
@@ -774,11 +806,13 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
         // Attachment dowload
         if (action->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(action.data());
-            AttachmentInfo attInfo;
-            attInfo.status = Queued;
-            attInfo.progress = 0;
-            m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
-            emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+            if (messagePartAction->isAttachment()) {
+                AttachmentInfo attInfo;
+                attInfo.status = Queued;
+                attInfo.progress = 0;
+                m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
+                emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+            }
         }
 
         m_actionQueue.append(action);
@@ -815,7 +849,9 @@ void EmailAgent::executeCurrent()
         // Attachment download
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
-            updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloading);
+            if (messagePartAction->isAttachment()) {
+                updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloading);
+            }
         }
         m_currentAction->execute();
     }

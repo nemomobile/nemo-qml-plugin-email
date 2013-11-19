@@ -33,7 +33,6 @@ QString EmailMessageListModel::bodyHtmlText(const QMailMessage &mailMsg) const
             m_retrievalAction->retrieveMessagePart(location);
             return " ";  // Put a space here as a place holder to notify UI that we do have html body.
         }
-
         return container->body().data();
     }
 
