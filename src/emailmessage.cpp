@@ -519,13 +519,16 @@ void EmailMessage::emitSignals()
 
 void EmailMessage::emitMessageReloadedSignals()
 {
+    if (contentType() == EmailMessage::HTML) {
+        emit htmlBodyChanged();
+    }
+
     emit accountIdChanged();
     emit attachmentsChanged();
     emit bccChanged();
     emit ccChanged();
     emit dateChanged();
     emit fromChanged();
-    emit htmlBodyChanged();
     emit bodyChanged();
     emit inReplyToChanged();
     emit messageIdChanged();
