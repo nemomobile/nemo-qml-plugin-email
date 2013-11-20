@@ -66,6 +66,7 @@ public:
     void sendMessages(const QMailAccountId &accountId);
     void setupAccountFlags();
     int standardFolderId(int accountId, QMailFolder::StandardFolder folder) const;
+    void syncAccounts(const QMailAccountIdList &accountIdList, const bool syncOnlyInbox = true, const uint minimum = 20);
 
     Q_INVOKABLE void accountsSync(const bool syncOnlyInbox = false, const uint minimum = 20);
     Q_INVOKABLE void cancelSync();
