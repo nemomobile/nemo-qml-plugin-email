@@ -758,6 +758,25 @@ void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
     }
 }
 
+//Sync accounts list (both ways)
+void EmailAgent::syncAccounts(const QMailAccountIdList &accountIdList, const bool syncOnlyInbox, const uint minimum)
+{
+    if (accountIdList.isEmpty()) {
+        qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
+        emit synchronizingChanged(EmailAgent::Error);
+        return;
+    } else {
+        foreach (QMailAccountId accountId, accountIdList) {
+            if (syncOnlyInbox) {
+                synchronizeInbox(accountId.toULongLong(), minimum);
+            }
+            else {
+                enqueue(new Synchronize(m_retrievalAction.data(), accountId));
+            }
+        }
+    }
+}
+
 // ############## Private API #########################
 
 bool EmailAgent::actionInQueue(QSharedPointer<EmailAction> action) const
