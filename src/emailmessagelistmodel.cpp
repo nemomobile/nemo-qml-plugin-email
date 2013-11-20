@@ -79,6 +79,9 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSizeSectionRole] = "sizeSection";
     roles[MessageFolderIdRole] = "folderId";
     roles[MessageSortByRole] = "sortBy";
+    roles[MessageSubjectFirstCharRole] = "subjectFirstChar";
+    roles[MessageSenderFirstCharRole] = "senderFirstChar";
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -271,6 +274,15 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     } else if (role == MessageFolderIdRole) {
         return messageMetaData.parentFolderId().toULongLong();
     }
+    else if (role == MessageSubjectFirstCharRole) {
+        QString subject = data(index, QMailMessageModelBase::MessageSubjectTextRole).toString();
+        return subject.length() ? subject.at(0) : QChar();
+    }
+    else if (role == MessageSenderFirstCharRole) {
+        QString sender = messageMetaData.from().name();
+        return sender.length() ? sender.at(0) : QChar();
+    }
+
     return QMailMessageListModel::data(index, role);
 }
 
