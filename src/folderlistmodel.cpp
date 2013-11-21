@@ -24,6 +24,7 @@
 
 FolderListModel::FolderListModel(QObject *parent) :
     QAbstractListModel(parent)
+  , m_currentFolderUnreadCount(0)
   , m_accountId(QMailAccountId())
 {
     roles.insert(FolderName, "folderName");
@@ -43,6 +44,8 @@ FolderListModel::FolderListModel(QObject *parent) :
                           SLOT(onFoldersChanged(const QMailFolderIdList &)));
     connect(QMailStore::instance(), SIGNAL(foldersUpdated(const QMailFolderIdList &)), this,
                           SLOT(onFoldersChanged(const QMailFolderIdList &)));
+    connect(QMailStore::instance(), SIGNAL(folderContentsModified(const QMailFolderIdList&)), this,
+                          SLOT(updateUnreadCount(const QMailFolderIdList&)));
 }
 
 FolderListModel::~FolderListModel()
@@ -85,9 +88,7 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
         return item->folderId.toULongLong();
     case FolderUnreadCount:
     {
-        QMailMessageKey parentFolderKey(QMailMessageKey::parentFolderId(item->folderId));
-        QMailMessageKey unreadKey(QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes));
-        return (QMailStore::instance()->countMessages(parentFolderKey & unreadKey));
+        return folderUnreadCount(item->folderId);
     }
     case FolderServerCount:
         return (folder.serverCount());
@@ -108,6 +109,28 @@ QVariant FolderListModel::data(const QModelIndex &index, int role) const
     default:
         return QVariant();
     }
+}
+
+quint64 FolderListModel::currentFolderId() const
+{
+    return m_currentFolderId.toULongLong();
+}
+
+void FolderListModel::setCurrentFolderId(quint64 currentFolderId)
+{
+    QMailFolderId folderId(currentFolderId);
+    if (folderId.isValid() && m_currentFolderId.toULongLong() != currentFolderId) {
+        m_currentFolderId = folderId;
+        QMailFolderIdList folderIds;
+        folderIds << m_currentFolderId;
+        updateUnreadCount(folderIds);
+        emit currentFolderIdChanged();
+    }
+}
+
+int FolderListModel::currentFolderUnreadCount() const
+{
+    return m_currentFolderUnreadCount;
 }
 
 QModelIndex FolderListModel::index(int row, int column, const QModelIndex &parent) const
@@ -134,6 +157,26 @@ void FolderListModel::onFoldersChanged(const QMailFolderIdList &ids)
             return;
         }
     }
+}
+
+void FolderListModel::updateUnreadCount(const QMailFolderIdList &folderIds)
+{
+    if (m_currentFolderId.isValid() && folderIds.contains(m_currentFolderId)) {
+        int tmpUnreadCount = folderUnreadCount(m_currentFolderId);
+        if (tmpUnreadCount != m_currentFolderUnreadCount) {
+            m_currentFolderUnreadCount = tmpUnreadCount;
+            emit currentFolderUnreadCountChanged();
+        }
+    }
+    // Update model data if needed
+    onFoldersChanged(folderIds);
+}
+
+int FolderListModel::folderUnreadCount(const QMailFolderId &folderId) const
+{
+    QMailMessageKey parentFolderKey(QMailMessageKey::parentFolderId(folderId));
+    QMailMessageKey unreadKey(QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes));
+    return QMailStore::instance()->countMessages(parentFolderKey & unreadKey);
 }
 
 int FolderListModel::folderId(int idx)

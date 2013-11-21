@@ -18,6 +18,8 @@ class Q_DECL_EXPORT FolderListModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_ENUMS(FolderStandardType)
+    Q_PROPERTY(quint64 currentFolderId READ currentFolderId WRITE setCurrentFolderId NOTIFY currentFolderIdChanged FINAL)
+    Q_PROPERTY(int currentFolderUnreadCount READ currentFolderUnreadCount NOTIFY currentFolderUnreadCountChanged FINAL)
 
 public:
     explicit FolderListModel(QObject *parent = 0);
@@ -48,6 +50,11 @@ public:
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
 
+    quint64 currentFolderId() const;
+    void setCurrentFolderId(quint64 currentFolderId);
+
+    int currentFolderUnreadCount() const;
+
     Q_INVOKABLE int folderId(int idx);
     Q_INVOKABLE QVariant folderMessageKey(int idx);
     Q_INVOKABLE QString folderName(int idx);
@@ -59,6 +66,11 @@ public:
     Q_INVOKABLE int numberOfFolders();
     Q_INVOKABLE void setAccountKey(int id);
 
+signals:
+    void currentFolderIdChanged();
+    void currentFolderUnreadCountChanged();
+
+
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
@@ -66,6 +78,10 @@ protected:
 
 private slots:
     void onFoldersChanged(const QMailFolderIdList &ids);
+    void updateUnreadCount(const QMailFolderIdList &folderIds);
+
+private:
+    int folderUnreadCount(const QMailFolderId &folderId) const;
 
 private:
     struct FolderItem {
@@ -79,6 +95,8 @@ private:
             index(idx), folderId(mailFolderId), folderType(mailFolderType), messageKey(folderMessageKey) {}
     };
 
+    QMailFolderId m_currentFolderId;
+    int m_currentFolderUnreadCount;
     QHash<int, QByteArray> roles;
     QMailAccountId m_accountId;
     QList<FolderItem*> m_folderList;
