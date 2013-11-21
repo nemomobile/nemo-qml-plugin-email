@@ -404,17 +404,17 @@ void EmailMessage::setPriority(EmailMessage::Priority priority)
 {
     switch (priority) {
     case HighPriority:
-        m_msg.appendHeaderField("X-Priority", "1");
-        m_msg.appendHeaderField("X-MSMail-Priority", "High");
+        m_msg.setHeaderField("X-Priority", "1");
+        m_msg.setHeaderField("X-MSMail-Priority", "High");
         break;
     case LowPriority:
-        m_msg.appendHeaderField("X-Priority", "5");
-        m_msg.appendHeaderField("X-MSMail-Priority", "Low");
+        m_msg.setHeaderField("X-Priority", "5");
+        m_msg.setHeaderField("X-MSMail-Priority", "Low");
         break;
     case NormalPriority:
     default:
-        m_msg.appendHeaderField("X-Priority", "3");
-        m_msg.appendHeaderField("X-MSMail-Priority", "Normal");
+        m_msg.setHeaderField("X-Priority", "3");
+        m_msg.setHeaderField("X-MSMail-Priority", "Normal");
         break;
     }
     emit priorityChanged();
