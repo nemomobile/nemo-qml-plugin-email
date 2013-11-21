@@ -173,6 +173,11 @@ int EmailMessage::accountId() const
     return m_msg.parentAccountId().toULongLong();
 }
 
+int EmailMessage::folderId() const
+{
+    return m_msg.parentFolderId().toULongLong();
+}
+
 QStringList EmailMessage::bcc() const
 {
     return QMailAddress::toStringList(m_msg.bcc());
@@ -513,6 +518,7 @@ void EmailMessage::emitSignals()
     if (m_newMessage)
         emit messageIdChanged();
 
+    emit folderIdChanged();
     emit storedMessageChanged();
     emit readChanged();
 }
@@ -520,6 +526,7 @@ void EmailMessage::emitSignals()
 void EmailMessage::emitMessageReloadedSignals()
 {
     emit accountIdChanged();
+    emit folderIdChanged();
     emit attachmentsChanged();
     emit bccChanged();
     emit ccChanged();
