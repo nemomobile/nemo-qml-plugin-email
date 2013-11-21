@@ -23,6 +23,7 @@ BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(qmfclient5)
 BuildRequires:  pkgconfig(qmfmessageserver5)
+BuildRequires:  pkgconfig(mlocale5)
 
 %description
 %{summary}.

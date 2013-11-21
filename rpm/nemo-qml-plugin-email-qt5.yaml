@@ -14,8 +14,9 @@ PkgConfigBR:
     - Qt5Core
     - Qt5Qml
     - Qt5Network
-    - qmfclient5 >= 4.0.4
+    - qmfclient5
     - qmfmessageserver5
+    - mlocale5
 Files:
     - "%{_libdir}/libnemoemail-qt5.so.*"
     - "%{_libdir}/qt5/qml/org/nemomobile/email/libnemoemail.so"
