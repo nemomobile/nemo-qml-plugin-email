@@ -370,26 +370,9 @@ void EmailAgent::onMessageServerProcessError(QProcess::ProcessError error)
     qFatal(errorMsg.toLatin1());
 }
 
-void EmailAgent::onNetworkSessionClosed()
-{
-    terminateNetworkSession();
-}
-
-void EmailAgent::onNetworkSessionError(QNetworkSession::SessionError errorCode)
-{
-    Q_UNUSED(errorCode);
-    terminateNetworkSession();
-
-    // check if we have a running action and cancel it
-    if (!m_currentAction.isNull() && m_currentAction->needsNetworkConnection() && m_currentAction->serviceAction()->isRunning()) {
-            m_currentAction->serviceAction()->cancelOperation();
-    }
-}
-
 void EmailAgent::onOnlineStateChanged(bool isOnline)
 {
     qDebug() << Q_FUNC_INFO << "Online State changed, device is now connected ? " << isOnline;
-    m_goingOnline = false;
     if (isOnline) {
         if (m_currentAction.isNull())
             m_currentAction = getNext();
@@ -399,6 +382,8 @@ void EmailAgent::onOnlineStateChanged(bool isOnline)
         } else {
             executeCurrent();
         }
+    } else if (!m_currentAction.isNull() && m_currentAction->needsNetworkConnection() && m_currentAction->serviceAction()->isRunning()) {
+        m_currentAction->serviceAction()->cancelOperation();
     }
 }
 
@@ -815,7 +800,9 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
 
     // Check if action neeeds connectivity and if we are not running from a background process
     if(action->needsNetworkConnection() && !backgroundProcess() && !isOnline()) {
-        goOnline();
+        // Request connection. Expecting the application to handle this.
+        // Actions will be resumed on onlineStateChanged signal.
+        emit networkConnectionRequested();
     }
 
     if (!foundAction) {
@@ -887,48 +874,6 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
 bool EmailAgent::isOnline()
 {
     return m_nmanager->isOnline();
-}
-
-void EmailAgent::goOnline()
-{
-    if (!m_goingOnline) {
-        terminateNetworkSession();
-        m_goingOnline = true;
-        QNetworkConfiguration defaultConfig = m_nmanager->defaultConfiguration();
-
-        // If default configuration is not valid, look for a valid one
-        if (!defaultConfig.isValid()) {
-            foreach (const QNetworkConfiguration& cfg, m_nmanager->allConfigurations()) {
-                if (cfg.isValid()) {
-                    defaultConfig = cfg;
-                    break;
-                }
-            }
-
-            if (!defaultConfig.isValid()){
-                qWarning() << Q_FUNC_INFO << "No valid  network configuration found.";
-                m_goingOnline = false;
-                return;
-            }
-        }
-
-        m_networkSession = new QNetworkSession(defaultConfig);
-        connect(m_networkSession, SIGNAL(error(QNetworkSession::SessionError)),
-                this, SLOT(onNetworkSessionError(QNetworkSession::SessionError)));
-        connect(m_networkSession, SIGNAL(closed()), this, SLOT(onNetworkSessionClosed()));
-
-        m_networkSession->open();
-    }
-}
-
-void EmailAgent::terminateNetworkSession()
-{
-    if (m_networkSession) {
-        disconnect(m_networkSession, 0, 0, 0);
-        m_networkSession->deleteLater();
-        m_networkSession = 0;
-    }
-    m_goingOnline = false;
 }
 
 void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation)

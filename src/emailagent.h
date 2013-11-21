@@ -109,13 +109,12 @@ signals:
     void sendCompleted();
     void standardFoldersCreated(const QMailAccountId &accountId);
     void synchronizingChanged(EmailAgent::Status status);
+    void networkConnectionRequested();
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
     void onIpcConnectionEstablished();
     void onMessageServerProcessError(QProcess::ProcessError error);
-    void onNetworkSessionClosed();
-    void onNetworkSessionError(QNetworkSession::SessionError errorCode);
     void onOnlineStateChanged(bool isOnline);
     void onStandardFoldersCreated(const QMailAccountId &accountId);
     void progressChanged(uint value, uint total);
@@ -130,7 +129,6 @@ private:
     bool m_enqueing;
     bool m_backgroundProcess;
     bool m_waitForIpc;
-    bool m_goingOnline;
 
     QMailAccountIdList m_enabledAccounts;
 
@@ -156,8 +154,6 @@ private:
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
     bool isOnline();
-    void goOnline();
-    void terminateNetworkSession();
     void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
