@@ -154,7 +154,7 @@ private:
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
     bool isOnline();
-    void saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation);
+    void saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
 };
