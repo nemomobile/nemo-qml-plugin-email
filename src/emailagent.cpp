@@ -13,6 +13,7 @@
 #include <QUrl>
 #include <QFile>
 #include <QProcess>
+#include <QStandardPaths>
 
 #include <qmailnamespace.h>
 #include <qmailaccount.h>
@@ -316,7 +317,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
             RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
             if (messagePartAction->isAttachment()) {
-                saveAttachmentToTemporaryFile(messagePartAction->messageId(), messagePartAction->partLocation());
+                saveAttachmentToDownloads(messagePartAction->messageId(), messagePartAction->partLocation());
             } else {
                 emit messagePartDownloaded(messagePartAction->messageId(), messagePartAction->partLocation(), true);
             }
@@ -546,7 +547,7 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
             QMailMessagePart::Location location = sourcePart.location();
             location.setContainingMessageId(m_messageId);
             if (sourcePart.hasBody()) {
-                saveAttachmentToTemporaryFile(m_messageId, attachmentlocation);
+                saveAttachmentToDownloads(m_messageId, attachmentlocation);
             } else {
                 qDebug() << "Start Dowload for: " << attachmentlocation;
                 enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, true));
@@ -876,9 +877,9 @@ bool EmailAgent::isOnline()
     return m_nmanager->isOnline();
 }
 
-void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, const QString &attachmentLocation)
+void EmailAgent::saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation)
 {
-    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentLocation;
+    QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/" + attachmentLocation;
 
     // Message and part structure can be updated during attachment download
     // is safer to reload everything
@@ -886,14 +887,14 @@ void EmailAgent::saveAttachmentToTemporaryFile(const QMailMessageId messageId, c
     for (uint i = 1; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentLocation == sourcePart.location().toString(true)) {
-            QString tempPath = temporaryFolder + "/" + sourcePart.displayName();
-            QFile f(tempPath);
+            QString attachmentPath = attachmentDownloadFolder + "/" + sourcePart.displayName();
+            QFile attachmentFile(attachmentPath);
 
-            if (f.exists()) {
-                emit attachmentUrlChanged(attachmentLocation, temporaryFolder);
+            if (attachmentFile.exists()) {
+                emit attachmentUrlChanged(attachmentLocation, attachmentDownloadFolder);
                 updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
             } else {
-                QString path = sourcePart.writeBodyTo(temporaryFolder);
+                QString path = sourcePart.writeBodyTo(attachmentDownloadFolder);
                 if (!path.isEmpty()) {
                     emit attachmentUrlChanged(attachmentLocation, path);
                     updateAttachmentDowloadStatus(attachmentLocation, Downloaded);

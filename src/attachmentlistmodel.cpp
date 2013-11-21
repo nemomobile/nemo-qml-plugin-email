@@ -10,6 +10,7 @@
 #include <QVector>
 #include <QDir>
 #include <QFile>
+#include <QStandardPaths>
 
 #include "attachmentlistmodel.h"
 #include "emailagent.h"
@@ -157,18 +158,18 @@ void AttachmentListModel::onAttachmentUrlChanged(const QString &attachmentLocati
 
 QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QString &attachmentLocation)
 {
-    QString temporaryFolder = QDir::tempPath() + "/mail_attachments/" + attachmentLocation;
+    QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/" + attachmentLocation;
     for (uint i = 1; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentLocation == sourcePart.location().toString(true)) {
-            QString tempPath = temporaryFolder + "/" + sourcePart.displayName();
-            QFile f(tempPath);
+            QString attachmentPath = attachmentDownloadFolder + "/" + sourcePart.displayName();
+            QFile f(attachmentPath);
             if (f.exists()) {
-                return tempPath;
+                return attachmentPath;
             } else {
                 // we have the part downloaded locally but not in a file type yet
                 if (sourcePart.hasBody()) {
-                    QString path = sourcePart.writeBodyTo(temporaryFolder);
+                    QString path = sourcePart.writeBodyTo(attachmentDownloadFolder);
                     return path;
                 }
                 return QString();
