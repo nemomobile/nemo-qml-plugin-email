@@ -192,8 +192,9 @@ QString EmailMessage::body()
             return QString();
         }
     } else {
-        qWarning() << "Couldn't find plain text part for message: " << m_id.toULongLong();
-        return QString();
+        // Fallback to body text when message does not have container. E.g. when
+        // we're composing an email message.
+        return m_bodyText;
     }
 }
 
