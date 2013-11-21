@@ -25,6 +25,7 @@ public:
     ~EmailMessage ();
 
     Q_PROPERTY(int accountId READ accountId NOTIFY accountIdChanged)
+    Q_PROPERTY(int folderId READ folderId NOTIFY folderIdChanged)
     Q_PROPERTY(QStringList attachments READ attachments WRITE setAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QStringList bcc READ bcc WRITE setBcc NOTIFY bccChanged)
     Q_PROPERTY(QString body READ body WRITE setBody NOTIFY bodyChanged)
@@ -55,6 +56,7 @@ public:
     Q_INVOKABLE void saveDraft();
 
     int accountId() const;
+    int folderId() const;
     QStringList attachments();
     QStringList bcc() const;
     QString body();
@@ -95,6 +97,7 @@ signals:
     void sendCompleted();
 
     void accountIdChanged();
+    void folderIdChanged();
     void attachmentsChanged();
     void bccChanged();
     void ccChanged();
