@@ -18,8 +18,22 @@
 
 #include <qmailnamespace.h>
 
+#include <mlocale.h>
+
 #include "emailagent.h"
 #include "emailmessagelistmodel.h"
+
+namespace {
+
+Q_GLOBAL_STATIC(ML10N::MLocale, m_locale)
+
+QString firstChar(const QString& str)
+{
+    QString group = m_locale()->indexBucket(str);
+    return group.isNull() ? QString::fromLatin1("#") : group;
+}
+
+}
 
 QString EmailMessageListModel::bodyHtmlText(const QMailMessage &mailMsg) const
 {
@@ -79,6 +93,9 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSizeSectionRole] = "sizeSection";
     roles[MessageFolderIdRole] = "folderId";
     roles[MessageSortByRole] = "sortBy";
+    roles[MessageSubjectFirstCharRole] = "subjectFirstChar";
+    roles[MessageSenderFirstCharRole] = "senderFirstChar";
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     setRoleNames(roles);
 #endif
@@ -271,6 +288,15 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     } else if (role == MessageFolderIdRole) {
         return messageMetaData.parentFolderId().toULongLong();
     }
+    else if (role == MessageSubjectFirstCharRole) {
+        QString subject = data(index, QMailMessageModelBase::MessageSubjectTextRole).toString();
+        return firstChar(subject);
+    }
+    else if (role == MessageSenderFirstCharRole) {
+        QString sender = messageMetaData.from().name();
+        return firstChar(sender);
+    }
+
     return QMailMessageListModel::data(index, role);
 }
 

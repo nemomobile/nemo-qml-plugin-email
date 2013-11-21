@@ -5,12 +5,12 @@ CONFIG += link_pkgconfig
 
 equals(QT_MAJOR_VERSION, 4) {
     TARGET = nemoemail
-    PKGCONFIG += qmfmessageserver qmfclient
+    PKGCONFIG += qmfmessageserver qmfclient mlocale
 }
 
 equals(QT_MAJOR_VERSION, 5) {
     TARGET = nemoemail-qt5
-    PKGCONFIG += qmfmessageserver5 qmfclient5
+    PKGCONFIG += qmfmessageserver5 qmfclient5 mlocale5
 }
 
 CONFIG += qt hide_symbols create_pc create_prl
