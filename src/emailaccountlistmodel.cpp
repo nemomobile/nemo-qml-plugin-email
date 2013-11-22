@@ -33,6 +33,8 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
 
     connect(this, SIGNAL(rowsRemoved(QModelIndex,int,int)),
             this,SLOT(onAccountsRemoved(QModelIndex,int,int)));
+    connect(QMailStore::instance(), SIGNAL(accountContentsModified(const QMailAccountIdList&)),
+            this, SLOT(onAccountContentsModified(const QMailAccountIdList&)));
 
     QMailAccountListModel::setSynchronizeEnabled(true);
     QMailAccountListModel::setKey(QMailAccountKey::status(QMailAccount::Enabled));
@@ -139,6 +141,17 @@ void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int sta
 
     emit accountsRemoved();
     emit numberOfAccountsChanged();
+}
+
+void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &ids)
+{
+    int count = numberOfAccounts();
+    for (int i = 0; i < count; ++i) {
+        QMailAccountId tmpAccountId(accountId(i));
+        if (ids.contains(tmpAccountId)) {
+            dataChanged(index(i), index(i), QVector<int>() << UnreadCount);
+        }
+    }
 }
 
 int EmailAccountListModel::numberOfAccounts() const

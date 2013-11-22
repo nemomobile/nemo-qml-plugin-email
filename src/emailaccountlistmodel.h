@@ -65,6 +65,7 @@ signals:
 private slots:
     void onAccountsAdded(const QModelIndex &parent, int start, int end);
     void onAccountsRemoved(const QModelIndex &parent, int start, int end);
+    void onAccountContentsModified(const QMailAccountIdList& ids);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:
