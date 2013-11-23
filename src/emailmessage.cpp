@@ -119,8 +119,9 @@ void EmailMessage::saveDraft()
 
     if (draftFolderId.isValid()) {
         m_msg.setParentFolderId(draftFolderId);
+    } else {
         //local storage set on buildMessage step
-        qWarning() << "Drafts folder not found, saving to local storage(Outbox)!";
+        qWarning() << "Drafts folder not found, saving to local storage!";
     }
 
     bool saved = false;
