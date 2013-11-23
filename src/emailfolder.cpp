@@ -40,7 +40,7 @@ int EmailFolder::parentAccountId() const
 
 int EmailFolder::parentFolderId() const
 {
-    return m_folder.parentAccountId().toULongLong();
+    return m_folder.parentFolderId().toULongLong();
 }
 
 QString EmailFolder::path() const
