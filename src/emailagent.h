@@ -25,6 +25,7 @@ class Q_DECL_EXPORT EmailAgent : public QObject
     Q_OBJECT
     Q_ENUMS(Status)
     Q_ENUMS(AttachmentStatus)
+    Q_ENUMS(SyncErrors)
 public:
     static EmailAgent *instance();
 
@@ -32,6 +33,7 @@ public:
     ~EmailAgent();
 
     Q_PROPERTY(bool synchronizing READ synchronizing NOTIFY synchronizingChanged)
+    Q_PROPERTY(int currentSynchronizingAccountId READ currentSynchronizingAccountId NOTIFY currentSynchronizingAccountIdChanged)
 
     enum Status {
         Synchronizing = 0,
@@ -48,6 +50,13 @@ public:
         FailedToSave
     };
 
+    enum SyncErrors {
+        SyncFailed = 0,
+        LoginFailed,
+        DiskFull
+    };
+
+    int currentSynchronizingAccountId() const;
     EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString &attachmentLocation);
     int attachmentDownloadProgress(const QString &attachmentLocation);
     QString attachmentName(const QMailMessagePart &part) const;
@@ -97,10 +106,11 @@ public:
     Q_INVOKABLE void synchronizeInbox(int accountId, const uint minimum = 20);
 
 signals:
+    void currentSynchronizingAccountIdChanged();
     void attachmentDownloadProgressChanged(const QString &attachmentLocation, int progress);
     void attachmentDownloadStatusChanged(const QString &attachmentLocation, EmailAgent::AttachmentStatus status);
     void attachmentUrlChanged(const QString &attachmentLocation, const QString &url);
-    void error(const QMailAccountId &accountId, const QString &message, int code);
+    void error(int accountId, EmailAgent::SyncErrors syncError);
     void folderRetrievalCompleted(const QMailAccountId &accountId);
     void ipcConnectionEstablished();
     void messagesDownloaded(const QMailMessageIdList &messageIds, bool success);
@@ -123,6 +133,7 @@ private:
     static EmailAgent *m_instance;
 
     uint m_actionCount;
+    uint m_accountSyncronizing;
     bool m_transmitting;
     bool m_cancelling;
     bool m_synchronizing;
@@ -154,6 +165,7 @@ private:
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
     bool isOnline();
+    void reportError(const QMailAccountId &accountId, const QMailServiceAction::Status::ErrorCode &errorCode);
     void saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);

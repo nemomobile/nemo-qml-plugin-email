@@ -50,6 +50,7 @@ EmailAgent *EmailAgent::instance()
 EmailAgent::EmailAgent(QObject *parent)
     : QObject(parent)
     , m_actionCount(0)
+    , m_accountSyncronizing(0)
     , m_transmitting(false)
     , m_cancelling(false)
     , m_synchronizing(false)
@@ -92,6 +93,11 @@ EmailAgent::EmailAgent(QObject *parent)
 
 EmailAgent::~EmailAgent()
 {
+}
+
+int EmailAgent::currentSynchronizingAccountId() const
+{
+    return m_accountSyncronizing;
 }
 
 int EmailAgent::attachmentDownloadProgress(const QString &attachmentLocation)
@@ -246,11 +252,13 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         // don't try to synchronise extra accounts if the user cancelled the sync
         if (m_cancelling) {
             m_synchronizing = false;
+            m_accountSyncronizing = 0;
+            emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Error);
             m_transmitting = false;
             m_cancelling = false;
             m_actionQueue.clear();
-            emit error(status.accountId, status.text, status.errorCode);
+            // Cancel by the user skip error reporting
             qDebug() << "Canceled by the user";
             break;
         } else {
@@ -280,11 +288,13 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             }
 
             m_currentAction = getNext();
-            emit error(status.accountId, status.text, status.errorCode);
+            reportError(status.accountId, status.errorCode);
 
             if (m_currentAction.isNull()) {
                 qDebug() << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
+                m_accountSyncronizing = 0;
+                emit currentSynchronizingAccountIdChanged();
                 emit synchronizingChanged(EmailAgent::Error);
             }
             else {
@@ -333,6 +343,8 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction.isNull()) {
             qDebug() << "Sync completed.";
             m_synchronizing = false;
+            m_accountSyncronizing = 0;
+            emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Completed);
         }
         else {
@@ -482,7 +494,7 @@ void EmailAgent::deleteFolder(int folderId)
     QMailFolderId id(folderId);
     Q_ASSERT(id.isValid());
 
-    enqueue(new OnlineDeleteFolder(m_storageAction.data(),id));
+    enqueue(new OnlineDeleteFolder(m_storageAction.data(), id));
 }
 
 void EmailAgent::deleteMessage(int messageId)
@@ -851,6 +863,12 @@ void EmailAgent::executeCurrent()
             emit synchronizingChanged(EmailAgent::Synchronizing);
         }
 
+        QMailAccountId aId = m_currentAction->accountId();
+        if (aId.isValid() && m_accountSyncronizing != aId.toULongLong()) {
+            m_accountSyncronizing = aId.toULongLong();
+            emit currentSynchronizingAccountIdChanged();
+        }
+
         qDebug() << "Executing " << m_currentAction->description();
 
         // Attachment download
@@ -875,6 +893,35 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
 bool EmailAgent::isOnline()
 {
     return m_nmanager->isOnline();
+}
+
+void EmailAgent::reportError(const QMailAccountId &accountId, const QMailServiceAction::Status::ErrorCode &errorCode)
+{
+    switch (errorCode) {
+    case QMailServiceAction::Status::ErrFrameworkFault:
+    case QMailServiceAction::Status::ErrSystemError:
+    case QMailServiceAction::Status::ErrInternalServer:
+    case QMailServiceAction::Status::ErrUnknownResponse:
+    case QMailServiceAction::Status::ErrEnqueueFailed:
+    case QMailServiceAction::Status::ErrNoConnection:
+    case QMailServiceAction::Status::ErrConnectionInUse:
+    case QMailServiceAction::Status::ErrConnectionNotReady:
+    case QMailServiceAction::Status::ErrConfiguration:
+    case QMailServiceAction::Status::ErrInvalidAddress:
+    case QMailServiceAction::Status::ErrInvalidData:
+    case QMailServiceAction::Status::ErrTimeout:
+    case QMailServiceAction::Status::ErrInternalStateReset:
+        emit error(accountId.toULongLong(), SyncFailed);
+        break;
+    case QMailServiceAction::Status::ErrLoginFailed:
+        emit error(accountId.toULongLong(), LoginFailed);
+        break;
+    case QMailServiceAction::Status::ErrFileSystemFull:
+        emit error(accountId.toULongLong(), DiskFull);
+        break;
+    default:
+        break;
+    }
 }
 
 void EmailAgent::saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation)
