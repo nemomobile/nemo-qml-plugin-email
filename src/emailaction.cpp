@@ -161,6 +161,11 @@ QMailServiceAction* ExportUpdates::serviceAction() const
     return _retrievalAction;
 }
 
+QMailAccountId ExportUpdates::accountId() const
+{
+    return _accountId;
+}
+
 /*
   FlagMessages
 */
@@ -195,7 +200,6 @@ QMailServiceAction* FlagMessages::serviceAction() const
 /*
     MoveToFolder
 */
-
 MoveToFolder::MoveToFolder(QMailStorageAction *storageAction, const QMailMessageIdList &ids,
                            const QMailFolderId &folderId)
     : EmailAction(false)
@@ -256,8 +260,8 @@ QMailServiceAction* MoveToStandardFolder::serviceAction() const
 /*
   OnlineCreateFolder
 */
-OnlineCreateFolder::OnlineCreateFolder(QMailStorageAction* storageAction, const QString &name
-                                       , const QMailAccountId &id, const QMailFolderId &parentId)
+OnlineCreateFolder::OnlineCreateFolder(QMailStorageAction* storageAction, const QString &name,
+                                       const QMailAccountId &id, const QMailFolderId &parentId)
     : EmailAction()
     , _storageAction(storageAction)
     , _name(name)
@@ -290,6 +294,11 @@ QMailServiceAction* OnlineCreateFolder::serviceAction() const
     return _storageAction;
 }
 
+QMailAccountId OnlineCreateFolder::accountId() const
+{
+    return _accountId;
+}
+
 /*
   OnlineDeleteFolder
 */
@@ -314,6 +323,12 @@ void OnlineDeleteFolder::execute()
 QMailServiceAction* OnlineDeleteFolder::serviceAction() const
 {
     return _storageAction;
+}
+
+QMailAccountId OnlineDeleteFolder::accountId() const
+{
+    QMailFolder folder(_folderId);
+    return folder.parentAccountId();
 }
 
 /*
@@ -373,6 +388,12 @@ QMailServiceAction* OnlineRenameFolder::serviceAction() const
     return _storageAction;
 }
 
+QMailAccountId OnlineRenameFolder::accountId() const
+{
+    QMailFolder folder(_folderId);
+    return folder.parentAccountId();
+}
+
 /*
   RetrieveFolderList
 */
@@ -416,7 +437,6 @@ QMailAccountId RetrieveFolderList::accountId() const
     return _accountId;
 }
 
-
 /*
   RetrieveMessageList
 */
@@ -447,6 +467,11 @@ void RetrieveMessageList::execute()
 QMailServiceAction* RetrieveMessageList::serviceAction() const
 {
     return _retrievalAction;
+}
+
+QMailAccountId RetrieveMessageList::accountId() const
+{
+    return _accountId;
 }
 
 /*
@@ -480,6 +505,11 @@ void RetrieveMessageLists::execute()
 QMailServiceAction* RetrieveMessageLists::serviceAction() const
 {
     return _retrievalAction;
+}
+
+QMailAccountId RetrieveMessageLists::accountId() const
+{
+    return _accountId;
 }
 
 /*
@@ -528,6 +558,12 @@ bool RetrieveMessagePart::isAttachment() const
     return _isAttachment;
 }
 
+QMailAccountId RetrieveMessagePart::accountId() const
+{
+    QMailMessage message(_messageId);
+    return message.parentAccountId();
+}
+
 /*
   RetrieveMessagePartRange
 */
@@ -558,6 +594,12 @@ QMailServiceAction* RetrieveMessagePartRange::serviceAction() const
     return _retrievalAction;
 }
 
+QMailAccountId RetrieveMessagePartRange::accountId() const
+{
+    QMailMessage message(_partLocation.containingMessageId());
+    return message.parentAccountId();
+}
+
 /*
   RetrieveMessageRange
 */
@@ -586,6 +628,12 @@ void RetrieveMessageRange::execute()
 QMailServiceAction* RetrieveMessageRange::serviceAction() const
 {
     return _retrievalAction;
+}
+
+QMailAccountId RetrieveMessageRange::accountId() const
+{
+    QMailMessage message(_messageId);
+    return message.parentAccountId();
 }
 
 /*
@@ -649,6 +697,11 @@ QMailServiceAction* Synchronize::serviceAction() const
     return _retrievalAction;
 }
 
+QMailAccountId Synchronize::accountId() const
+{
+    return _accountId;
+}
+
 /*
     TransmitMessages
 */
@@ -679,5 +732,3 @@ QMailAccountId TransmitMessages::accountId() const
 {
     return _accountId;
 }
-
-
