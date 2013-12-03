@@ -41,7 +41,7 @@ public:
     Q_PROPERTY(int numberOfAttachments READ numberOfAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QString preview READ preview NOTIFY storedMessageChanged)
     Q_PROPERTY(Priority priority READ priority WRITE setPriority NOTIFY priorityChanged)
-    Q_PROPERTY(QString quotedBody READ quotedBody NOTIFY storedMessageChanged)
+    Q_PROPERTY(QString quotedBody READ quotedBody NOTIFY quotedBodyChanged)
     Q_PROPERTY(QStringList recipients READ recipients NOTIFY recipientsChanged)
     Q_PROPERTY(bool read READ read WRITE setRead NOTIFY readChanged)
     Q_PROPERTY(QString replyTo READ replyTo WRITE setReplyTo NOTIFY replyToChanged)
@@ -72,7 +72,7 @@ public:
     int numberOfAttachments() const;
     QString preview() const;
     Priority priority() const;
-    QString quotedBody() const;
+    QString quotedBody();
     QStringList recipients() const;
     bool read() const;
     QString replyTo() const;
@@ -114,6 +114,7 @@ signals:
     void storedMessageChanged();
     void toChanged();
     void bodyChanged();
+    void quotedBodyChanged();
 
 private slots:
     void onMessagesDownloaded(const QMailMessageIdList &ids, bool success);

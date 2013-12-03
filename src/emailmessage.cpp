@@ -16,6 +16,7 @@
 #include "emailmessage.h"
 #include "qmailnamespace.h"
 #include <qmaildisconnected.h>
+#include <QTextDocument>
 
 EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
@@ -51,6 +52,7 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
     if (messageId == m_id) {
         // Reload the message
         m_msg = QMailMessage(m_id);
+        QMailMessagePartContainer *plainTextcontainer = m_msg.findPlainTextContainer();
         // // Check if is the html text part first
         if (QMailMessagePartContainer *container = m_msg.findHtmlContainer()) {
             QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
@@ -59,12 +61,16 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
                         this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
                 if (success) {
                     emit htmlBodyChanged();
+                    // If plain text body is not present we also refresh quotedBody here
+                    if (!plainTextcontainer) {
+                        emit quotedBodyChanged();
+                    }
                 }
                 return;
             }
         }
         // Check if is the plain text part
-        if (QMailMessagePartContainer *container = m_msg.findPlainTextContainer()) {
+        if (plainTextcontainer) {
             QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
             if (location.toString(true) == partLocation) {
                 m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
@@ -72,6 +78,7 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
                         this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
                 if (success) {
                     emit bodyChanged();
+                    emit quotedBodyChanged();
                 }
             }
         }
@@ -298,13 +305,23 @@ EmailMessage::Priority EmailMessage::priority() const
     }
 }
 
-QString EmailMessage::quotedBody() const
+QString EmailMessage::quotedBody()
 {
-    QString body = EmailAgent::instance()->bodyPlainText(m_msg);
-    body.prepend('\n');
-    body.replace('\n', "\n>");
-    body.truncate(body.size() - 1);  // remove the extra ">" put there by QString.replace
-    return body;
+    QString qBody;
+    QMailMessagePartContainer *container = m_msg.findPlainTextContainer();
+    if (container) {
+        qBody = body();
+    } else {
+        // If plain text body is not available we extract the text from the html part
+        QTextDocument doc;
+        doc.setHtml(htmlBody());
+        qBody = doc.toPlainText();
+    }
+
+    qBody.prepend('\n');
+    qBody.replace('\n', "\n>");
+    qBody.truncate(qBody.size() - 1);  // remove the extra ">" put there by QString.replace
+    return qBody;
 }
 
 QStringList EmailMessage::recipients() const
@@ -548,6 +565,7 @@ void EmailMessage::emitMessageReloadedSignals()
     emit subjectChanged();
     emit storedMessageChanged();
     emit toChanged();
+    emit quotedBodyChanged();
 }
 
 void EmailMessage::processAttachments ()
