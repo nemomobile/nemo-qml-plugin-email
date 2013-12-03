@@ -1,6 +1,5 @@
 TEMPLATE = lib
-QT += network
-QT -= gui
+QT += network gui
 CONFIG += link_pkgconfig
 
 equals(QT_MAJOR_VERSION, 4) {

@@ -12,6 +12,7 @@ Configure: none
 Builder: qmake5
 PkgConfigBR:
     - Qt5Core
+    - Qt5Gui
     - Qt5Qml
     - Qt5Network
     - qmfclient5
