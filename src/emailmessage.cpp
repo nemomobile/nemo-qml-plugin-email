@@ -71,7 +71,7 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
         }
         // Check if is the plain text part
         if (plainTextcontainer) {
-            QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
+            QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(plainTextcontainer)->location();
             if (location.toString(true) == partLocation) {
                 m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
                 disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
