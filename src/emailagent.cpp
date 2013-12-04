@@ -811,35 +811,39 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
     QSharedPointer<EmailAction> action(actionPointer);
     bool foundAction = actionInQueue(action);
 
-    // Check if action neeeds connectivity and if we are not running from a background process
-    if(action->needsNetworkConnection() && !backgroundProcess() && !isOnline()) {
-        // Request connection. Expecting the application to handle this.
-        // Actions will be resumed on onlineStateChanged signal.
-        emit networkConnectionRequested();
-    }
-
     if (!foundAction) {
-        // It's a new action.
-        action->setId(newAction());
 
-        // Attachment dowload
-        if (action->type() == EmailAction::RetrieveMessagePart) {
-            RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(action.data());
-            if (messagePartAction->isAttachment()) {
-                AttachmentInfo attInfo;
-                attInfo.status = Queued;
-                attInfo.progress = 0;
-                m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
-                emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+        // Check if action neeeds connectivity and if we are not running from a background process
+        if(action->needsNetworkConnection()) {
+            //discard action in this case
+            m_synchronizing = false;
+            qDebug() << "Discarding online action!!";
+            emit synchronizingChanged(EmailAgent::Completed);
+            return;
+        } else {
+
+            // It's a new action.
+            action->setId(newAction());
+
+            // Attachment dowload
+            if (action->type() == EmailAction::RetrieveMessagePart) {
+                RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(action.data());
+                if (messagePartAction->isAttachment()) {
+                    AttachmentInfo attInfo;
+                    attInfo.status = Queued;
+                    attInfo.progress = 0;
+                    m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
+                    emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+                }
             }
-        }
 
-        m_actionQueue.append(action);
+            m_actionQueue.append(action);
 
-        if (!m_enqueing && m_currentAction.isNull()) {
-            // Nothing is running, start first action.
-            m_currentAction = getNext();
-            executeCurrent();
+            if (!m_enqueing && m_currentAction.isNull()) {
+                // Nothing is running, start first action.
+                m_currentAction = getNext();
+                executeCurrent();
+            }
         }
     }
     else {
