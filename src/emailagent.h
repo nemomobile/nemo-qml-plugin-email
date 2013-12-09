@@ -133,7 +133,7 @@ private:
     static EmailAgent *m_instance;
 
     uint m_actionCount;
-    uint m_accountSyncronizing;
+    uint m_accountSynchronizing;
     bool m_transmitting;
     bool m_cancelling;
     bool m_synchronizing;

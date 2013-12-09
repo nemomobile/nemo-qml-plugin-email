@@ -50,7 +50,7 @@ EmailAgent *EmailAgent::instance()
 EmailAgent::EmailAgent(QObject *parent)
     : QObject(parent)
     , m_actionCount(0)
-    , m_accountSyncronizing(0)
+    , m_accountSynchronizing(-1)
     , m_transmitting(false)
     , m_cancelling(false)
     , m_synchronizing(false)
@@ -97,7 +97,7 @@ EmailAgent::~EmailAgent()
 
 int EmailAgent::currentSynchronizingAccountId() const
 {
-    return m_accountSyncronizing;
+    return m_accountSynchronizing;
 }
 
 int EmailAgent::attachmentDownloadProgress(const QString &attachmentLocation)
@@ -252,7 +252,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         // don't try to synchronise extra accounts if the user cancelled the sync
         if (m_cancelling) {
             m_synchronizing = false;
-            m_accountSyncronizing = 0;
+            m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Error);
             m_transmitting = false;
@@ -293,7 +293,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             if (m_currentAction.isNull()) {
                 qDebug() << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
-                m_accountSyncronizing = 0;
+                m_accountSynchronizing = -1;
                 emit currentSynchronizingAccountIdChanged();
                 emit synchronizingChanged(EmailAgent::Error);
             }
@@ -343,7 +343,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction.isNull()) {
             qDebug() << "Sync completed.";
             m_synchronizing = false;
-            m_accountSyncronizing = 0;
+            m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Completed);
         }
@@ -536,15 +536,26 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             QMailStore::instance()->removeMessages(QMailMessageKey::id(localOnlyIds));
             idsToRemove = (ids.toSet().subtract(localOnlyIds.toSet())).toList();
         }
-        if(!idsToRemove.isEmpty())
+        if(!idsToRemove.isEmpty()) {
+            m_enqueing = true;
             enqueue(new DeleteMessages(m_storageAction.data(), idsToRemove));
+            m_enqueing = false;
+            enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
+        }
     }
     else {
+        QMailAccount account(accountId);
+        QMailFolderId trashFolderId = account.standardFolder(QMailFolder::TrashFolder);
+        // If standard folder is not valid we use local storage
+        if (!trashFolderId.isValid()) {
+            qDebug() << "Trash folder not found using local storage";
+            trashFolderId = QMailFolder::LocalStorageFolderId;
+        }
         m_enqueing = true;
-        enqueue(new MoveToStandardFolder(m_storageAction.data(), ids, QMailFolder::TrashFolder));
-        enqueue(new FlagMessages(m_storageAction.data(), ids, QMailMessage::Trash,0));
+        enqueue(new MoveToFolder(m_storageAction.data(), ids, trashFolderId));
+        enqueue(new FlagMessages(m_storageAction.data(), ids, QMailMessage::Trash, 0));
         m_enqueing = false;
-        enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
+        enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
     }
 }
 
@@ -864,8 +875,8 @@ void EmailAgent::executeCurrent()
         }
 
         QMailAccountId aId = m_currentAction->accountId();
-        if (aId.isValid() && m_accountSyncronizing != aId.toULongLong()) {
-            m_accountSyncronizing = aId.toULongLong();
+        if (aId.isValid() && m_accountSynchronizing != aId.toULongLong()) {
+            m_accountSynchronizing = aId.toULongLong();
             emit currentSynchronizingAccountIdChanged();
         }
 
