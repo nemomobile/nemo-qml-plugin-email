@@ -568,7 +568,7 @@ void EmailMessage::emitMessageReloadedSignals()
     emit quotedBodyChanged();
 }
 
-void EmailMessage::processAttachments ()
+void EmailMessage::processAttachments()
 {
     QMailMessagePart attachmentPart;
     foreach (QString attachment, m_attachments) {
