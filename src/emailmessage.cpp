@@ -20,6 +20,7 @@
 
 EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
+    , m_originalMessageId(QMailMessageId())
     , m_newMessage(true)
 {
     setPriority(NormalPriority);
@@ -288,6 +289,11 @@ int EmailMessage::numberOfAttachments() const
     return attachmentLocations.count();
 }
 
+int EmailMessage::originalMessageId() const
+{
+    return m_originalMessageId.toULongLong();
+}
+
 QString EmailMessage::preview() const
 {
     return m_msg.preview();
@@ -345,7 +351,28 @@ bool EmailMessage::read() const
 
 QString EmailMessage::replyTo() const
 {
-    return m_msg.replyTo().toString();
+    return m_msg.replyTo().address();
+}
+
+EmailMessage::ResponseType EmailMessage::responseType() const
+{
+    switch (m_msg.responseType()) {
+    case QMailMessage::NoResponse:
+        return NoResponse;
+    case QMailMessage::Reply:
+        return Reply;
+    case QMailMessage::ReplyToAll:
+        return ReplyToAll;
+    case QMailMessage::Forward:
+        return Forward;
+    case QMailMessage::ForwardPart:
+        return ForwardPart;
+    case QMailMessage::Redirect:
+        return Redirect;
+    case QMailMessage::UnspecifiedResponse:
+    default:
+        return UnspecifiedResponse;
+    }
 }
 
 void EmailMessage::setAttachments (const QStringList &uris)
@@ -356,8 +383,10 @@ void EmailMessage::setAttachments (const QStringList &uris)
 
 void EmailMessage::setBcc(const QStringList &bccList)
 {
-    m_msg.setBcc(QMailAddress::fromStringList(bccList));
-    emit bccChanged();
+    if (bccList.size()) {
+        m_msg.setBcc(QMailAddress::fromStringList(bccList));
+        emit bccChanged();
+    }
 }
 
 void EmailMessage::setBody(const QString &body)
@@ -370,8 +399,10 @@ void EmailMessage::setBody(const QString &body)
 
 void EmailMessage::setCc(const QStringList &ccList)
 {
-    m_msg.setCc(QMailAddress::fromStringList(ccList));
-    emit ccChanged();
+    if (ccList.size()) {
+        m_msg.setCc(QMailAddress::fromStringList(ccList));
+        emit ccChanged();
+    }
 }
 
 void EmailMessage::setFrom(const QString &sender)
@@ -419,6 +450,12 @@ void EmailMessage::setMessageId(int messageId)
     }
 }
 
+void EmailMessage::setOriginalMessageId(int messageId)
+{
+    m_originalMessageId = QMailMessageId(messageId);
+    emit originalMessageIdChanged();
+}
+
 void EmailMessage::setPriority(EmailMessage::Priority priority)
 {
     switch (priority) {
@@ -458,6 +495,35 @@ void EmailMessage::setReplyTo(const QString &address)
     emit replyToChanged();
 }
 
+void EmailMessage::setResponseType(EmailMessage::ResponseType responseType)
+{
+    switch (responseType) {
+    case NoResponse:
+        m_msg.setResponseType(QMailMessage::NoResponse);
+        break;
+    case Reply:
+        m_msg.setResponseType(QMailMessage::Reply);
+        break;
+    case ReplyToAll:
+        m_msg.setResponseType(QMailMessage::ReplyToAll);
+        break;
+    case Forward:
+        m_msg.setResponseType(QMailMessage::Forward);
+        break;
+    case ForwardPart:
+        m_msg.setResponseType(QMailMessage::ForwardPart);
+        break;
+    case Redirect:
+        m_msg.setResponseType(QMailMessage::Redirect);
+        break;
+    case UnspecifiedResponse:
+    default:
+        m_msg.setResponseType(QMailMessage::UnspecifiedResponse);
+        break;
+    }
+    emit responseTypeChanged();
+}
+
 void EmailMessage::setSubject(const QString &subject)
 {
     m_msg.setSubject(subject);
@@ -488,6 +554,17 @@ QStringList EmailMessage::to()
 // ############## Private API #########################
 void EmailMessage::buildMessage()
 {
+
+    if (m_msg.responseType() == QMailMessage::Reply || m_msg.responseType() == QMailMessage::ReplyToAll ||
+            m_msg.responseType() == QMailMessage::Forward) {
+        // Needed for conversations support
+        if (m_originalMessageId.isValid()) {
+            m_msg.setInResponseTo(m_originalMessageId);
+            QMailMessage originalMessage(m_originalMessageId);
+            updateReferences(m_msg, originalMessage);
+        }
+    }
+
     QMailMessageContentType type;
     type.setType("text/plain; charset=UTF-8");
     // Sending only supports plain text at the moment
@@ -497,6 +574,7 @@ void EmailMessage::buildMessage()
     else
         type.setType("text/html; charset=UTF-8");
     */
+    // This should be improved to use QuotedPrintable when appending parts and inline references are implemented
     if (m_attachments.size() == 0)
         m_msg.setBody(QMailMessageBody::fromData(m_bodyText, type, QMailMessageBody::Base64));
     else {
@@ -562,6 +640,7 @@ void EmailMessage::emitMessageReloadedSignals()
     emit readChanged();
     emit recipientsChanged();
     emit replyToChanged();
+    emit responseTypeChanged();
     emit subjectChanged();
     emit storedMessageChanged();
     emit toChanged();
@@ -611,4 +690,25 @@ void EmailMessage::requestMessagePartDownload(const QMailMessagePartContainer *c
 
     QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
     EmailAgent::instance()->downloadMessagePart(location);
+}
+
+void EmailMessage::updateReferences(QMailMessage &message, const QMailMessage &originalMessage)
+{
+    QString references(originalMessage.headerFieldText("References"));
+    if (references.isEmpty()) {
+        references = originalMessage.headerFieldText("In-Reply-To");
+    }
+    QString precursorId(originalMessage.headerFieldText("Message-ID"));
+    if (!precursorId.isEmpty()) {
+        message.setHeaderField("In-Reply-To", precursorId);
+
+        if (!references.isEmpty()) {
+            references.append(' ');
+        }
+        references.append(precursorId);
+    }
+    if (!references.isEmpty()) {
+        // TODO: Truncate references if they're too long
+        message.setHeaderField("References", references);
+    }
 }
