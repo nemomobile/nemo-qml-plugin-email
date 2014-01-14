@@ -37,6 +37,14 @@ Requires:   %{name} = %{version}-%{release}
 %description devel
 %{summary}.
 
+%package tests
+Summary:    QML email plugin tests
+Group:      System/Libraries
+Requires:   %{name} = %{version}-%{release}
+
+%description tests
+%{summary}.
+
 %prep
 %setup -q -n %{name}-%{version}
 
@@ -83,3 +91,9 @@ rm -rf %{buildroot}
 %{_libdir}/pkgconfig/nemoemail-qt5.pc
 # >> files devel
 # << files devel
+
+%files tests
+%defattr(-,root,root,-)
+/opt/tests/nemo-qml-plugins/email/*
+# >> files tests
+# << files tests

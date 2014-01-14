@@ -142,6 +142,8 @@ private slots:
     void onSendCompleted();
 
 private:
+    friend class tst_EmailMessage;
+
     void buildMessage();
     void emitSignals();
     void emitMessageReloadedSignals();
