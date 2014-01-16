@@ -15,6 +15,7 @@ PkgConfigBR:
     - Qt5Gui
     - Qt5Qml
     - Qt5Network
+    - Qt5Test
     - qmfclient5
     - qmfmessageserver5
     - mlocale5
