@@ -29,6 +29,9 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
+    Q_PROPERTY(int selectedMessage READ selectedMessage WRITE setSelectedMessage NOTIFY selectedMessageChanged)
+    Q_PROPERTY(int selectedMessageIndex READ selectedMessageIndex NOTIFY selectedMessageIndexChanged)
+
 
 public:
     enum Roles
@@ -76,6 +79,9 @@ public:
     void setCombinedInbox(bool c);
     bool filterUnread() const;
     void setFilterUnread(bool u);
+    int selectedMessage() const;
+    void setSelectedMessage(int messageId);
+    int selectedMessageIndex() const;
     EmailMessageListModel::Sort sortBy() const;
 
 Q_SIGNALS:
@@ -83,6 +89,8 @@ Q_SIGNALS:
     void combinedInboxChanged();
     void filterUnreadChanged();
     void sortByChanged();
+    void selectedMessageChanged();
+    void selectedMessageIndexChanged();
 
 signals:
     void messageDownloadCompleted();
@@ -133,6 +141,7 @@ public slots:
 
 private slots:
     void downloadActivityChanged(QMailServiceAction::Activity);
+    void indexesChanged(const QModelIndex &parent, int start, int end);
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:
@@ -143,6 +152,8 @@ private:
     QHash<int, QByteArray> roles;
     bool m_combinedInbox;
     bool m_filterUnread;
+    int m_selectedMessage;
+    int m_selectedMessageIndex;
     QProcess m_msgAccount;
     QMailFolderId m_currentFolderId;
     QMailAccountIdList m_mailAccountIds;

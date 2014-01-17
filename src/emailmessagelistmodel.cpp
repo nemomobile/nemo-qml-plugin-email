@@ -58,6 +58,8 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     : QMailMessageListModel(parent),
       m_combinedInbox(false),
       m_filterUnread(true),
+      m_selectedMessage(-1),
+      m_selectedMessageIndex(-1),
       m_retrievalAction(new QMailRetrievalAction(this))
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
@@ -106,10 +108,10 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     m_selectedMsgIds.clear();
 
     connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
-            this,SIGNAL(countChanged()));
+            this,SLOT(indexesChanged(QModelIndex,int,int)));
 
     connect(this, SIGNAL(rowsRemoved(QModelIndex,int,int)),
-            this,SIGNAL(countChanged()));
+            this,SLOT(indexesChanged(QModelIndex,int,int)));
 }
 
 EmailMessageListModel::~EmailMessageListModel()
@@ -391,6 +393,36 @@ void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
                    SLOT(foldersAdded( const QMailFolderIdList &)));
         m_key = key();
     }
+}
+
+int EmailMessageListModel::selectedMessage() const
+{
+    return m_selectedMessage;
+}
+
+void EmailMessageListModel::setSelectedMessage(int messageId)
+{
+    if (messageId < 0) {
+        // reset indexes and avoid transversing the list of messages
+        m_selectedMessage = messageId;
+        emit selectedMessageChanged();
+        m_selectedMessageIndex = messageId;
+        emit selectedMessageIndexChanged();
+    } else if (messageId != m_selectedMessage) {
+        m_selectedMessage = messageId;
+        emit selectedMessageChanged();
+
+        int index = indexFromMessageId(m_selectedMessage);
+        if (m_selectedMessageIndex != index) {
+            m_selectedMessageIndex = index;
+            emit selectedMessageIndexChanged();
+        }
+    }
+}
+
+int EmailMessageListModel::selectedMessageIndex() const
+{
+    return m_selectedMessageIndex;
 }
 
 EmailMessageListModel::Sort EmailMessageListModel::sortBy() const
@@ -701,6 +733,23 @@ void EmailMessageListModel::downloadActivityChanged(QMailServiceAction::Activity
         else if (activity == QMailServiceAction::Failed) {
             //  Todo:  hmm.. may be I should emit an error here.
             emit messageDownloadCompleted();
+        }
+    }
+}
+
+void EmailMessageListModel::indexesChanged(const QModelIndex &parent, int start, int end)
+{
+    Q_UNUSED(parent);
+    Q_UNUSED(start);
+    Q_UNUSED(end);
+    emit countChanged();
+
+    // determine if current message index changed
+    if (m_selectedMessageIndex >= 0) {
+        int index = indexFromMessageId(m_selectedMessage);
+        if (m_selectedMessageIndex != index) {
+            m_selectedMessageIndex = index;
+            emit selectedMessageIndexChanged();
         }
     }
 }
