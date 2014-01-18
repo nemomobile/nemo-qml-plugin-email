@@ -335,6 +335,8 @@ void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
 
     if (combinedInbox())
         setCombinedInbox(false);
+
+    emit countChanged();
 }
 
 void EmailMessageListModel::setAccountKey(int id)
@@ -370,6 +372,8 @@ void EmailMessageListModel::setAccountKey(int id)
 
     if (combinedInbox())
         setCombinedInbox(false);
+
+     emit countChanged();
 }
 
 void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
@@ -653,11 +657,8 @@ void EmailMessageListModel::deleteSelectedMessageIds()
     if (m_selectedMsgIds.empty())
         return;
 
-    QMailMessage const msg(m_selectedMsgIds[0]);
-
     EmailAgent::instance()->deleteMessages(m_selectedMsgIds);
     m_selectedMsgIds.clear();
-    EmailAgent::instance()->exportUpdates(msg.parentAccountId());
 }
 
 void EmailMessageListModel::markAllMessagesAsRead()
