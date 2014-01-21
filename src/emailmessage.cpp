@@ -182,6 +182,13 @@ int EmailMessage::accountId() const
     return m_msg.parentAccountId().toULongLong();
 }
 
+// Email address of the account having the message
+QString EmailMessage::accountAddress() const
+{
+    QMailAccount account(m_msg.parentAccountId());
+    return account.fromAddress().address();
+}
+
 int EmailMessage::folderId() const
 {
     return m_msg.parentFolderId().toULongLong();
@@ -278,6 +285,22 @@ QString EmailMessage::inReplyTo() const
 int EmailMessage::messageId() const
 {
     return m_id.toULongLong();
+}
+
+bool EmailMessage::multipleRecipients() const
+{
+    QStringList recipients = this->recipients();
+
+    if (!recipients.size()) {
+        return false;
+    } else if (recipients.size() > 1) {
+        return true;
+    } else if (!recipients.contains(this->accountAddress(), Qt::CaseInsensitive)
+               && !recipients.contains(this->replyTo(), Qt::CaseInsensitive)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 int EmailMessage::numberOfAttachments() const
@@ -386,6 +409,7 @@ void EmailMessage::setBcc(const QStringList &bccList)
     if (bccList.size()) {
         m_msg.setBcc(QMailAddress::fromStringList(bccList));
         emit bccChanged();
+        emit multipleRecipientsChanged();
     }
 }
 
@@ -402,6 +426,7 @@ void EmailMessage::setCc(const QStringList &ccList)
     if (ccList.size()) {
         m_msg.setCc(QMailAddress::fromStringList(ccList));
         emit ccChanged();
+        emit multipleRecipientsChanged();
     }
 }
 
@@ -422,6 +447,7 @@ void EmailMessage::setFrom(const QString &sender)
     }
     emit fromChanged();
     emit accountIdChanged();
+    emit accountAddressChanged();
 }
 
 void EmailMessage::setInReplyTo(const QString &messageId)
@@ -627,6 +653,7 @@ void EmailMessage::emitMessageReloadedSignals()
     }
 
     emit accountIdChanged();
+    emit accountAddressChanged();
     emit folderIdChanged();
     emit attachmentsChanged();
     emit bccChanged();
@@ -636,6 +663,7 @@ void EmailMessage::emitMessageReloadedSignals()
     emit bodyChanged();
     emit inReplyToChanged();
     emit messageIdChanged();
+    emit multipleRecipientsChanged();
     emit priorityChanged();
     emit readChanged();
     emit recipientsChanged();

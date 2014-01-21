@@ -26,6 +26,7 @@ public:
     ~EmailMessage ();
 
     Q_PROPERTY(int accountId READ accountId NOTIFY accountIdChanged)
+    Q_PROPERTY(QString accountAddress READ accountAddress NOTIFY accountAddressChanged)
     Q_PROPERTY(int folderId READ folderId NOTIFY folderIdChanged)
     Q_PROPERTY(QStringList attachments READ attachments WRITE setAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QStringList bcc READ bcc WRITE setBcc NOTIFY bccChanged)
@@ -39,6 +40,7 @@ public:
     Q_PROPERTY(QString htmlBody READ htmlBody NOTIFY htmlBodyChanged FINAL)
     Q_PROPERTY(QString inReplyTo READ inReplyTo WRITE setInReplyTo NOTIFY inReplyToChanged)
     Q_PROPERTY(int messageId READ messageId WRITE setMessageId NOTIFY messageIdChanged)
+    Q_PROPERTY(bool multipleRecipients READ multipleRecipients NOTIFY multipleRecipientsChanged)
     Q_PROPERTY(int numberOfAttachments READ numberOfAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(int originalMessageId READ originalMessageId WRITE setOriginalMessageId NOTIFY originalMessageIdChanged)
     Q_PROPERTY(QString preview READ preview NOTIFY storedMessageChanged)
@@ -70,6 +72,7 @@ public:
     Q_INVOKABLE void saveDraft();
 
     int accountId() const;
+    QString accountAddress() const;
     int folderId() const;
     QStringList attachments();
     QStringList bcc() const;
@@ -83,6 +86,7 @@ public:
     QString htmlBody();
     QString inReplyTo() const;
     int messageId() const;
+    bool multipleRecipients() const;
     int numberOfAttachments() const;
     int originalMessageId() const;
     QString preview() const;
@@ -115,6 +119,7 @@ signals:
     void sendCompleted();
 
     void accountIdChanged();
+    void accountAddressChanged();
     void folderIdChanged();
     void attachmentsChanged();
     void bccChanged();
@@ -124,6 +129,7 @@ signals:
     void htmlBodyChanged();
     void inReplyToChanged();
     void messageIdChanged();
+    void multipleRecipientsChanged();
     void originalMessageIdChanged();
     void priorityChanged();
     void readChanged();
