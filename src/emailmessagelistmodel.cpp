@@ -603,20 +603,20 @@ QVariant EmailMessageListModel::priority(int idx)
     return data(index(idx), MessagePriorityRole);
 }
 
+void EmailMessageListModel::selectAllMessages()
+{
+    for (int row = 0; row < rowCount(); row++) {
+        selectMessage(row);
+    }
+}
+
 void EmailMessageListModel::deSelectAllMessages()
 {
-    if (m_selectedMsgIds.size() == 0)
+    if (!m_selectedMsgIds.size())
         return;
 
-    QMailMessageIdList msgIds = m_selectedMsgIds;
-    m_selectedMsgIds.clear();
-    foreach (const QMailMessageId &msgId,  msgIds) {
-        for (int row = 0; row < rowCount(); row++) {
-            QVariant vMsgId = data(index(row), QMailMessageModelBase::MessageIdRole);
-    
-            if (msgId == vMsgId.value<QMailMessageId>())
-                dataChanged (index(row), index(row));
-        }
+    for (int row = 0; row < rowCount(); row++) {
+        deSelectMessage(row);
     }
 }
 
@@ -634,8 +634,10 @@ void EmailMessageListModel::deSelectMessage(int idx)
 {
     QMailMessageId msgId = idFromIndex(index(idx));
 
-    m_selectedMsgIds.removeOne(msgId);
-    dataChanged(index(idx), index(idx));
+    if (m_selectedMsgIds.contains (msgId)) {
+        m_selectedMsgIds.removeOne(msgId);
+        dataChanged(index(idx), index(idx));
+    }
 }
 
 void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
