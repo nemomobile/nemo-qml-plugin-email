@@ -36,9 +36,6 @@ FolderListModel::FolderListModel(QObject *parent) :
     roles.insert(FolderNestingLevel, "folderNestingLevel");
     roles.insert(FolderMessageKey, "folderMessageKey");
     roles.insert(FolderType, "folderType");
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
 
     connect(QMailStore::instance(), SIGNAL(foldersAdded(const QMailFolderIdList &)), this,
                           SLOT(onFoldersChanged(const QMailFolderIdList &)));
@@ -52,12 +49,10 @@ FolderListModel::~FolderListModel()
 {
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> FolderListModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 int FolderListModel::rowCount(const QModelIndex &parent) const
 {

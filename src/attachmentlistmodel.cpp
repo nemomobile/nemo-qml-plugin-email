@@ -27,9 +27,6 @@ AttachmentListModel::AttachmentListModel(QObject *parent) :
     roles.insert(StatusInfo, "statusInfo");
     roles.insert(Url, "url");
     roles.insert(ProgressInfo, "progressInfo");
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
 
     connect(EmailAgent::instance(), SIGNAL(attachmentDownloadStatusChanged(QString,EmailAgent::AttachmentStatus)),
             this, SLOT(onAttachmentDownloadStatusChanged(QString,EmailAgent::AttachmentStatus)));
@@ -45,12 +42,10 @@ AttachmentListModel::~AttachmentListModel()
 {
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> AttachmentListModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 int AttachmentListModel::rowCount(const QModelIndex &parent) const
 {

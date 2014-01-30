@@ -69,11 +69,8 @@ signals:
     void currentFolderIdxChanged();
     void currentFolderUnreadCountChanged();
 
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
-#endif
 
 private slots:
     void onFoldersChanged(const QMailFolderIdList &ids);

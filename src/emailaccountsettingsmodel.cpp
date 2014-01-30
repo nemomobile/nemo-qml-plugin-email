@@ -35,9 +35,6 @@ EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     roles[SendPasswordRole] = "sendPassword";
 
     roles[PresetRole] = "preset";
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
 
     init();
 }
@@ -83,12 +80,10 @@ void EmailAccountSettingsModel::reload()
     endResetModel();
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> EmailAccountSettingsModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 int EmailAccountSettingsModel::rowCount(const QModelIndex &parent) const
 {

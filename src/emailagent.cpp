@@ -24,11 +24,7 @@
 #include "emailagent.h"
 #include "emailaction.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#define MESSAGESERVER "/usr/bin/messageserver"
-#else
 #define MESSAGESERVER "/usr/bin/messageserver5"
-#endif
 
 namespace {
 

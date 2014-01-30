@@ -25,9 +25,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
     roles.insert(Signature, "signature");
     roles.insert(IconPath, "iconPath");
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
+
     connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
             this,SLOT(onAccountsAdded(QModelIndex,int,int)));
 
@@ -44,12 +42,10 @@ EmailAccountListModel::~EmailAccountListModel()
 {
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> EmailAccountListModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 {
