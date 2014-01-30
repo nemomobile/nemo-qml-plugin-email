@@ -653,7 +653,7 @@ void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
     m_selectedMsgIds.clear();
     EmailAgent::instance()->exportUpdates(msg.parentAccountId());
 }
-//TODO: support to delete messages from mutiple accounts
+
 void EmailMessageListModel::deleteSelectedMessageIds()
 {
     if (m_selectedMsgIds.empty())

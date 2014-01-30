@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QFile>
+#include <QMap>
 #include <QProcess>
 #include <QStandardPaths>
 
@@ -529,9 +530,6 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
 {
     Q_ASSERT(!ids.isEmpty());
 
-    QMailMessageId id(ids[0]);
-    QMailAccountId accountId = accountForMessageId(id);
-
     if (m_transmitting) {
         // Do not delete messages from the outbox folder while we're sending
         QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox));
@@ -539,6 +537,21 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             //TODO: emit proper error
             return;
         }
+    }
+
+    bool exportUpdates;
+
+    QMap<QMailAccountId, QMailMessageIdList> accountMap;
+    // Messages can be from several accounts
+    foreach (const QMailMessageId &id, ids) {
+       QMailAccountId accountId = accountForMessageId(id);
+       if (accountMap.contains(accountId)) {
+           QMailMessageIdList idList = accountMap.value(accountId);
+           idList.append(id);
+           accountMap.insert(accountId, idList);
+       } else {
+           accountMap.insert(accountId, QMailMessageIdList() << id);
+       }
     }
 
     // If any of these messages are not yet trash, then we're only moved to trash
@@ -559,23 +572,39 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
         if(!idsToRemove.isEmpty()) {
             m_enqueing = true;
             enqueue(new DeleteMessages(m_storageAction.data(), idsToRemove));
-            m_enqueing = false;
-            enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
+            exportUpdates = true;
         }
+    } else {
+        QMapIterator<QMailAccountId, QMailMessageIdList> iter(accountMap);
+        while (iter.hasNext()) {
+            iter.next();
+            QMailAccount account(iter.key());
+            QMailFolderId trashFolderId = account.standardFolder(QMailFolder::TrashFolder);
+            // If standard folder is not valid we use local storage
+            if (!trashFolderId.isValid()) {
+                qDebug() << "Trash folder not found using local storage";
+                trashFolderId = QMailFolder::LocalStorageFolderId;
+            }
+            m_enqueing = true;
+            enqueue(new MoveToFolder(m_storageAction.data(), iter.value(), trashFolderId));
+            enqueue(new FlagMessages(m_storageAction.data(), iter.value(), QMailMessage::Trash, 0));
+            if (!iter.hasNext()) {
+                m_enqueing = false;
+            }
+        }
+        exportUpdates = true;
     }
-    else {
-        QMailAccount account(accountId);
-        QMailFolderId trashFolderId = account.standardFolder(QMailFolder::TrashFolder);
-        // If standard folder is not valid we use local storage
-        if (!trashFolderId.isValid()) {
-            qDebug() << "Trash folder not found using local storage";
-            trashFolderId = QMailFolder::LocalStorageFolderId;
+
+    // Do online actions at the end
+    if (exportUpdates) {
+        // Export updates for all accounts that we deleted messages from
+        QMailAccountIdList accountList = accountMap.uniqueKeys();
+        for (int i = 0; i < accountList.size(); i++) {
+            if (i == accountList.size()) {
+                m_enqueing = false;
+            }
+            enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
         }
-        m_enqueing = true;
-        enqueue(new MoveToFolder(m_storageAction.data(), ids, trashFolderId));
-        enqueue(new FlagMessages(m_storageAction.data(), ids, QMailMessage::Trash, 0));
-        m_enqueing = false;
-        enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
     }
 }
 
