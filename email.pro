@@ -13,4 +13,4 @@ tests.depends = sub-src
 
 SUBDIRS = src plugins tests
 
-OTHER_FILES += rpm/*
+OTHER_FILES += rpm/nemo-qml-plugin-email-qt5.spec

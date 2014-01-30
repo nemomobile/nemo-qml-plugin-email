@@ -1,18 +1,8 @@
 TEMPLATE = lib
 QT += network gui
-CONFIG += link_pkgconfig
-
-equals(QT_MAJOR_VERSION, 4) {
-    TARGET = nemoemail
-    PKGCONFIG += qmfmessageserver qmfclient mlocale
-}
-
-equals(QT_MAJOR_VERSION, 5) {
-    TARGET = nemoemail-qt5
-    PKGCONFIG += qmfmessageserver5 qmfclient5 mlocale5
-}
-
-CONFIG += qt hide_symbols create_pc create_prl
+CONFIG += link_pkgconfig qt hide_symbols create_pc create_prl
+TARGET = nemoemail-qt5
+PKGCONFIG += qmfmessageserver5 qmfclient5 mlocale5
 
 SOURCES += \
     $$PWD/emailaccountlistmodel.cpp \
@@ -45,8 +35,7 @@ target.path = $$[QT_INSTALL_LIBS]
 pkgconfig.files = $$TARGET.pc
 pkgconfig.path = $$target.path/pkgconfig
 headers.files = $$HEADERS
-equals(QT_MAJOR_VERSION, 4): headers.path = /usr/include/nemoemail
-equals(QT_MAJOR_VERSION, 5): headers.path = /usr/include/nemoemail-qt5
+headers.path = /usr/include/nemoemail-qt5
 
 VERSION = 0.0.1
 QMAKE_PKGCONFIG_NAME = lib$$TARGET

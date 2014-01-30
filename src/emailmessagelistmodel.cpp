@@ -96,9 +96,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSubjectFirstCharRole] = "subjectFirstChar";
     roles[MessageSenderFirstCharRole] = "senderFirstChar";
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
     m_key = key();
     m_sortKey = QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
     m_sortBy = Time;
@@ -117,12 +114,10 @@ EmailMessageListModel::~EmailMessageListModel()
     delete m_retrievalAction;
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> EmailMessageListModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 int EmailMessageListModel::rowCount(const QModelIndex & parent) const {
     return QMailMessageListModel::rowCount(parent);
