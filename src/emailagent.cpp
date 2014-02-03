@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QFile>
+#include <QMap>
 #include <QProcess>
 #include <QStandardPaths>
 
@@ -23,11 +24,7 @@
 #include "emailagent.h"
 #include "emailaction.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#define MESSAGESERVER "/usr/bin/messageserver"
-#else
 #define MESSAGESERVER "/usr/bin/messageserver5"
-#endif
 
 namespace {
 
@@ -50,7 +47,7 @@ EmailAgent *EmailAgent::instance()
 EmailAgent::EmailAgent(QObject *parent)
     : QObject(parent)
     , m_actionCount(0)
-    , m_accountSyncronizing(0)
+    , m_accountSynchronizing(-1)
     , m_transmitting(false)
     , m_cancelling(false)
     , m_synchronizing(false)
@@ -97,7 +94,7 @@ EmailAgent::~EmailAgent()
 
 int EmailAgent::currentSynchronizingAccountId() const
 {
-    return m_accountSyncronizing;
+    return m_accountSynchronizing;
 }
 
 int EmailAgent::attachmentDownloadProgress(const QString &attachmentLocation)
@@ -170,6 +167,18 @@ void EmailAgent::exportUpdates(const QMailAccountId accountId)
     enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
 }
 
+bool EmailAgent::hasMessagesInOutbox(const QMailAccountId accountId)
+{
+    // Local folders can have messages from several accounts.
+    QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox) & ~QMailMessageKey::status(QMailMessage::Trash));
+    QMailMessageKey accountKey(QMailMessageKey::parentAccountId(accountId));
+    if (QMailStore::instance()->countMessages(accountKey & outboxFilter)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void EmailAgent::initMailServer()
 {
     // starts the messageserver if it is not already running.
@@ -228,7 +237,6 @@ quint64 EmailAgent::newAction()
 void EmailAgent::sendMessages(const QMailAccountId &accountId)
 {
     if (accountId.isValid()) {
-        m_transmitting = true;
         enqueue(new TransmitMessages(m_transmitAction.data(),accountId));
     }
 }
@@ -252,7 +260,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         // don't try to synchronise extra accounts if the user cancelled the sync
         if (m_cancelling) {
             m_synchronizing = false;
-            m_accountSyncronizing = 0;
+            m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Error);
             m_transmitting = false;
@@ -293,7 +301,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             if (m_currentAction.isNull()) {
                 qDebug() << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
-                m_accountSyncronizing = 0;
+                m_accountSynchronizing = -1;
                 emit currentSynchronizingAccountIdChanged();
                 emit synchronizingChanged(EmailAgent::Error);
             }
@@ -343,7 +351,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         if (m_currentAction.isNull()) {
             qDebug() << "Sync completed.";
             m_synchronizing = false;
-            m_accountSyncronizing = 0;
+            m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
             emit synchronizingChanged(EmailAgent::Completed);
         }
@@ -450,7 +458,16 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
                 synchronizeInbox(accountId.toULongLong(), minimum);
             }
             else {
+                bool messagesToSend = hasMessagesInOutbox(accountId);
+                if (messagesToSend) {
+                    m_enqueing = true;
+                }
                 enqueue(new Synchronize(m_retrievalAction.data(), accountId));
+                if (messagesToSend) {
+                    m_enqueing = false;
+                    // Send any message waiting in the outbox
+                    enqueue(new TransmitMessages(m_transmitAction.data(),accountId));
+                }
             }
         }
     }
@@ -509,9 +526,6 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
 {
     Q_ASSERT(!ids.isEmpty());
 
-    QMailMessageId id(ids[0]);
-    QMailAccountId accountId = accountForMessageId(id);
-
     if (m_transmitting) {
         // Do not delete messages from the outbox folder while we're sending
         QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox));
@@ -519,6 +533,21 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             //TODO: emit proper error
             return;
         }
+    }
+
+    bool exportUpdates;
+
+    QMap<QMailAccountId, QMailMessageIdList> accountMap;
+    // Messages can be from several accounts
+    foreach (const QMailMessageId &id, ids) {
+       QMailAccountId accountId = accountForMessageId(id);
+       if (accountMap.contains(accountId)) {
+           QMailMessageIdList idList = accountMap.value(accountId);
+           idList.append(id);
+           accountMap.insert(accountId, idList);
+       } else {
+           accountMap.insert(accountId, QMailMessageIdList() << id);
+       }
     }
 
     // If any of these messages are not yet trash, then we're only moved to trash
@@ -536,15 +565,42 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             QMailStore::instance()->removeMessages(QMailMessageKey::id(localOnlyIds));
             idsToRemove = (ids.toSet().subtract(localOnlyIds.toSet())).toList();
         }
-        if(!idsToRemove.isEmpty())
+        if(!idsToRemove.isEmpty()) {
+            m_enqueing = true;
             enqueue(new DeleteMessages(m_storageAction.data(), idsToRemove));
+            exportUpdates = true;
+        }
+    } else {
+        QMapIterator<QMailAccountId, QMailMessageIdList> iter(accountMap);
+        while (iter.hasNext()) {
+            iter.next();
+            QMailAccount account(iter.key());
+            QMailFolderId trashFolderId = account.standardFolder(QMailFolder::TrashFolder);
+            // If standard folder is not valid we use local storage
+            if (!trashFolderId.isValid()) {
+                qDebug() << "Trash folder not found using local storage";
+                trashFolderId = QMailFolder::LocalStorageFolderId;
+            }
+            m_enqueing = true;
+            enqueue(new MoveToFolder(m_storageAction.data(), iter.value(), trashFolderId));
+            enqueue(new FlagMessages(m_storageAction.data(), iter.value(), QMailMessage::Trash, 0));
+            if (!iter.hasNext()) {
+                m_enqueing = false;
+            }
+        }
+        exportUpdates = true;
     }
-    else {
-        m_enqueing = true;
-        enqueue(new MoveToStandardFolder(m_storageAction.data(), ids, QMailFolder::TrashFolder));
-        enqueue(new FlagMessages(m_storageAction.data(), ids, QMailMessage::Trash,0));
-        m_enqueing = false;
-        enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
+
+    // Do online actions at the end
+    if (exportUpdates) {
+        // Export updates for all accounts that we deleted messages from
+        QMailAccountIdList accountList = accountMap.uniqueKeys();
+        for (int i = 0; i < accountList.size(); i++) {
+            if (i == accountList.size()) {
+                m_enqueing = false;
+            }
+            enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
+        }
     }
 }
 
@@ -723,6 +779,14 @@ void EmailAgent::retrieveMessageRange(int messageId, uint minimum)
     enqueue(new RetrieveMessageRange(m_retrievalAction.data(), id, minimum));
 }
 
+void EmailAgent::purgeSendingQueue(int accountId)
+{
+    QMailAccountId acctId(accountId);
+    if (hasMessagesInOutbox(acctId)) {
+        sendMessages(acctId);
+    }
+}
+
 void EmailAgent::synchronize(int accountId)
 {
     QMailAccountId acctId(accountId);
@@ -739,11 +803,19 @@ void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
     QMailAccount account(acctId);
     QMailFolderId foldId = account.standardFolder(QMailFolder::InboxFolder);
     if(foldId.isValid()) {
+        bool messagesToSend = hasMessagesInOutbox(acctId);
         m_enqueing = true;
         enqueue(new ExportUpdates(m_retrievalAction.data(),acctId));
         enqueue(new RetrieveFolderList(m_retrievalAction.data(), acctId, QMailFolderId(), true));
-        m_enqueing = false;
+        if (!messagesToSend) {
+            m_enqueing = false;
+        }
         enqueue(new RetrieveMessageList(m_retrievalAction.data(), acctId, foldId, minimum));
+        if (messagesToSend) {
+            m_enqueing = false;
+            // send any message in the outbox
+            enqueue(new TransmitMessages(m_transmitAction.data(), acctId));
+        }
     }
     //Account was never synced, retrieve list of folders and come back here.
     else {
@@ -868,8 +940,8 @@ void EmailAgent::executeCurrent()
         }
 
         QMailAccountId aId = m_currentAction->accountId();
-        if (aId.isValid() && m_accountSyncronizing != aId.toULongLong()) {
-            m_accountSyncronizing = aId.toULongLong();
+        if (aId.isValid() && m_accountSynchronizing != aId.toULongLong()) {
+            m_accountSynchronizing = aId.toULongLong();
             emit currentSynchronizingAccountIdChanged();
         }
 
@@ -881,6 +953,8 @@ void EmailAgent::executeCurrent()
             if (messagePartAction->isAttachment()) {
                 updateAttachmentDowloadStatus(messagePartAction->partLocation(), Downloading);
             }
+        } else if (m_currentAction->type() == EmailAction::Transmit) {
+            m_transmitting = true;
         }
         m_currentAction->execute();
     }

@@ -3,7 +3,7 @@ Summary: Email plugin for Nemo Mobile
 URL: https://github.com/nemomobile/nemo-qml-plugin-email
 Group: System/Libraries
 Description: "%{summary}."
-Version: 0.1.11offline
+Version: 0.1.20offline
 Release: 1
 Sources:
     - "%{name}-%{version}.tar.bz2"
@@ -15,6 +15,7 @@ PkgConfigBR:
     - Qt5Gui
     - Qt5Qml
     - Qt5Network
+    - Qt5Test
     - qmfclient5
     - qmfmessageserver5
     - mlocale5

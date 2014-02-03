@@ -19,12 +19,14 @@ class Q_DECL_EXPORT EmailMessage : public QObject
     Q_OBJECT
     Q_ENUMS(Priority)
     Q_ENUMS(ContentType)
+    Q_ENUMS(ResponseType)
 
 public:
     explicit EmailMessage(QObject *parent = 0);
     ~EmailMessage ();
 
     Q_PROPERTY(int accountId READ accountId NOTIFY accountIdChanged)
+    Q_PROPERTY(QString accountAddress READ accountAddress NOTIFY accountAddressChanged)
     Q_PROPERTY(int folderId READ folderId NOTIFY folderIdChanged)
     Q_PROPERTY(QStringList attachments READ attachments WRITE setAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QStringList bcc READ bcc WRITE setBcc NOTIFY bccChanged)
@@ -38,13 +40,16 @@ public:
     Q_PROPERTY(QString htmlBody READ htmlBody NOTIFY htmlBodyChanged FINAL)
     Q_PROPERTY(QString inReplyTo READ inReplyTo WRITE setInReplyTo NOTIFY inReplyToChanged)
     Q_PROPERTY(int messageId READ messageId WRITE setMessageId NOTIFY messageIdChanged)
+    Q_PROPERTY(bool multipleRecipients READ multipleRecipients NOTIFY multipleRecipientsChanged)
     Q_PROPERTY(int numberOfAttachments READ numberOfAttachments NOTIFY attachmentsChanged)
+    Q_PROPERTY(int originalMessageId READ originalMessageId WRITE setOriginalMessageId NOTIFY originalMessageIdChanged)
     Q_PROPERTY(QString preview READ preview NOTIFY storedMessageChanged)
     Q_PROPERTY(Priority priority READ priority WRITE setPriority NOTIFY priorityChanged)
     Q_PROPERTY(QString quotedBody READ quotedBody NOTIFY quotedBodyChanged)
     Q_PROPERTY(QStringList recipients READ recipients NOTIFY recipientsChanged)
     Q_PROPERTY(bool read READ read WRITE setRead NOTIFY readChanged)
     Q_PROPERTY(QString replyTo READ replyTo WRITE setReplyTo NOTIFY replyToChanged)
+    Q_PROPERTY(ResponseType responseType READ responseType WRITE setResponseType NOTIFY responseTypeChanged)
     Q_PROPERTY(int size READ size NOTIFY storedMessageChanged)
     Q_PROPERTY(QString subject READ subject WRITE setSubject NOTIFY subjectChanged)
     Q_PROPERTY(QStringList to READ to WRITE setTo NOTIFY toChanged)
@@ -52,10 +57,22 @@ public:
     enum Priority { LowPriority, NormalPriority, HighPriority };
     enum ContentType { Plain, HTML };
 
+    // Matches qmailmessagefwd enum
+    enum ResponseType {
+        NoResponse          = 0,
+        Reply               = 1,
+        ReplyToAll          = 2,
+        Forward             = 3,
+        ForwardPart         = 4,
+        Redirect            = 5,
+        UnspecifiedResponse = 6
+    };
+
     Q_INVOKABLE void send();
     Q_INVOKABLE void saveDraft();
 
     int accountId() const;
+    QString accountAddress() const;
     int folderId() const;
     QStringList attachments();
     QStringList bcc() const;
@@ -69,13 +86,16 @@ public:
     QString htmlBody();
     QString inReplyTo() const;
     int messageId() const;
+    bool multipleRecipients() const;
     int numberOfAttachments() const;
+    int originalMessageId() const;
     QString preview() const;
     Priority priority() const;
     QString quotedBody();
     QStringList recipients() const;
     bool read() const;
     QString replyTo() const;
+    ResponseType responseType() const;
     void setAttachments(const QStringList &uris);
     void setBcc(const QStringList &bccList);
     void setBody(const QString &body);
@@ -83,9 +103,11 @@ public:
     void setFrom(const QString &sender);
     void setInReplyTo(const QString &messageId);
     void setMessageId(int messageId);
+    void setOriginalMessageId(int messageId);
     void setPriority(Priority priority);
     void setRead(bool read);
     void setReplyTo(const QString &address);
+    void setResponseType(ResponseType responseType);
     void setSubject(const QString &subject);
     void setTo(const QStringList &toList);
     int size();
@@ -97,6 +119,7 @@ signals:
     void sendCompleted();
 
     void accountIdChanged();
+    void accountAddressChanged();
     void folderIdChanged();
     void attachmentsChanged();
     void bccChanged();
@@ -106,10 +129,13 @@ signals:
     void htmlBodyChanged();
     void inReplyToChanged();
     void messageIdChanged();
+    void multipleRecipientsChanged();
+    void originalMessageIdChanged();
     void priorityChanged();
     void readChanged();
     void recipientsChanged();
     void replyToChanged();
+    void responseTypeChanged();
     void subjectChanged();
     void storedMessageChanged();
     void toChanged();
@@ -122,17 +148,21 @@ private slots:
     void onSendCompleted();
 
 private:
+    friend class tst_EmailMessage;
+
     void buildMessage();
     void emitSignals();
     void emitMessageReloadedSignals();
     void processAttachments();
     void requestMessageDownload();
     void requestMessagePartDownload(const QMailMessagePartContainer *container) const;
+    void updateReferences(QMailMessage &message, const QMailMessage &originalMessage);
 
     QMailAccount m_account;
     QStringList m_attachments;
     QString m_bodyText;
     QMailMessageId m_id;
+    QMailMessageId m_originalMessageId;
     QMailMessage m_msg;
     bool m_newMessage;
 };

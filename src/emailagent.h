@@ -66,6 +66,7 @@ public:
     void downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec);
     void downloadMessagePart(const QMailMessagePartContainer::Location &location);
     void exportUpdates(const QMailAccountId accountId);
+    bool hasMessagesInOutbox(const QMailAccountId accountId);
     void initMailServer();
     bool ipcConnected();
     bool synchronizing() const;
@@ -102,6 +103,7 @@ public:
     Q_INVOKABLE void retrieveFolderList(int accountId, int folderId = 0, const bool descending = true);
     Q_INVOKABLE void retrieveMessageList(int accountId, int folderId, const uint minimum = 20);
     Q_INVOKABLE void retrieveMessageRange(int messageId, uint minimum);
+    Q_INVOKABLE void purgeSendingQueue(int accountId);
     Q_INVOKABLE void synchronize(int accountId);
     Q_INVOKABLE void synchronizeInbox(int accountId, const uint minimum = 20);
 
@@ -133,7 +135,7 @@ private:
     static EmailAgent *m_instance;
 
     uint m_actionCount;
-    uint m_accountSyncronizing;
+    uint m_accountSynchronizing;
     bool m_transmitting;
     bool m_cancelling;
     bool m_synchronizing;

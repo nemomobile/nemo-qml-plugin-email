@@ -96,9 +96,6 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSubjectFirstCharRole] = "subjectFirstChar";
     roles[MessageSenderFirstCharRole] = "senderFirstChar";
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    setRoleNames(roles);
-#endif
     m_key = key();
     m_sortKey = QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
     m_sortBy = Time;
@@ -117,12 +114,10 @@ EmailMessageListModel::~EmailMessageListModel()
     delete m_retrievalAction;
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 QHash<int, QByteArray> EmailMessageListModel::roleNames() const
 {
     return roles;
 }
-#endif
 
 int EmailMessageListModel::rowCount(const QModelIndex & parent) const {
     return QMailMessageListModel::rowCount(parent);
@@ -335,6 +330,8 @@ void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
 
     if (combinedInbox())
         setCombinedInbox(false);
+
+    emit countChanged();
 }
 
 void EmailMessageListModel::setAccountKey(int id)
@@ -370,6 +367,8 @@ void EmailMessageListModel::setAccountKey(int id)
 
     if (combinedInbox())
         setCombinedInbox(false);
+
+     emit countChanged();
 }
 
 void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
@@ -599,20 +598,20 @@ QVariant EmailMessageListModel::priority(int idx)
     return data(index(idx), MessagePriorityRole);
 }
 
+void EmailMessageListModel::selectAllMessages()
+{
+    for (int row = 0; row < rowCount(); row++) {
+        selectMessage(row);
+    }
+}
+
 void EmailMessageListModel::deSelectAllMessages()
 {
-    if (m_selectedMsgIds.size() == 0)
+    if (!m_selectedMsgIds.size())
         return;
 
-    QMailMessageIdList msgIds = m_selectedMsgIds;
-    m_selectedMsgIds.clear();
-    foreach (const QMailMessageId &msgId,  msgIds) {
-        for (int row = 0; row < rowCount(); row++) {
-            QVariant vMsgId = data(index(row), QMailMessageModelBase::MessageIdRole);
-    
-            if (msgId == vMsgId.value<QMailMessageId>())
-                dataChanged (index(row), index(row));
-        }
+    for (int row = 0; row < rowCount(); row++) {
+        deSelectMessage(row);
     }
 }
 
@@ -630,8 +629,10 @@ void EmailMessageListModel::deSelectMessage(int idx)
 {
     QMailMessageId msgId = idFromIndex(index(idx));
 
-    m_selectedMsgIds.removeOne(msgId);
-    dataChanged(index(idx), index(idx));
+    if (m_selectedMsgIds.contains (msgId)) {
+        m_selectedMsgIds.removeOne(msgId);
+        dataChanged(index(idx), index(idx));
+    }
 }
 
 void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
@@ -647,17 +648,14 @@ void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
     m_selectedMsgIds.clear();
     EmailAgent::instance()->exportUpdates(msg.parentAccountId());
 }
-//TODO: support to delete messages from mutiple accounts
+
 void EmailMessageListModel::deleteSelectedMessageIds()
 {
     if (m_selectedMsgIds.empty())
         return;
 
-    QMailMessage const msg(m_selectedMsgIds[0]);
-
     EmailAgent::instance()->deleteMessages(m_selectedMsgIds);
     m_selectedMsgIds.clear();
-    EmailAgent::instance()->exportUpdates(msg.parentAccountId());
 }
 
 void EmailMessageListModel::markAllMessagesAsRead()

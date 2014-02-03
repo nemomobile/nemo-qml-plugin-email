@@ -122,6 +122,7 @@ public slots:
     Q_INVOKABLE int accountId(int index);
     Q_INVOKABLE QVariant priority(int index);
 
+    Q_INVOKABLE void selectAllMessages();
     Q_INVOKABLE void deSelectAllMessages();
     Q_INVOKABLE void selectMessage(int index);
     Q_INVOKABLE void deSelectMessage(int index);
