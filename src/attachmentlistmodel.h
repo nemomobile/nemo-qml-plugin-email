@@ -22,6 +22,7 @@ public:
     explicit AttachmentListModel(QObject *parent = 0);
     ~AttachmentListModel();
 
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(int messageId READ messageId WRITE setMessageId NOTIFY messageIdChanged FINAL)
 
     enum Role {
@@ -42,6 +43,12 @@ public:
     QModelIndex indexFromLocation(const QString &location);
     QString attachmentUrl(const QMailMessage message, const QString &attachmentLocation);
 
+    Q_INVOKABLE QString displayName(int idx);
+    Q_INVOKABLE bool downloadStatus(int idx);
+    Q_INVOKABLE QString mimeType(int idx);
+    Q_INVOKABLE QString url(int idx);
+
+    int count() const;
     int messageId() const;
     void setMessageId(int id);
 
@@ -49,6 +56,7 @@ protected:
     virtual QHash<int, QByteArray> roleNames() const;
 
 signals:
+    void countChanged();
     void messageIdChanged();
 
 private slots:
