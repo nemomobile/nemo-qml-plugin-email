@@ -348,7 +348,7 @@ QString EmailMessage::quotedBody()
     }
 
     qBody.prepend('\n');
-    qBody.replace('\n', "\n>");
+    qBody.replace('\n', "\n> ");
     qBody.truncate(qBody.size() - 1);  // remove the extra ">" put there by QString.replace
     return qBody;
 }
