@@ -42,6 +42,9 @@ void EmailMessage::onMessagesDownloaded(const QMailMessageIdList &ids, bool succ
                 m_msg = QMailMessage(m_id);
                 m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
                 emitMessageReloadedSignals();
+                emit messageDownloaded();
+            } else {
+                emit messageDownloadFailed();
             }
             return;
         }
@@ -92,6 +95,11 @@ void EmailMessage::onSendCompleted()
 }
 
 // ############# Invokable API ########################
+void EmailMessage::downloadMessage()
+{
+    requestMessageDownload();
+}
+
 void EmailMessage::send()
 {
     buildMessage();

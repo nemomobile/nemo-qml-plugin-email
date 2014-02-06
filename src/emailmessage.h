@@ -68,6 +68,7 @@ public:
         UnspecifiedResponse = 6
     };
 
+    Q_INVOKABLE void downloadMessage();
     Q_INVOKABLE void send();
     Q_INVOKABLE void saveDraft();
 
@@ -129,6 +130,8 @@ signals:
     void htmlBodyChanged();
     void inReplyToChanged();
     void messageIdChanged();
+    void messageDownloaded();
+    void messageDownloadFailed();
     void multipleRecipientsChanged();
     void originalMessageIdChanged();
     void priorityChanged();
