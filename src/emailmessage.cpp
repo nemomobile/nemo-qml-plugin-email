@@ -22,6 +22,7 @@ EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
     , m_originalMessageId(QMailMessageId())
     , m_newMessage(true)
+    , m_downloadActionId(0)
 {
     setPriority(NormalPriority);
 }
@@ -95,6 +96,15 @@ void EmailMessage::onSendCompleted()
 }
 
 // ############# Invokable API ########################
+void EmailMessage::cancelMessageDownload()
+{
+    if (m_downloadActionId) {
+        EmailAgent::instance()->cancelAction(m_downloadActionId);
+        disconnect(this, SLOT(onMessagesDownloaded(QMailMessageIdList,bool)));
+        disconnect(this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
+    }
+}
+
 void EmailMessage::downloadMessage()
 {
     requestMessageDownload();
@@ -716,16 +726,16 @@ void EmailMessage::requestMessageDownload()
 {
     connect(EmailAgent::instance(), SIGNAL(messagesDownloaded(QMailMessageIdList, bool)),
             this, SLOT(onMessagesDownloaded(QMailMessageIdList, bool)));
-    EmailAgent::instance()->downloadMessages(QMailMessageIdList() << m_id, QMailRetrievalAction::Content);
+     m_downloadActionId = EmailAgent::instance()->downloadMessages(QMailMessageIdList() << m_id, QMailRetrievalAction::Content);
 }
 
-void EmailMessage::requestMessagePartDownload(const QMailMessagePartContainer *container) const
+void EmailMessage::requestMessagePartDownload(const QMailMessagePartContainer *container)
 {
     connect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString, bool)),
             this, SLOT(onMessagePartDownloaded(QMailMessageId,QString, bool)));
 
     QMailMessagePart::Location location = static_cast<const QMailMessagePart *>(container)->location();
-    EmailAgent::instance()->downloadMessagePart(location);
+    m_downloadActionId = EmailAgent::instance()->downloadMessagePart(location);
 }
 
 void EmailMessage::updateReferences(QMailMessage &message, const QMailMessage &originalMessage)

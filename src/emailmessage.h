@@ -67,7 +67,7 @@ public:
         Redirect            = 5,
         UnspecifiedResponse = 6
     };
-
+    Q_INVOKABLE void cancelMessageDownload();
     Q_INVOKABLE void downloadMessage();
     Q_INVOKABLE void send();
     Q_INVOKABLE void saveDraft();
@@ -158,7 +158,7 @@ private:
     void emitMessageReloadedSignals();
     void processAttachments();
     void requestMessageDownload();
-    void requestMessagePartDownload(const QMailMessagePartContainer *container) const;
+    void requestMessagePartDownload(const QMailMessagePartContainer *container);
     void updateReferences(QMailMessage &message, const QMailMessage &originalMessage);
 
     QMailAccount m_account;
@@ -168,6 +168,7 @@ private:
     QMailMessageId m_originalMessageId;
     QMailMessage m_msg;
     bool m_newMessage;
+    quint64 m_downloadActionId;
 };
 
 #endif
