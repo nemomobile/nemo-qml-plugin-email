@@ -50,6 +50,7 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_accountSynchronizing(-1)
     , m_transmitting(false)
     , m_cancelling(false)
+    , m_cancellingSingleAction(false)
     , m_synchronizing(false)
     , m_enqueing(false)
     , m_backgroundProcess(false)
@@ -152,14 +153,29 @@ void EmailAgent::setBackgroundProcess(const bool isBackgroundProcess)
     m_backgroundProcess = isBackgroundProcess;
 }
 
-void EmailAgent::downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec)
+void EmailAgent::cancelAction(quint64 actionId)
 {
-     enqueue(new RetrieveMessages(m_retrievalAction.data(), messageIds, spec));
+    //cancel running action
+    if (m_currentAction->id() == actionId) {
+        if(m_currentAction->serviceAction()->isRunning()) {
+            m_cancellingSingleAction = true;
+            m_currentAction->serviceAction()->cancelOperation();
+        }
+        m_currentAction.clear();
+        dequeue();
+    } else {
+        removeAction(actionId);
+    }
 }
 
-void EmailAgent::downloadMessagePart(const QMailMessagePart::Location &location)
+quint64 EmailAgent::downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec)
 {
-    enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, false));
+     return enqueue(new RetrieveMessages(m_retrievalAction.data(), messageIds, spec));
+}
+
+quint64 EmailAgent::downloadMessagePart(const QMailMessagePart::Location &location)
+{
+    return enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, false));
 }
 
 void EmailAgent::exportUpdates(const QMailAccountId accountId)
@@ -229,11 +245,6 @@ void EmailAgent::moveMessages(const QMailMessageIdList &ids, const QMailFolderId
     enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
 }
 
-quint64 EmailAgent::newAction()
-{
-    return quint64(++m_actionCount);
-}
-
 void EmailAgent::sendMessages(const QMailAccountId &accountId)
 {
     if (accountId.isValid()) {
@@ -269,6 +280,14 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             // Cancel by the user skip error reporting
             qDebug() << "Canceled by the user";
             break;
+        } else if (m_cancellingSingleAction) {
+            qDebug() << "Single action canceled by the user";
+            m_cancellingSingleAction = false;
+            m_accountSynchronizing = -1;
+            emit currentSynchronizingAccountIdChanged();
+            if (m_actionQueue.empty()) {
+                m_synchronizing = false;
+            }
         } else {
             // Report the error
             dequeue();
@@ -858,13 +877,19 @@ bool EmailAgent::actionInQueue(QSharedPointer<EmailAction> action) const
         return true;
     }
     else {
-        foreach (const QSharedPointer<EmailAction> &a, m_actionQueue) {
-            if (*(a.data()) == *(action.data())) {
-                return true;
-            }
-        }
+        return actionInQueueId(action) != -1;
     }
     return false;
+}
+
+quint64 EmailAgent::actionInQueueId(QSharedPointer<EmailAction> action) const
+{
+    foreach (const QSharedPointer<EmailAction> &a, m_actionQueue) {
+        if (*(a.data()) == *(action.data())) {
+            return a.data()->id();
+        }
+    }
+    return -1;
 }
 
 void EmailAgent::dequeue()
@@ -877,7 +902,7 @@ void EmailAgent::dequeue()
     }
 }
 
-void EmailAgent::enqueue(EmailAction *actionPointer)
+quint64 EmailAgent::enqueue(EmailAction *actionPointer)
 {
     Q_ASSERT(actionPointer);
     QSharedPointer<EmailAction> action(actionPointer);
@@ -913,10 +938,11 @@ void EmailAgent::enqueue(EmailAction *actionPointer)
             m_currentAction = getNext();
             executeCurrent();
         }
-    }
-    else {
+        return action->id();
+    } else {
         qWarning() << "This request already exists in the queue: " << action->description();
         qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
+        return actionInQueueId(action);
     }
 }
 
@@ -964,6 +990,11 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
     return m_actionQueue.first();
 }
 
+quint64 EmailAgent::newAction()
+{
+    return quint64(++m_actionCount);
+}
+
 bool EmailAgent::isOnline()
 {
     return m_nmanager->isOnline();
@@ -995,6 +1026,16 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
         break;
     default:
         break;
+    }
+}
+
+void EmailAgent::removeAction(quint64 actionId)
+{
+    for (int i = 0; i < m_actionQueue.size(); ++i) {
+        if (m_actionQueue.at(i).data()->id() == actionId) {
+            m_actionQueue.removeAt(i);
+            return;
+        }
     }
 }
 

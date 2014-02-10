@@ -63,8 +63,9 @@ public:
     QString bodyPlainText(const QMailMessage &mailMsg) const;
     bool backgroundProcess() const;
     void setBackgroundProcess(const bool isBackgroundProcess);
-    void downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec);
-    void downloadMessagePart(const QMailMessagePartContainer::Location &location);
+    void cancelAction(quint64 actionId);
+    quint64 downloadMessages(const QMailMessageIdList &messageIds, QMailRetrievalAction::RetrievalSpecification spec);
+    quint64 downloadMessagePart(const QMailMessagePartContainer::Location &location);
     void exportUpdates(const QMailAccountId accountId);
     bool hasMessagesInOutbox(const QMailAccountId accountId);
     void initMailServer();
@@ -72,7 +73,6 @@ public:
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
-    quint64 newAction();
     void sendMessages(const QMailAccountId &accountId);
     void setupAccountFlags();
     int standardFolderId(int accountId, QMailFolder::StandardFolder folder) const;
@@ -138,6 +138,7 @@ private:
     uint m_accountSynchronizing;
     bool m_transmitting;
     bool m_cancelling;
+    bool m_cancellingSingleAction;
     bool m_synchronizing;
     bool m_enqueing;
     bool m_backgroundProcess;
@@ -162,12 +163,15 @@ private:
     QHash<QString, AttachmentInfo> m_attachmentDownloadQueue;
 
     bool actionInQueue(QSharedPointer<EmailAction> action) const;
+    quint64 actionInQueueId(QSharedPointer<EmailAction> action) const;
     void dequeue();
-    void enqueue(EmailAction *action);
+    quint64 enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
+    quint64 newAction();
     bool isOnline();
     void reportError(const QMailAccountId &accountId, const QMailServiceAction::Status::ErrorCode &errorCode);
+    void removeAction(quint64 actionId);
     void saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);

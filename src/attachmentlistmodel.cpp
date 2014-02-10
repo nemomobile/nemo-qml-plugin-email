@@ -174,6 +174,31 @@ QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QSt
     return QString();
 }
 
+QString AttachmentListModel::displayName(int idx)
+{
+    return data(index(idx,0), DisplayName).toString();
+}
+
+bool AttachmentListModel::downloadStatus(int idx)
+{
+    return data(index(idx,0), Downloaded).toBool();
+}
+
+QString AttachmentListModel::mimeType(int idx)
+{
+    return data(index(idx,0), MimeType).toString();
+}
+
+QString AttachmentListModel::url(int idx)
+{
+    return data(index(idx,0), Url).toString();
+}
+
+int AttachmentListModel::count() const
+{
+    return rowCount();
+}
+
 int AttachmentListModel::messageId() const
 {
     return m_messageId.toULongLong();
@@ -218,4 +243,5 @@ void AttachmentListModel::resetModel()
         }
     }
     endResetModel();
+    emit countChanged();
 }
