@@ -877,7 +877,7 @@ bool EmailAgent::actionInQueue(QSharedPointer<EmailAction> action) const
         return true;
     }
     else {
-        return actionInQueueId(action) != -1;
+        return actionInQueueId(action) != quint64(0);
     }
     return false;
 }
@@ -889,7 +889,7 @@ quint64 EmailAgent::actionInQueueId(QSharedPointer<EmailAction> action) const
             return a.data()->id();
         }
     }
-    return -1;
+    return quint64(0);
 }
 
 void EmailAgent::dequeue()
@@ -904,6 +904,53 @@ void EmailAgent::dequeue()
 
 quint64 EmailAgent::enqueue(EmailAction *actionPointer)
 {
+#ifdef OFFLINE
+    Q_ASSERT(actionPointer);
+    QSharedPointer<EmailAction> action(actionPointer);
+    bool foundAction = actionInQueue(action);
+
+    if (!foundAction) {
+
+        // Check if action neeeds connectivity and if we are not running from a background process
+        if(action->needsNetworkConnection()) {
+            //discard action in this case
+            m_synchronizing = false;
+            qDebug() << "Discarding online action!!";
+            emit synchronizingChanged(EmailAgent::Completed);
+            return quint64(0);
+        } else {
+
+            // It's a new action.
+            action->setId(newAction());
+
+            // Attachment dowload
+            if (action->type() == EmailAction::RetrieveMessagePart) {
+                RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(action.data());
+                if (messagePartAction->isAttachment()) {
+                    AttachmentInfo attInfo;
+                    attInfo.status = Queued;
+                    attInfo.progress = 0;
+                    m_attachmentDownloadQueue.insert(messagePartAction->partLocation(), attInfo);
+                    emit attachmentDownloadStatusChanged(messagePartAction->partLocation(), attInfo.status);
+                }
+            }
+
+            m_actionQueue.append(action);
+
+            if (!m_enqueing && m_currentAction.isNull()) {
+                // Nothing is running, start first action.
+                m_currentAction = getNext();
+                executeCurrent();
+            }
+        }
+        return action->id();
+    }
+    else {
+        qWarning() << "This request already exists in the queue: " << action->description();
+        qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
+        return actionInQueueId(action);
+    }
+#else
     Q_ASSERT(actionPointer);
     QSharedPointer<EmailAction> action(actionPointer);
     bool foundAction = actionInQueue(action);
@@ -944,6 +991,7 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
         qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
         return actionInQueueId(action);
     }
+#endif
 }
 
 void EmailAgent::executeCurrent()
