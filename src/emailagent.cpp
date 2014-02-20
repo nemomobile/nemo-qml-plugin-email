@@ -957,9 +957,16 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
 
     // Check if action neeeds connectivity and if we are not running from a background process
     if(action->needsNetworkConnection() && !backgroundProcess() && !isOnline()) {
-        // Request connection. Expecting the application to handle this.
-        // Actions will be resumed on onlineStateChanged signal.
-        emit networkConnectionRequested();
+        if (m_backgroundProcess) {
+            qDebug() << "Network not available to execute background action, exiting...";
+            m_synchronizing = false;
+            emit synchronizingChanged(EmailAgent::Error);
+            return quint64(0);
+        } else {
+            // Request connection. Expecting the application to handle this.
+            // Actions will be resumed on onlineStateChanged signal.
+            emit networkConnectionRequested();
+        }
     }
 
     if (!foundAction) {
@@ -1003,6 +1010,11 @@ void EmailAgent::executeCurrent()
         m_waitForIpc = true;
     } else if (m_currentAction->needsNetworkConnection() && !isOnline()) {
         qDebug() << "Current action not executed, waiting for newtwork";
+        if (m_backgroundProcess) {
+            qDebug() << "Network not available to execute background action, exiting...";
+            m_synchronizing = false;
+            emit synchronizingChanged(EmailAgent::Error);
+        }
     } else {
         if (!m_synchronizing) {
             m_synchronizing = true;
