@@ -1006,8 +1006,14 @@ void EmailAgent::executeCurrent()
     Q_ASSERT (!m_currentAction.isNull());
 
     if (!QMailStore::instance()->isIpcConnectionEstablished()) {
-        qWarning() << "Ipc connection not established, can't execute service action";
-        m_waitForIpc = true;
+        if (m_backgroundProcess) {
+            qDebug() << "IPC not connected to execute background action, exiting...";
+            m_synchronizing = false;
+            emit synchronizingChanged(EmailAgent::Error);
+        } else {
+            qWarning() << "Ipc connection not established, can't execute service action";
+            m_waitForIpc = true;
+        }
     } else if (m_currentAction->needsNetworkConnection() && !isOnline()) {
         qDebug() << "Current action not executed, waiting for newtwork";
         if (m_backgroundProcess) {
