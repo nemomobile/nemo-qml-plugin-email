@@ -598,6 +598,8 @@ QStringList EmailMessage::to()
 // ############## Private API #########################
 void EmailMessage::buildMessage()
 {
+    // remove all existent message parts if there's any
+    m_msg.clearParts();
 
     if (m_msg.responseType() == QMailMessage::Reply || m_msg.responseType() == QMailMessage::ReplyToAll ||
             m_msg.responseType() == QMailMessage::Forward) {

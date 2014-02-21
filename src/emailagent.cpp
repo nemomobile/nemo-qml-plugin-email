@@ -161,8 +161,6 @@ void EmailAgent::cancelAction(quint64 actionId)
             m_cancellingSingleAction = true;
             m_currentAction->serviceAction()->cancelOperation();
         }
-        m_currentAction.clear();
-        dequeue();
     } else {
         removeAction(actionId);
     }
@@ -281,6 +279,8 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             qDebug() << "Canceled by the user";
             break;
         } else if (m_cancellingSingleAction) {
+            dequeue();
+            m_currentAction.clear();
             qDebug() << "Single action canceled by the user";
             m_cancellingSingleAction = false;
             m_accountSynchronizing = -1;
@@ -288,6 +288,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             if (m_actionQueue.empty()) {
                 m_synchronizing = false;
             }
+            break;
         } else {
             // Report the error
             dequeue();
@@ -628,7 +629,7 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
     m_messageId = QMailMessageId(messageId);
     QMailMessage message (m_messageId);
 
-    for (uint i = 1; i < message.partCount(); i++) {
+    for (uint i = 0; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentlocation == sourcePart.location().toString(true)) {
             QMailMessagePart::Location location = sourcePart.location();
@@ -1112,7 +1113,7 @@ void EmailAgent::saveAttachmentToDownloads(const QMailMessageId messageId, const
     // Message and part structure can be updated during attachment download
     // is safer to reload everything
     QMailMessage message (messageId);
-    for (uint i = 1; i < message.partCount(); i++) {
+    for (uint i = 0; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentLocation == sourcePart.location().toString(true)) {
             QString attachmentPath = attachmentDownloadFolder + "/" + sourcePart.displayName();
