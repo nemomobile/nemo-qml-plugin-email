@@ -154,7 +154,7 @@ void AttachmentListModel::onAttachmentUrlChanged(const QString &attachmentLocati
 QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QString &attachmentLocation)
 {
     QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/" + attachmentLocation;
-    for (uint i = 1; i < message.partCount(); i++) {
+    for (uint i = 0; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentLocation == sourcePart.location().toString(true)) {
             QString attachmentPath = attachmentDownloadFolder + "/" + sourcePart.displayName();
