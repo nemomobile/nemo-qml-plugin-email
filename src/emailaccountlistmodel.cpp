@@ -28,14 +28,21 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
 
     connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
             this,SLOT(onAccountsAdded(QModelIndex,int,int)));
-
     connect(this, SIGNAL(rowsRemoved(QModelIndex,int,int)),
             this,SLOT(onAccountsRemoved(QModelIndex,int,int)));
     connect(QMailStore::instance(), SIGNAL(accountContentsModified(const QMailAccountIdList&)),
             this, SLOT(onAccountContentsModified(const QMailAccountIdList&)));
+    connect(QMailStore::instance(), SIGNAL(accountsUpdated(const QMailAccountIdList&)),
+            this, SLOT(onAccountsUpdated(const QMailAccountIdList&)));
 
     QMailAccountListModel::setSynchronizeEnabled(true);
     QMailAccountListModel::setKey(QMailAccountKey::status(QMailAccount::Enabled));
+
+    for (int row = 0; row < rowCount(); row++) {
+        if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
+            m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
+        }
+    }
 }
 
 EmailAccountListModel::~EmailAccountListModel()
@@ -127,6 +134,7 @@ void EmailAccountListModel::onAccountsAdded(const QModelIndex &parent, int start
 
     emit accountsAdded();
     emit numberOfAccountsChanged();
+    emit lastUpdateTimeChanged();
 }
 
 void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int start, int end)
@@ -137,6 +145,7 @@ void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int sta
 
     emit accountsRemoved();
     emit numberOfAccountsChanged();
+    emit lastUpdateTimeChanged();
 }
 
 void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &ids)
@@ -150,9 +159,31 @@ void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &
     }
 }
 
+void EmailAccountListModel::onAccountsUpdated(const QMailAccountIdList &ids)
+{
+    Q_UNUSED(ids);
+
+    bool emitSignal = false;
+    for (int row = 0; row < rowCount(); row++) {
+        if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
+            emitSignal = true;
+            m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
+        }
+    }
+
+    if (emitSignal) {
+        emit lastUpdateTimeChanged();
+    }
+}
+
 int EmailAccountListModel::numberOfAccounts() const
 {
     return rowCount();
+}
+
+QDateTime EmailAccountListModel::lastUpdateTime() const
+{
+    return m_lastUpdateTime;
 }
 
 // ########### Invokable API ###################
@@ -224,16 +255,6 @@ int EmailAccountListModel::indexFromAccountId(int id)
             return row;
     }
     return -1;
-}
-
-QDateTime EmailAccountListModel::lastUpdatedAccountTime()
-{
-    QDateTime lastUpdatedAccTime;
-    for (int row = 0; row < rowCount(); row++) {
-        if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > lastUpdatedAccTime)
-            lastUpdatedAccTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
-    }
-    return lastUpdatedAccTime;
 }
 
 bool EmailAccountListModel::standardFoldersRetrieved(int idx)

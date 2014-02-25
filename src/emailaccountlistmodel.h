@@ -19,6 +19,7 @@ class Q_DECL_EXPORT EmailAccountListModel : public QMailAccountListModel
 {
     Q_OBJECT
     Q_PROPERTY(int numberOfAccounts READ numberOfAccounts NOTIFY numberOfAccountsChanged)
+    Q_PROPERTY(QDateTime lastUpdateTime READ lastUpdateTime NOTIFY lastUpdateTimeChanged)
 
 public:
     explicit EmailAccountListModel(QObject *parent = 0);
@@ -42,6 +43,7 @@ public:
 
 public:
     int numberOfAccounts() const;
+    QDateTime lastUpdateTime() const;
 
 public slots:
     Q_INVOKABLE int accountId(int idx);
@@ -52,13 +54,13 @@ public slots:
     Q_INVOKABLE QString emailAddress(int idx);
     Q_INVOKABLE QString emailAddressFromAccountId(int accountId);
     Q_INVOKABLE int indexFromAccountId(int accountId);
-    Q_INVOKABLE QDateTime lastUpdatedAccountTime();
     Q_INVOKABLE bool standardFoldersRetrieved(int idx);
 
 signals:
     void accountsAdded();
     void accountsRemoved();
     void accountsUpdated();
+    void lastUpdateTimeChanged();
     void modelReset();
     void numberOfAccountsChanged();
 
@@ -66,12 +68,14 @@ private slots:
     void onAccountsAdded(const QModelIndex &parent, int start, int end);
     void onAccountsRemoved(const QModelIndex &parent, int start, int end);
     void onAccountContentsModified(const QMailAccountIdList& ids);
+    void onAccountsUpdated(const QMailAccountIdList& ids);
 
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
 
 private:
     QHash<int, QByteArray> roles;
+    QDateTime m_lastUpdateTime;
 };
 
 #endif
