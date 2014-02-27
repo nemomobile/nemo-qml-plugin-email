@@ -616,7 +616,7 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
         // Export updates for all accounts that we deleted messages from
         QMailAccountIdList accountList = accountMap.uniqueKeys();
         for (int i = 0; i < accountList.size(); i++) {
-            if (i == accountList.size()) {
+            if (i+1 == accountList.size()) {
                 m_enqueing = false;
             }
             enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
