@@ -640,13 +640,9 @@ void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
     if (m_selectedMsgIds.empty())
         return;
 
-    QMailFolderId const id(vFolderId);
-
-    QMailMessage const msg(m_selectedMsgIds[0]);
-
+    const QMailFolderId id(vFolderId);
     EmailAgent::instance()->moveMessages(m_selectedMsgIds, id);
     m_selectedMsgIds.clear();
-    EmailAgent::instance()->exportUpdates(msg.parentAccountId());
 }
 
 void EmailMessageListModel::deleteSelectedMessageIds()

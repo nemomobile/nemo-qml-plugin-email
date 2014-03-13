@@ -237,9 +237,8 @@ void EmailAgent::moveMessages(const QMailMessageIdList &ids, const QMailFolderId
     QMailMessageId id(ids[0]);
     QMailAccountId accountId = accountForMessageId(id);
 
-    m_enqueing = true;
-    enqueue(new MoveToFolder(m_storageAction.data(), ids, destinationId));
-    m_enqueing = false;
+    QMailDisconnected::moveToFolder(ids, destinationId);
+
     enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
 }
 

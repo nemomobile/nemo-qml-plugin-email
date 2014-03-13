@@ -202,7 +202,7 @@ QMailServiceAction* FlagMessages::serviceAction() const
 */
 MoveToFolder::MoveToFolder(QMailStorageAction *storageAction, const QMailMessageIdList &ids,
                            const QMailFolderId &folderId)
-    : EmailAction(false)
+    : EmailAction()
     , _storageAction(storageAction)
     , _ids(ids)
     , _destinationFolder(folderId)
@@ -228,11 +228,11 @@ QMailServiceAction* MoveToFolder::serviceAction() const
 }
 
 /*
-  MoveToStandardFolder
+   MoveToStandardFolder
 */
 MoveToStandardFolder::MoveToStandardFolder(QMailStorageAction *storageAction,
                                            const QMailMessageIdList &ids, QMailFolder::StandardFolder standardFolder)
-    : EmailAction(false)
+    : EmailAction()
     , _storageAction(storageAction)
     , _ids(ids)
     , _standardFolder(standardFolder)
