@@ -505,16 +505,22 @@ void EmailMessage::setPriority(EmailMessage::Priority priority)
     switch (priority) {
     case HighPriority:
         m_msg.setHeaderField("X-Priority", "1");
-        m_msg.setHeaderField("X-MSMail-Priority", "High");
+        m_msg.setHeaderField("Importance", "high");
+        m_msg.setStatus(QMailMessage::LowPriority, false);
+        m_msg.setStatus(QMailMessage::HighPriority, true);
         break;
     case LowPriority:
         m_msg.setHeaderField("X-Priority", "5");
-        m_msg.setHeaderField("X-MSMail-Priority", "Low");
+        m_msg.setHeaderField("Importance", "low");
+        m_msg.setStatus(QMailMessage::HighPriority, false);
+        m_msg.setStatus(QMailMessage::LowPriority, true);
         break;
     case NormalPriority:
     default:
         m_msg.setHeaderField("X-Priority", "3");
-        m_msg.setHeaderField("X-MSMail-Priority", "Normal");
+        m_msg.removeHeaderField("Importance");
+        m_msg.setStatus(QMailMessage::HighPriority, false);
+        m_msg.setStatus(QMailMessage::LowPriority, false);
         break;
     }
     emit priorityChanged();
