@@ -641,7 +641,9 @@ void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
         return;
 
     const QMailFolderId id(vFolderId);
-    EmailAgent::instance()->moveMessages(m_selectedMsgIds, id);
+    if (id.isValid()) {
+        EmailAgent::instance()->moveMessages(m_selectedMsgIds, id);
+    }
     m_selectedMsgIds.clear();
 }
 
