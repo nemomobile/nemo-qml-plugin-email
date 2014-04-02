@@ -428,6 +428,8 @@ void EmailMessage::setBcc(const QStringList &bccList)
         m_msg.setBcc(QMailAddress::fromStringList(bccList));
         emit bccChanged();
         emit multipleRecipientsChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set 'Bcc' addresses from a empty list";
     }
 }
 
@@ -445,33 +447,43 @@ void EmailMessage::setCc(const QStringList &ccList)
         m_msg.setCc(QMailAddress::fromStringList(ccList));
         emit ccChanged();
         emit multipleRecipientsChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set 'Cc' addresses from a empty list";
     }
 }
 
 void EmailMessage::setFrom(const QString &sender)
 {
-    QMailAccountIdList accountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
-                                                                          & QMailAccountKey::status(QMailAccount::Enabled)
-                                                                          , QMailAccountSortKey::name());
-    // look up the account id for the given sender
-    foreach (QMailAccountId id, accountIds) {
-        QMailAccount account(id);
-        QMailAddress from = account.fromAddress();
-        if (from.address() == sender || from.toString() == sender || from.name() == sender) {
-            m_account = account;
-            m_msg.setParentAccountId(id);
-            m_msg.setFrom(account.fromAddress());
+    if (!sender.isEmpty()) {
+        QMailAccountIdList accountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
+                                                                              & QMailAccountKey::status(QMailAccount::Enabled)
+                                                                              , QMailAccountSortKey::name());
+        // look up the account id for the given sender
+        foreach (QMailAccountId id, accountIds) {
+            QMailAccount account(id);
+            QMailAddress from = account.fromAddress();
+            if (from.address() == sender || from.toString() == sender || from.name() == sender) {
+                m_account = account;
+                m_msg.setParentAccountId(id);
+                m_msg.setFrom(account.fromAddress());
+            }
         }
+        emit fromChanged();
+        emit accountIdChanged();
+        emit accountAddressChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set a empty 'From' address.";
     }
-    emit fromChanged();
-    emit accountIdChanged();
-    emit accountAddressChanged();
 }
 
 void EmailMessage::setInReplyTo(const QString &messageId)
 {
-    m_msg.setInReplyTo(messageId);
-    emit inReplyToChanged();
+    if (!messageId.isEmpty()) {
+        m_msg.setInReplyTo(messageId);
+        emit inReplyToChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set a empty messageId as 'InReplyTo' header.";
+    }
 }
 
 void EmailMessage::setMessageId(int messageId)
@@ -540,9 +552,13 @@ void EmailMessage::setRead(bool read) {
 
 void EmailMessage::setReplyTo(const QString &address)
 {
-    QMailAddress addr(address);
-    m_msg.setReplyTo(addr);
-    emit replyToChanged();
+    if (!address.isEmpty()) {
+        QMailAddress addr(address);
+        m_msg.setReplyTo(addr);
+        emit replyToChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set a empty address as 'ReplyTo' header.";
+    }
 }
 
 void EmailMessage::setResponseType(EmailMessage::ResponseType responseType)
@@ -582,8 +598,12 @@ void EmailMessage::setSubject(const QString &subject)
 
 void EmailMessage::setTo(const QStringList &toList)
 {
-    m_msg.setTo(QMailAddress::fromStringList(toList));
-    emit toChanged();
+    if (toList.size()) {
+        m_msg.setTo(QMailAddress::fromStringList(toList));
+        emit toChanged();
+    } else {
+        qWarning() << Q_FUNC_INFO << "Can't set 'To' addresses from a empty list";
+    }
 }
 
 int EmailMessage::size()
