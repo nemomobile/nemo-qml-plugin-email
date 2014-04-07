@@ -22,7 +22,9 @@ EmailAccount::EmailAccount()
     , mSendCfg(0)
     , mRetrievalAction(new QMailRetrievalAction(this))
     , mTransmitAction(new QMailTransmitAction(this))
+    , mTimeoutTimer(new QTimer(this))
     , mErrorCode(0)
+    , mIncomingTested(0)
 { 
     EmailAgent::instance();
     mAccount->setMessageType(QMailMessage::Email);
@@ -36,7 +38,9 @@ EmailAccount::EmailAccount(const QMailAccount &other)
     , mSendCfg(0)
     , mRetrievalAction(new QMailRetrievalAction(this))
     , mTransmitAction(new QMailTransmitAction(this))
+    , mTimeoutTimer(new QTimer(this))
     , mErrorCode(0)
+    , mIncomingTested(0)
 {
     EmailAgent::instance();
     *mAccountConfig = QMailStore::instance()->accountConfiguration(mAccount->id());
@@ -129,28 +133,50 @@ bool EmailAccount::remove()
     }
     return result;
 }
-
-void EmailAccount::test()
+// Timeout in seconds
+void EmailAccount::test(int timeout)
 {
-    QTimer::singleShot(5000, this, SLOT(testConfiguration()));
-    //TODO: check for network here when conf manager is integrated
-    //with conman
-    /*
-    QNetworkConfigurationManager networkManager;
-    if (networkManager.isOnline()) {
-        QTimer::singleShot(5000, this, SLOT(testConfiguration()));
-    } else {
-        // skip test if not connected to a network
-        emit testSkipped();
-    }*/
-}
+    mIncomingTested = false;
+    stopTimeout();
 
-void EmailAccount::testConfiguration()
-{
     if (mAccount->id().isValid()) {
+        connect(mTimeoutTimer, SIGNAL(timeout()), this, SLOT(timeout()));
+        mTimeoutTimer->start(timeout * 1000);
         mRetrievalAction->retrieveFolderList(mAccount->id(), QMailFolderId(), true);
     } else {
-        emit testFailed(InvalidAccount);
+        emit testFailed(IncomingServer,InvalidAccount);
+    }
+}
+
+void EmailAccount::cancelTest()
+{
+    //cancel retrieval action
+    if (mRetrievalAction->isRunning()) {
+        mRetrievalAction->cancelOperation();
+    }
+
+    //cancel transmit action
+    if (mTransmitAction->isRunning()) {
+        mTransmitAction->cancelOperation();
+    }
+}
+
+void EmailAccount::timeout()
+{
+    cancelTest();
+
+    if (mIncomingTested) {
+        emit testFailed(OutgoingServer, Timeout);
+    } else {
+        emit testFailed(IncomingServer, Timeout);
+    }
+}
+
+void EmailAccount::stopTimeout()
+{
+    // Stop any previous runnning timer
+    if (mTimeoutTimer && mTimeoutTimer->isActive()) {
+        mTimeoutTimer->stop();
     }
 }
 
@@ -160,22 +186,24 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         const QMailServiceAction::Status status(mRetrievalAction->status());
 
         if (activity == QMailServiceAction::Successful) {
+            mIncomingTested = true;
             mTransmitAction->transmitMessages(mAccount->id());
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
             qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
-            emit testFailed(IncomingServer);
+            emitError(IncomingServer, status.errorCode);
         }
     } else if (sender() == static_cast<QObject*>(mTransmitAction)) {
         const QMailServiceAction::Status status(mTransmitAction->status());
         if (activity == QMailServiceAction::Successful) {
+            stopTimeout();
             emit testSucceeded();
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
             qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
-            emit testFailed(OutgoingServer);
+            emitError(OutgoingServer, status.errorCode);
         }
     }
 }
@@ -565,4 +593,48 @@ QString EmailAccount::toBase64(const QString &value)
 QString EmailAccount::fromBase64(const QString &value)
 {
     return Base64::decode(value);
+}
+
+void EmailAccount::emitError(const EmailAccount::ServerType serverType, const QMailServiceAction::Status::ErrorCode &errorCode)
+{
+    stopTimeout();
+
+    switch (errorCode) {
+    case QMailServiceAction::Status::ErrFrameworkFault:
+    case QMailServiceAction::Status::ErrSystemError:
+    case QMailServiceAction::Status::ErrInternalServer:
+    case QMailServiceAction::Status::ErrEnqueueFailed:
+    case QMailServiceAction::Status::ErrInternalStateReset:
+        emit testFailed(serverType, InternalError);
+        break;
+    case QMailServiceAction::Status::ErrLoginFailed:
+        emit testFailed(serverType, LoginFailed);
+        break;
+    case QMailServiceAction::Status::ErrFileSystemFull:
+        emit testFailed(serverType, DiskFull);
+        break;
+    case QMailServiceAction::Status::ErrUnknownResponse:
+        emit testFailed(serverType, ExternalComunicationError);
+        break;
+    case QMailServiceAction::Status::ErrNoConnection:
+    case QMailServiceAction::Status::ErrConnectionInUse:
+    case QMailServiceAction::Status::ErrConnectionNotReady:
+        emit testFailed(serverType, ConnectionError);
+        break;
+    case QMailServiceAction::Status::ErrConfiguration:
+    case QMailServiceAction::Status::ErrInvalidAddress:
+    case QMailServiceAction::Status::ErrInvalidData:
+    case QMailServiceAction::Status::ErrNotImplemented:
+        emit testFailed(serverType, InvalidConfiguration);
+        break;
+    case QMailServiceAction::Status::ErrTimeout:
+        emit testFailed(serverType, Timeout);
+        break;
+    case QMailServiceAction::Status::ErrCancel:
+        // The operation was cancelled by user intervention.
+        break;
+    default:
+        emit testFailed(serverType, InternalError);
+        break;
+    }
 }
