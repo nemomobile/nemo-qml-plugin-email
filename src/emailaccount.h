@@ -16,7 +16,8 @@
 
 class Q_DECL_EXPORT EmailAccount : public QObject {
     Q_OBJECT
-    Q_ENUMS(ErrorType)
+    Q_ENUMS(Error)
+    Q_ENUMS(ServerType)
 
     Q_PROPERTY(int accountId READ accountId WRITE setAccountId)
     Q_PROPERTY(QString description READ description WRITE setDescription)
@@ -56,7 +57,8 @@ public:
 
     Q_INVOKABLE bool save();
     Q_INVOKABLE bool remove();
-    Q_INVOKABLE void test();
+    Q_INVOKABLE void test(int timeout = 60);
+    Q_INVOKABLE void cancelTest();
     Q_INVOKABLE void clear();
     Q_INVOKABLE void applyPreset();
     Q_INVOKABLE QString toBase64(const QString &value);
@@ -118,19 +120,29 @@ public:
         mslivePreset
     };
 
-    enum ErrorType {
-        InvalidAccount = 0,
-        IncomingServer,
+    enum Error {
+        ConnectionError = 0,
+        DiskFull,
+        ExternalComunicationError,
+        InvalidAccount,
+        InvalidConfiguration,
+        InternalError,
+        LoginFailed,
+        Timeout
+    };
+
+    enum ServerType {
+        IncomingServer = 0,
         OutgoingServer
     };
 
 signals:
     void testSucceeded();
     void testSkipped();
-    void testFailed(ErrorType e);
+    void testFailed(ServerType serverType, Error error);
 
 private slots:
-    void testConfiguration();
+    void timeout();
     void activityChanged(QMailServiceAction::Activity activity);
 
 private:
@@ -140,12 +152,16 @@ private:
     QMailServiceConfiguration *mSendCfg;
     QMailRetrievalAction *mRetrievalAction;
     QMailTransmitAction *mTransmitAction;
+    QTimer *mTimeoutTimer;
     QString mRecvType;
     QString mPassword;
     QString mErrorMessage;
     int mErrorCode;
+    bool mIncomingTested;
 
     void init();
+    void emitError(const ServerType serverType, const QMailServiceAction::Status::ErrorCode &errorCode);
+    void stopTimeout();
 
     // workaround to QMF hiding its base64 password encoder in
     // protected methods
