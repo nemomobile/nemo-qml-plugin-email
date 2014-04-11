@@ -1,6 +1,6 @@
 /*
  * Copyright 2011 Intel Corporation.
- * Copyright (C) 2012 Jolla Ltd.
+ * Copyright (C) 2012-2014 Jolla Ltd.
  *
  * This program is licensed under the terms and conditions of the
  * Apache License, version 2.0.  The full text of the Apache License is at 	
@@ -20,6 +20,7 @@ class Q_DECL_EXPORT EmailAccountListModel : public QMailAccountListModel
     Q_OBJECT
     Q_PROPERTY(int numberOfAccounts READ numberOfAccounts NOTIFY numberOfAccountsChanged)
     Q_PROPERTY(QDateTime lastUpdateTime READ lastUpdateTime NOTIFY lastUpdateTimeChanged)
+    Q_PROPERTY(bool canTransmitAccounts READ canTransmitAccounts WRITE setCanTransmitAccounts NOTIFY canTransmitAccountsChanged)
 
 public:
     explicit EmailAccountListModel(QObject *parent = 0);
@@ -44,6 +45,8 @@ public:
 public:
     int numberOfAccounts() const;
     QDateTime lastUpdateTime() const;
+    bool canTransmitAccounts() const;
+    void setCanTransmitAccounts(bool value);
 
 public slots:
     Q_INVOKABLE int accountId(int idx);
@@ -63,6 +66,7 @@ signals:
     void lastUpdateTimeChanged();
     void modelReset();
     void numberOfAccountsChanged();
+    void canTransmitAccountsChanged();
 
 private slots:
     void onAccountsAdded(const QModelIndex &parent, int start, int end);
@@ -76,6 +80,7 @@ protected:
 private:
     QHash<int, QByteArray> roles;
     QDateTime m_lastUpdateTime;
+    bool m_canTransmitAccounts;
 };
 
 #endif

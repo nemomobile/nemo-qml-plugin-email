@@ -1,6 +1,6 @@
 /*
  * Copyright 2011 Intel Corporation.
- * Copyright (C) 2012 Jolla Ltd.
+ * Copyright (C) 2012-2014 Jolla Ltd.
  *
  * This program is licensed under the terms and conditions of the
  * Apache License, version 2.0.  The full text of the Apache License is at 	
@@ -37,6 +37,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
 
     QMailAccountListModel::setSynchronizeEnabled(true);
     QMailAccountListModel::setKey(QMailAccountKey::status(QMailAccount::Enabled));
+    m_canTransmitAccounts = false;
 
     for (int row = 0; row < rowCount(); row++) {
         if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
@@ -184,6 +185,26 @@ int EmailAccountListModel::numberOfAccounts() const
 QDateTime EmailAccountListModel::lastUpdateTime() const
 {
     return m_lastUpdateTime;
+}
+
+bool EmailAccountListModel::canTransmitAccounts() const
+{
+    return m_canTransmitAccounts;
+}
+
+void EmailAccountListModel::setCanTransmitAccounts(bool value)
+{
+    if (value != m_canTransmitAccounts) {
+        if (value) {
+            QMailAccountKey transmitKey = QMailAccountKey::status(QMailAccount::Enabled)  &
+                    QMailAccountKey::status(QMailAccount::CanTransmit);
+            QMailAccountListModel::setKey(transmitKey);
+        } else {
+            QMailAccountListModel::setKey(QMailAccountKey::status(QMailAccount::Enabled));
+        }
+        emit numberOfAccountsChanged();
+        emit canTransmitAccountsChanged();
+    }
 }
 
 // ########### Invokable API ###################
