@@ -44,8 +44,6 @@ class Q_DECL_EXPORT EmailAccount : public QObject {
     Q_PROPERTY(QString sendUsername READ sendUsername WRITE setSendUsername)
     Q_PROPERTY(QString sendPassword READ sendPassword WRITE setSendPassword)
 
-    Q_PROPERTY(int preset READ preset WRITE setPreset)
-
     // error message and code from configuration test
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY testFailed)
     Q_PROPERTY(int errorCode READ errorCode NOTIFY testFailed)
@@ -59,8 +57,8 @@ public:
     Q_INVOKABLE bool remove();
     Q_INVOKABLE void test(int timeout = 60);
     Q_INVOKABLE void cancelTest();
+    Q_INVOKABLE void retrieveSettings(QString emailAdress);
     Q_INVOKABLE void clear();
-    Q_INVOKABLE void applyPreset();
     Q_INVOKABLE QString toBase64(const QString &value);
     Q_INVOKABLE QString fromBase64(const QString &value);
 
@@ -105,20 +103,8 @@ public:
     QString sendPassword() const;
     void setSendPassword(QString val);
 
-    int preset() const;
-    void setPreset(int val);
-
     QString errorMessage() const;
     int errorCode() const;
-
-    enum PresetType {
-        noPreset = 0,
-        mobilemePreset,
-        gmailPreset,
-        yahooPreset,
-        aolPreset,
-        mslivePreset
-    };
 
     enum Error {
         ConnectionError = 0,
@@ -137,6 +123,8 @@ public:
     };
 
 signals:
+    void settingsRetrieved();
+    void settingsRetrievalFailed();
     void testSucceeded();
     void testSkipped();
     void testFailed(ServerType serverType, Error error);

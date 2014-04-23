@@ -34,8 +34,6 @@ EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     roles[SendUsernameRole] = "sendUsername";
     roles[SendPasswordRole] = "sendPassword";
 
-    roles[PresetRole] = "preset";
-
     init();
 }
 
@@ -186,9 +184,6 @@ QVariant EmailAccountSettingsModel::data(const QModelIndex &index, int role) con
             svccfg = mAccountConfigs[index.row()].serviceConfiguration("smtp");
             return QMailDecoder::decode(svccfg.value("smtppassword"));
             break;
-        case PresetRole:
-            return mAccounts[index.row()].customField("preset");
-            break;
         default:
             return QVariant();
         }
@@ -319,8 +314,6 @@ bool EmailAccountSettingsModel::setData(const QModelIndex &index, const QVariant
             svccfg.setValue("smtppassword", QMailDecoder::encode(value.toString()));
             return true;
             break;
-        case PresetRole:
-            // setting preset not implemented here
         default:
             return false;
         }

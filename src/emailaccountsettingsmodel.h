@@ -38,10 +38,9 @@ public:
         SendAuthRole,
         SendSecurityRole,
         SendUsernameRole,
-        SendPasswordRole,
-
-        PresetRole
+        SendPasswordRole
     };
+
     EmailAccountSettingsModel(QObject *parent = 0);
     Q_INVOKABLE void reload();
     Q_INVOKABLE int rowCount(const QModelIndex &parent = QModelIndex()) const;
