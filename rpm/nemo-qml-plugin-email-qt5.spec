@@ -82,6 +82,8 @@ rm -rf %{buildroot}
 %{_libdir}/libnemoemail-qt5.so.*
 %{_libdir}/qt5/qml/org/nemomobile/email/libnemoemail.so
 %{_libdir}/qt5/qml/org/nemomobile/email/qmldir
+%{_sysconfdir}/xdg/nemo-qml-plugin-email/domainSettings.conf
+%{_sysconfdir}/xdg/nemo-qml-plugin-email/serviceSettings.conf
 # >> files
 # << files
 

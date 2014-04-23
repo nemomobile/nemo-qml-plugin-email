@@ -8,12 +8,41 @@
 
 #include <QNetworkConfigurationManager>
 #include <QTimer>
+#include <QSettings>
 
 #include <qmailstore.h>
 #include <qmailmessage.h>
 
 #include "emailaccount.h"
 #include "emailagent.h"
+
+namespace {
+    QString securityType(const QString &securityType) {
+        if (securityType.toLower() == QLatin1String("ssl")) {
+            return QLatin1String("1");
+        } else if (securityType.toLower() == QLatin1String("starttls")) {
+            return QLatin1String("2");
+        }
+
+        if (securityType.toLower() != QLatin1String("none"))
+            qWarning() << "Unknown security type:" << securityType;
+        return QLatin1String("0");
+    }
+
+    QString authorizationType(const QString &authType) {
+        if (authType.toLower() == QLatin1String("login")) {
+            return QLatin1String("1");
+        } else if (authType.toLower() == QLatin1String("plain")) {
+            return QLatin1String("2");
+        } else if (authType.toLower() == QLatin1String("cram-md5")) {
+            return QLatin1String("3");
+        }
+
+        if (authType.toLower() != QLatin1String("none"))
+            qWarning() << "Unknown authorization type:" << authType;
+        return QLatin1String("0");
+    }
+}
 
 EmailAccount::EmailAccount()
     : mAccount(new QMailAccount())
@@ -115,10 +144,9 @@ bool EmailAccount::save()
     if (mAccount->id().isValid()) {
         result = QMailStore::instance()->updateAccount(mAccount, mAccountConfig);
     } else {
-        if (preset() == noPreset) {
-            // set description to server for custom email accounts
-            setDescription(server());
-        }
+        // set description to server for custom email accounts
+        setDescription(server());
+
         result = QMailStore::instance()->addAccount(mAccount, mAccountConfig);
     }
     return result;
@@ -158,6 +186,40 @@ void EmailAccount::cancelTest()
     //cancel transmit action
     if (mTransmitAction->isRunning()) {
         mTransmitAction->cancelOperation();
+    }
+}
+
+void EmailAccount::retrieveSettings(QString emailAdress)
+{
+    QString domain = (emailAdress.remove(QRegExp("^.*@"))).toLower();
+    QSettings domains(QSettings::SystemScope, "nemo-qml-plugin-email", "domainSettings");
+
+    if (!domain.isEmpty() && domains.contains(domain + QLatin1String("/serviceProvider"))) {
+        domains.beginGroup(domain);
+        QString serviceName = domains.value("serviceProvider").toString();
+
+        QSettings services(QSettings::SystemScope, "nemo-qml-plugin-email", "serviceSettings");
+
+        if (services.contains(serviceName + QLatin1String("/incomingServer"))) {
+            services.beginGroup(serviceName);
+
+            setRecvType(services.value("incomingServerType").toString());
+            setRecvServer(services.value("incomingServer").toString());
+            setRecvSecurity(securityType(services.value("incomingSecureConnection").toString()));
+            setRecvPort(services.value("incomingPort").toString());
+
+            setSendServer(services.value("outgoingServer").toString());
+            setSendSecurity(securityType(services.value("outgoingSecureConnection").toString()));
+            setSendPort(services.value("outgoingPort").toString());
+            setSendAuth(authorizationType(services.value("outgoingAuthentication").toString()));
+
+            emit settingsRetrieved();
+
+        } else {
+            emit settingsRetrievalFailed();
+        }
+    }  else {
+        emit settingsRetrievalFailed();
     }
 }
 
@@ -205,149 +267,6 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
             qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
             emitError(OutgoingServer, status.errorCode);
         }
-    }
-}
-
-namespace {
-
-    // The only supported types here ('external' type) are: '0':pop3 '1':imap4
-    QString externalRecvType(const QString &internal) {
-        if (internal == QLatin1String("pop3")) {
-            return QLatin1String("0");
-        } else if (internal == QLatin1String("imap4")) {
-            return QLatin1String("1");
-        }
-        qWarning() << "Unknown internal receive type:" << internal;
-        return QString();
-    }
-
-    // Internal type is the stored value
-    QString internalRecvType(const QString &external) {
-        if (external == QLatin1String("0")) {
-            return QLatin1String("pop3");
-        } else if (external == QLatin1String("1")) {
-            return QLatin1String("imap4");
-        }
-        qWarning() << "Unknown external receive type:" << external;
-        return QString();
-    }
-
-    // Equivalent to QMailTransport::EncryptType?
-    QString securityType(const QString &securityType) {
-        if (securityType == QLatin1String("SSL")) {
-            return QLatin1String("1");
-        } else if (securityType == QLatin1String("TLS")) {
-            return QLatin1String("2");
-        }
-
-        if (securityType != QLatin1String("none"))
-            qWarning() << "Unknown security type:" << securityType;
-        return QLatin1String("0");
-    }
-
-    // Equivalent to QMail::SaslMechanism?
-    QString authorizationType(const QString &authType) {
-        if (authType == QLatin1String("Login")) {
-            return QLatin1String("1");
-        } else if (authType == QLatin1String("Plain")) {
-            return QLatin1String("2");
-        } else if (authType == QLatin1String("CRAM-MD5")) {
-            return QLatin1String("3");
-        }
-
-        if (authType != QLatin1String("none"))
-            qWarning() << "Unknown authorization type:" << authType;
-        return QLatin1String("0");
-    }
-}
-
-void EmailAccount::applyPreset()
-{
-    switch(preset()) {
-        case mobilemePreset:
-            setRecvType(externalRecvType("imap4"));
-            setRecvServer("mail.me.com");
-            setRecvPort("993");
-            setRecvSecurity(securityType("SSL"));
-            setRecvUsername(username());         // username only
-            setRecvPassword(password());
-            setSendServer("smtp.me.com");
-            setSendPort("587");
-            setSendSecurity(securityType("SSL"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(username());         // username only
-            setSendPassword(password());
-            break;
-        case gmailPreset:
-            setRecvType(externalRecvType("imap4"));
-            setRecvServer("imap.gmail.com");
-            setRecvPort("993");
-            setRecvSecurity(securityType("SSL"));
-            setRecvUsername(address());          // full email address
-            setRecvPassword(password());
-            setSendServer("smtp.gmail.com");
-            setSendPort("465");
-            setSendSecurity(securityType("SSL"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(address());          // full email address
-            setSendPassword(password());
-            break;
-        case yahooPreset:
-            setRecvType(externalRecvType("imap4"));
-            setRecvServer("imap.mail.yahoo.com");
-            setRecvPort("993");
-            setRecvSecurity(securityType("SSL"));
-            setRecvUsername(address());          // full email address
-            setRecvPassword(password());
-            setSendServer("smtp.mail.yahoo.com");
-            setSendPort("465");
-            setSendSecurity(securityType("SSL"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(address());          // full email address
-            setSendPassword(password());
-            break;
-        case aolPreset:
-            setRecvType(externalRecvType("imap4"));
-            setRecvServer("imap.aol.com");
-            setRecvPort("143");
-            setRecvSecurity(securityType("none"));
-            setRecvUsername(username());         // username only
-            setRecvPassword(password());
-            setSendServer("smtp.aol.com");
-            setSendPort("587");
-            setSendSecurity(securityType("none"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(username());         // username only
-            setSendPassword(password());
-            break;
-        case mslivePreset:
-            setRecvType(externalRecvType("pop3"));
-            setRecvServer("pop3.live.com");
-            setRecvPort("995");
-            setRecvSecurity(securityType("SSL"));
-            setRecvUsername(address());          // full email address
-            setRecvPassword(password());
-            setSendServer("smtp.live.com");
-            setSendPort("587");
-            setSendSecurity(securityType("TLS"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(address());          // full email address
-            setSendPassword(password());
-            break;
-        case noPreset:
-            setRecvType(externalRecvType("imap4"));
-            setRecvPort("993");
-            setRecvSecurity(securityType("SSL"));
-            setRecvUsername(username());         // username only
-            setRecvPassword(password());
-            setSendPort("587");
-            setSendSecurity(securityType("SSL"));
-            setSendAuth(authorizationType("Login"));
-            setSendUsername(username());         // username only
-            setSendPassword(password());
-            break;
-        default:
-            break;
     }
 }
 
@@ -436,18 +355,17 @@ void EmailAccount::setPassword(QString val)
 
 QString EmailAccount::recvType() const
 {
-    return externalRecvType(mRecvType);
+    return mRecvType;
 }
 
 void EmailAccount::setRecvType(QString val)
 {
     // prevent bug where recv type gets reset
     // when loading the first time
-    QString newRecvType = internalRecvType(val);
-    if (newRecvType != mRecvType) {
+    if (val != mRecvType) {
         mAccountConfig->removeServiceConfiguration(mRecvType);
-        mAccountConfig->addServiceConfiguration(newRecvType);
-        mRecvType = newRecvType;
+        mAccountConfig->addServiceConfiguration(val);
+        mRecvType = val;
         delete mRecvCfg;
         mRecvCfg = new QMailServiceConfiguration(mAccountConfig, mRecvType);
         mRecvCfg->setType(QMailServiceConfiguration::Source);
@@ -563,16 +481,6 @@ QString EmailAccount::sendPassword() const
 void EmailAccount::setSendPassword(QString val)
 {
     mSendCfg->setValue("smtppassword", Base64::encode(val));
-}
-
-int EmailAccount::preset() const
-{
-    return mAccount->customField("preset").toInt();
-}
-
-void EmailAccount::setPreset(int val)
-{
-    mAccount->setCustomField("preset", QString::number(val));
 }
 
 QString EmailAccount::errorMessage() const
