@@ -248,9 +248,12 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         const QMailServiceAction::Status status(mRetrievalAction->status());
 
         if (activity == QMailServiceAction::Successful) {
-            mIncomingTested = true;
-            mTransmitAction->transmitMessages(mAccount->id());
-        } else if (activity == QMailServiceAction::Failed) {
+            if (!mIncomingTested) {
+                mIncomingTested = true;
+                mRetrievalAction->createStandardFolders(mAccount->id());
+                mTransmitAction->transmitMessages(mAccount->id());
+            }
+        } else if (activity == QMailServiceAction::Failed && !mIncomingTested) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
             qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
