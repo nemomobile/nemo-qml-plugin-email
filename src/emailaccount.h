@@ -114,7 +114,8 @@ public:
         InvalidConfiguration,
         InternalError,
         LoginFailed,
-        Timeout
+        Timeout,
+        UntrustedCertificates
     };
 
     enum ServerType {
