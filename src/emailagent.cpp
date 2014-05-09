@@ -1077,9 +1077,6 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
     case QMailServiceAction::Status::ErrNoConnection:
     case QMailServiceAction::Status::ErrConnectionInUse:
     case QMailServiceAction::Status::ErrConnectionNotReady:
-    case QMailServiceAction::Status::ErrConfiguration:
-    case QMailServiceAction::Status::ErrInvalidAddress:
-    case QMailServiceAction::Status::ErrInvalidData:
     case QMailServiceAction::Status::ErrTimeout:
     case QMailServiceAction::Status::ErrInternalStateReset:
         emit error(accountId.toULongLong(), SyncFailed);
@@ -1090,7 +1087,21 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
     case QMailServiceAction::Status::ErrFileSystemFull:
         emit error(accountId.toULongLong(), DiskFull);
         break;
+    case QMailServiceAction::Status::ErrConfiguration:
+    case QMailServiceAction::Status::ErrInvalidAddress:
+    case QMailServiceAction::Status::ErrInvalidData:
+    case QMailServiceAction::Status::ErrNotImplemented:
+    case QMailServiceAction::Status::ErrNoSslSupport:
+        emit error(accountId.toULongLong(), InvalidConfiguration);
+        break;
+    case QMailServiceAction::Status::ErrUntrustedCertificates:
+        emit error(accountId.toULongLong(), UntrustedCertificates);
+        break;
+    case QMailServiceAction::Status::ErrCancel:
+        // The operation was cancelled by user intervention.
+        break;
     default:
+        emit error(accountId.toULongLong(), InternalError);
         break;
     }
 }

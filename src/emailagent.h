@@ -53,7 +53,10 @@ public:
     enum SyncErrors {
         SyncFailed = 0,
         LoginFailed,
-        DiskFull
+        DiskFull,
+        InvalidConfiguration,
+        UntrustedCertificates,
+        InternalError
     };
 
     int currentSynchronizingAccountId() const;

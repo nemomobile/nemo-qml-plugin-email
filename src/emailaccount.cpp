@@ -536,10 +536,14 @@ void EmailAccount::emitError(const EmailAccount::ServerType serverType, const QM
     case QMailServiceAction::Status::ErrInvalidAddress:
     case QMailServiceAction::Status::ErrInvalidData:
     case QMailServiceAction::Status::ErrNotImplemented:
+    case QMailServiceAction::Status::ErrNoSslSupport:
         emit testFailed(serverType, InvalidConfiguration);
         break;
     case QMailServiceAction::Status::ErrTimeout:
         emit testFailed(serverType, Timeout);
+        break;
+    case QMailServiceAction::Status::ErrUntrustedCertificates:
+        emit testFailed(serverType, UntrustedCertificates);
         break;
     case QMailServiceAction::Status::ErrCancel:
         // The operation was cancelled by user intervention.
