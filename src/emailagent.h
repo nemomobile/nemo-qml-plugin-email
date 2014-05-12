@@ -56,7 +56,8 @@ public:
         DiskFull,
         InvalidConfiguration,
         UntrustedCertificates,
-        InternalError
+        InternalError,
+        SendFailed
     };
 
     int currentSynchronizingAccountId() const;
@@ -121,7 +122,7 @@ signals:
     void messagesDownloaded(const QMailMessageIdList &messageIds, bool success);
     void messagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
     void progressUpdated(int percent);
-    void sendCompleted();
+    void sendCompleted(bool success);
     void standardFoldersCreated(const QMailAccountId &accountId);
     void synchronizingChanged(EmailAgent::Status status);
     void networkConnectionRequested();
@@ -146,6 +147,7 @@ private:
     bool m_enqueing;
     bool m_backgroundProcess;
     bool m_waitForIpc;
+    bool m_sendFailed;
 
     QMailAccountIdList m_enabledAccounts;
 

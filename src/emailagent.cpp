@@ -54,6 +54,7 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_synchronizing(false)
     , m_enqueing(false)
     , m_backgroundProcess(false)
+    , m_sendFailed(false)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
@@ -293,7 +294,8 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             dequeue();
             if (m_currentAction->type() == EmailAction::Transmit) {
                 m_transmitting = false;
-                emit sendCompleted();
+                m_sendFailed = true;
+                emit sendCompleted(false);
                 qDebug() << "Error: Send failed";
             }
 
@@ -332,12 +334,10 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
 
     case QMailServiceAction::Successful:
         dequeue();
-        //Clients should not wait for send, check if this is
-        //really necessary
         if (m_currentAction->type() == EmailAction::Transmit) {
             qDebug() << "Finished sending for " << m_currentAction->accountId();
             m_transmitting = false;
-            emit sendCompleted();
+            emit sendCompleted(true);
         }
 
         if (m_currentAction->type() == EmailAction::StandardFolders) {
@@ -1079,7 +1079,12 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
     case QMailServiceAction::Status::ErrConnectionNotReady:
     case QMailServiceAction::Status::ErrTimeout:
     case QMailServiceAction::Status::ErrInternalStateReset:
-        emit error(accountId.toULongLong(), SyncFailed);
+        if (m_sendFailed) {
+            m_sendFailed = false;
+            emit error(accountId.toULongLong(), SendFailed);
+        } else {
+            emit error(accountId.toULongLong(), SyncFailed);
+        }
         break;
     case QMailServiceAction::Status::ErrLoginFailed:
         emit error(accountId.toULongLong(), LoginFailed);

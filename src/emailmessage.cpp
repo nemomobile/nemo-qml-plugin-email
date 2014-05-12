@@ -90,9 +90,9 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
     }
 }
 
-void EmailMessage::onSendCompleted()
+void EmailMessage::onSendCompleted(bool success)
 {
-    emit sendCompleted();
+    emit sendCompleted(success);
 }
 
 // ############# Invokable API ########################
@@ -128,7 +128,7 @@ void EmailMessage::send()
 
     EmailAgent *emailAgent = EmailAgent::instance();
     if (stored) {
-        connect(emailAgent, SIGNAL(sendCompleted()), this, SLOT(onSendCompleted()));
+        connect(emailAgent, SIGNAL(sendCompleted(bool)), this, SLOT(onSendCompleted(bool)));
         emailAgent->sendMessages(m_msg.parentAccountId());
         emitSignals();
     }
