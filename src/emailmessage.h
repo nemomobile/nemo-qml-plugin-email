@@ -117,7 +117,7 @@ public:
 
 
 signals:
-    void sendCompleted();
+    void sendCompleted(bool success);
 
     void accountIdChanged();
     void accountAddressChanged();
@@ -148,7 +148,7 @@ signals:
 private slots:
     void onMessagesDownloaded(const QMailMessageIdList &ids, bool success);
     void onMessagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
-    void onSendCompleted();
+    void onSendCompleted(bool success);
 
 private:
     friend class tst_EmailMessage;
