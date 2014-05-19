@@ -298,6 +298,16 @@ void FolderListModel::setAccountKey(int id)
 
 }
 
+int FolderListModel::standardFolderIndex(FolderStandardType folderType)
+{
+    foreach (const FolderItem *item, m_folderList) {
+        if (item->folderType == folderType) {
+            return item->index.row();
+        }
+    }
+    return -1;
+}
+
 FolderListModel::FolderStandardType FolderListModel::folderTypeFromId(const QMailFolderId &id) const
 {
     QMailFolder folder(id);
