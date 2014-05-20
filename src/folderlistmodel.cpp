@@ -176,8 +176,15 @@ void FolderListModel::updateUnreadCount(const QMailFolderIdList &folderIds)
             }
         }
     }
-    // Update model data if needed
-    onFoldersChanged(folderIds);
+    // Update unread count
+    // all local folders in the model will be updated since they have same ID
+    int count = rowCount();
+    for (int i = 0; i < count; ++i) {
+        QMailFolderId tmpFolderId(folderId(i));
+        if (folderIds.contains(tmpFolderId)) {
+            dataChanged(index(i,0), index(i,0), QVector<int>() << FolderUnreadCount);
+        }
+    }
 }
 
 int FolderListModel::folderUnreadCount(const QMailFolderId &folderId, FolderStandardType folderType,
