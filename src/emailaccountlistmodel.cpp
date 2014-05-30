@@ -24,6 +24,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(LastSynchronized, "lastSynchronized");
     roles.insert(StandardFoldersRetrieved, "standardFoldersRetrieved");
     roles.insert(Signature, "signature");
+    roles.insert(AppendSignature, "appendSignature");
     roles.insert(IconPath, "iconPath");
 
     connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
@@ -112,6 +113,10 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 
     if (role == Signature) {
         return account.signature();
+    }
+
+    if (role == AppendSignature) {
+        return account.status() & QMailAccount::AppendSignature;
     }
 
     if (role == IconPath) {
@@ -281,4 +286,24 @@ int EmailAccountListModel::indexFromAccountId(int id)
 bool EmailAccountListModel::standardFoldersRetrieved(int idx)
 {
     return data(index(idx), EmailAccountListModel::StandardFoldersRetrieved).toBool();
+}
+
+bool EmailAccountListModel::appendSignature(int accountId)
+{
+    int accountIndex = indexFromAccountId(accountId);
+
+    if (accountIndex < 0)
+        return false;
+
+    return data(index(accountIndex), EmailAccountListModel::AppendSignature).toBool();
+}
+
+QString EmailAccountListModel::signature(int accountId)
+{
+    int accountIndex = indexFromAccountId(accountId);
+
+    if (accountIndex < 0)
+        return QString();
+
+    return data(index(accountIndex), EmailAccountListModel::Signature).toString();
 }
