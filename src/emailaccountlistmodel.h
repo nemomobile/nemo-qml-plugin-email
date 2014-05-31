@@ -35,8 +35,9 @@ public:
         LastSynchronized = Qt::UserRole + 9,
         StandardFoldersRetrieved = Qt::UserRole + 10,
         Signature = Qt::UserRole + 11,
-        IconPath = Qt::UserRole + 12,
-        Index = Qt::UserRole + 13
+        AppendSignature = Qt::UserRole + 12,
+        IconPath = Qt::UserRole + 13,
+        Index = Qt::UserRole + 14
     };
 
     virtual QVariant data(const QModelIndex &index, int role) const;
@@ -58,6 +59,8 @@ public slots:
     Q_INVOKABLE QString emailAddressFromAccountId(int accountId);
     Q_INVOKABLE int indexFromAccountId(int accountId);
     Q_INVOKABLE bool standardFoldersRetrieved(int idx);
+    Q_INVOKABLE bool appendSignature(int accountId);
+    Q_INVOKABLE QString signature(int accountId);
 
 signals:
     void accountsAdded();
