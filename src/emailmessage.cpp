@@ -221,7 +221,11 @@ QString EmailMessage::body()
 {
     if (QMailMessagePartContainer *container = m_msg.findPlainTextContainer()) {
         if (container->contentAvailable()) {
-            return m_bodyText;
+            if (m_bodyText.length()) {
+                return m_bodyText;
+            } else {
+                return QStringLiteral(" ");
+            }
         } else {
             if (m_msg.multipartType() == QMailMessage::MultipartNone) {
                 requestMessageDownload();
@@ -281,7 +285,13 @@ QString EmailMessage::htmlBody()
     QMailMessagePartContainer *container = m_msg.findHtmlContainer();
     if (contentType() == EmailMessage::HTML && container) {
         if (container->contentAvailable()) {
-            return container->body().data();
+            // Some email clients don't add html tags to the html
+            // body in case there's no content in the email body itself
+            if (container->body().data().length()) {
+                return container->body().data();
+            } else {
+                return QStringLiteral("<br/>");
+            }
         } else {
             if (m_msg.multipartType() == QMailMessage::MultipartNone) {
                 requestMessageDownload();
