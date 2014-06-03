@@ -86,10 +86,12 @@ private:
         QMailFolderId folderId;
         FolderStandardType folderType;
         QMailMessageKey messageKey;
+        int unreadCount;
 
         FolderItem(QModelIndex idx, QMailFolderId mailFolderId,
-                   FolderStandardType mailFolderType, QMailMessageKey folderMessageKey) :
-            index(idx), folderId(mailFolderId), folderType(mailFolderType), messageKey(folderMessageKey) {}
+                   FolderStandardType mailFolderType, QMailMessageKey folderMessageKey, int folderUnreadCount) :
+            index(idx), folderId(mailFolderId), folderType(mailFolderType), messageKey(folderMessageKey),
+            unreadCount(folderUnreadCount) {}
     };
 
     int m_currentFolderIdx;

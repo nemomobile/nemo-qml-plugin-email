@@ -82,8 +82,12 @@ protected:
 
 private:
     QHash<int, QByteArray> roles;
+    QHash<QMailAccountId, int> m_unreadCountCache;
     QDateTime m_lastUpdateTime;
     bool m_canTransmitAccounts;
+
+    int accountUnreadCount(const QMailAccountId accountId);
+
 };
 
 #endif
