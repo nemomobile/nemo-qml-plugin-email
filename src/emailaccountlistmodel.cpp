@@ -44,11 +44,31 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
         if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
             m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
         }
+
+        QMailAccountId accountId(data(index(row), EmailAccountListModel::MailAccountId).toInt());
+        m_unreadCountCache.insert(accountId, accountUnreadCount(accountId));
     }
 }
 
 EmailAccountListModel::~EmailAccountListModel()
 {
+}
+
+int EmailAccountListModel::accountUnreadCount(const QMailAccountId accountId)
+{
+    QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
+    QMailFolderSortKey sortKey = QMailFolderSortKey::serverCount(Qt::DescendingOrder);
+    QMailFolderIdList folderIds = QMailStore::instance()->queryFolders(key, sortKey);
+
+    QMailMessageKey accountKey(QMailMessageKey::parentAccountId(accountId));
+    QMailMessageKey folderKey(QMailMessageKey::parentFolderId(folderIds));
+    QMailMessageKey unreadKey(QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Trash, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Junk, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Outgoing, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Sent, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Draft, QMailDataComparator::Excludes));
+    return (QMailStore::instance()->countMessages(accountKey & folderKey & unreadKey));
 }
 
 QHash<int, QByteArray> EmailAccountListModel::roleNames() const
@@ -72,14 +92,7 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     }
 
     if (role == UnreadCount) {
-        QMailFolderKey key = QMailFolderKey::parentAccountId(accountId);
-        QMailFolderSortKey sortKey = QMailFolderSortKey::serverCount(Qt::DescendingOrder);
-        QMailFolderIdList folderIds = QMailStore::instance()->queryFolders(key, sortKey);
-
-        QMailMessageKey accountKey(QMailMessageKey::parentAccountId(accountId));
-        QMailMessageKey folderKey(QMailMessageKey::parentFolderId(folderIds));
-        QMailMessageKey unreadKey(QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes));
-        return (QMailStore::instance()->countMessages(accountKey & folderKey & unreadKey));
+        return m_unreadCountCache.value(accountId);
     }
 
     QMailAccount account(accountId);
@@ -135,8 +148,12 @@ int EmailAccountListModel::rowCount(const QModelIndex &parent) const
 void EmailAccountListModel::onAccountsAdded(const QModelIndex &parent, int start, int end)
 {
     Q_UNUSED(parent);
-    Q_UNUSED(start);
-    Q_UNUSED(end);
+
+    for (int i = start; i < end; i++) {
+        QMailAccountId accountId(data(index(i), EmailAccountListModel::MailAccountId).toInt());
+        m_unreadCountCache.insert(accountId, accountUnreadCount(accountId));
+        dataChanged(index(i), index(i), QVector<int>() << UnreadCount);
+    }
 
     emit accountsAdded();
     emit numberOfAccountsChanged();
@@ -160,6 +177,7 @@ void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &
     for (int i = 0; i < count; ++i) {
         QMailAccountId tmpAccountId(accountId(i));
         if (ids.contains(tmpAccountId)) {
+            m_unreadCountCache.insert(tmpAccountId, accountUnreadCount(tmpAccountId));
             dataChanged(index(i), index(i), QVector<int>() << UnreadCount);
         }
     }
