@@ -148,16 +148,25 @@ int EmailAccountListModel::rowCount(const QModelIndex &parent) const
 void EmailAccountListModel::onAccountsAdded(const QModelIndex &parent, int start, int end)
 {
     Q_UNUSED(parent);
+    bool updateTimeChanged = false;
 
     for (int i = start; i < end; i++) {
         QMailAccountId accountId(data(index(i), EmailAccountListModel::MailAccountId).toInt());
         m_unreadCountCache.insert(accountId, accountUnreadCount(accountId));
         dataChanged(index(i), index(i), QVector<int>() << UnreadCount);
+
+        if ((data(index(i), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
+            updateTimeChanged = true;
+            m_lastUpdateTime = (data(index(i), EmailAccountListModel::LastSynchronized)).toDateTime();
+        }
     }
 
     emit accountsAdded();
     emit numberOfAccountsChanged();
-    emit lastUpdateTimeChanged();
+
+    if (updateTimeChanged) {
+        emit lastUpdateTimeChanged();
+    }
 }
 
 void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int start, int end)
@@ -166,9 +175,18 @@ void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int sta
     Q_UNUSED(start);
     Q_UNUSED(end);
 
+    if (rowCount()) {
+        m_lastUpdateTime = QDateTime();
+        for (int row = 0; row < rowCount(); row++) {
+            if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
+                m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
+            }
+        }
+        emit lastUpdateTimeChanged();
+    }
+
     emit accountsRemoved();
     emit numberOfAccountsChanged();
-    emit lastUpdateTimeChanged();
 }
 
 void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &ids)
