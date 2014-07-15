@@ -1,6 +1,6 @@
 Name:       nemo-qml-plugin-email-qt5-offline
 Summary:    Offline email plugin for Nemo Mobile
-Version:    0.1.21
+Version:    0.1.41
 Release:    1
 Group:      System/Libraries
 License:    BSD
@@ -73,6 +73,8 @@ rm -rf %{buildroot}
 %{_libdir}/libnemoemail-qt5.so.*
 %{_libdir}/qt5/qml/org/nemomobile/email/libnemoemail.so
 %{_libdir}/qt5/qml/org/nemomobile/email/qmldir
+%{_sysconfdir}/xdg/nemo-qml-plugin-email/domainSettings.conf
+%{_sysconfdir}/xdg/nemo-qml-plugin-email/serviceSettings.conf
 # >> files
 # << files
 
