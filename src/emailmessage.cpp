@@ -733,31 +733,15 @@ void EmailMessage::emitMessageReloadedSignals()
 
 void EmailMessage::processAttachments()
 {
-    QMailMessagePart attachmentPart;
+    QStringList attachments;
     foreach (QString attachment, m_attachments) {
         // Attaching a file
-        if (attachment.startsWith("file://"))
+        if (attachment.startsWith("file://")) {
             attachment.remove(0, 7);
-        QFileInfo fi(attachment);
-
-        // Just in case..
-        if (!fi.isFile())
-            continue;
-
-        QMailMessageContentType attachmenttype(QMail::mimeTypeFromFileName(attachment).toLatin1());
-        attachmenttype.setName(fi.fileName().toLatin1());
-
-        QMailMessageContentDisposition disposition(QMailMessageContentDisposition::Attachment);
-        disposition.setFilename(fi.fileName().toLatin1());
-        disposition.setSize(fi.size());
-
-        attachmentPart = QMailMessagePart::fromFile(attachment,
-                                                    disposition,
-                                                    attachmenttype,
-                                                    QMailMessageBody::Base64,
-                                                    QMailMessageBody::RequiresEncoding);
-        m_msg.appendPart(attachmentPart);
+        }
+        attachments.append(attachment);
     }
+    m_msg.setAttachments(attachments);
 }
 
 void EmailMessage::requestMessageDownload()
