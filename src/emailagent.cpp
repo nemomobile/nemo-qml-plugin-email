@@ -623,6 +623,29 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
     }
 }
 
+void EmailAgent::expungeMessages(const QMailMessageIdList &ids)
+{
+    m_enqueing = true;
+    enqueue(new DeleteMessages(m_storageAction.data(), ids));
+
+    QMailAccountIdList accountList;
+    // Messages can be from several accounts
+    foreach (const QMailMessageId &id, ids) {
+        QMailAccountId accountId = accountForMessageId(id);
+        if (!accountList.contains(accountId)) {
+            accountList.append(accountId);
+        }
+    }
+
+    // Export updates for all accounts that we deleted messages from
+    for (int i = 0; i < accountList.size(); i++) {
+        if (i+1 == accountList.size()) {
+            m_enqueing = false;
+        }
+        enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
+    }
+}
+
 void EmailAgent::downloadAttachment(int messageId, const QString &attachmentlocation)
 {
     m_messageId = QMailMessageId(messageId);

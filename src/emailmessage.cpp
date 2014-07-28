@@ -112,28 +112,48 @@ void EmailMessage::downloadMessage()
 
 void EmailMessage::send()
 {
+    // Check if we are about to send a existent draft message
+    // if so create a new message with the draft content
+    if (m_msg.id().isValid()) {
+        QMailMessage newMessage;
+        EmailMessage::Priority previousMessagePriority = this->priority();
+
+        // Record any message properties we should retain
+        newMessage.setResponseType(m_msg.responseType());
+        newMessage.setTo(m_msg.to());
+        newMessage.setCc(m_msg.cc());
+        newMessage.setBcc(m_msg.bcc());
+        newMessage.setParentAccountId(m_account.id());
+        newMessage.setFrom(m_account.fromAddress());
+        newMessage.setSubject(m_msg.subject());
+        m_msg = newMessage;
+        this->setPriority(previousMessagePriority);
+        m_idToRemove = m_id;
+        m_id = QMailMessageId();
+    }
+
     buildMessage();
 
     bool stored = false;
 
-    if (!m_msg.id().isValid()) {
-        // Message present only on the local device until we externalise or send it
-        m_msg.setStatus(QMailMessage::LocalOnly, true);
-        stored = QMailStore::instance()->addMessage(&m_msg);
-    }
-    else {
-        stored = QMailStore::instance()->updateMessage(&m_msg);
-        m_newMessage = false;
-    }
+    // Message present only on the local device until we externalise or send it
+    m_msg.setStatus(QMailMessage::LocalOnly, true);
+    stored = QMailStore::instance()->addMessage(&m_msg);
 
     EmailAgent *emailAgent = EmailAgent::instance();
     if (stored) {
         connect(emailAgent, SIGNAL(sendCompleted(bool)), this, SLOT(onSendCompleted(bool)));
         emailAgent->sendMessages(m_msg.parentAccountId());
+        if (m_idToRemove.isValid()) {
+            emailAgent->expungeMessages(QMailMessageIdList() << m_idToRemove);
+            m_idToRemove = QMailMessageId();
+        }
+        // Send messages are always new at this point
+        m_newMessage = false;
         emitSignals();
-    }
-    else
+    } else {
        qWarning() << "Error: queuing message, stored: " << stored;
+    }
 }
 
 void EmailMessage::saveDraft()

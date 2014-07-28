@@ -166,6 +166,7 @@ private:
     QString m_bodyText;
     QMailMessageId m_id;
     QMailMessageId m_originalMessageId;
+    QMailMessageId m_idToRemove;
     QMailMessage m_msg;
     bool m_newMessage;
     quint64 m_downloadActionId;
