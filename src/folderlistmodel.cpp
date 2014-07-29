@@ -290,6 +290,16 @@ int FolderListModel::indexFromFolderId(int folderId)
     return -1;
 }
 
+// Returns true for sent, outbox and draft folders
+bool FolderListModel::isOutgoingFolder(int idx)
+{
+    FolderStandardType folderStdType = static_cast<FolderListModel::FolderStandardType>(folderType(idx).toInt());
+    if (folderStdType == SentFolder || folderStdType == DraftsFolder || folderStdType == OutboxFolder) {
+        return true;
+    }
+    return false;
+}
+
 int FolderListModel::numberOfFolders()
 {
     return m_folderList.count();
