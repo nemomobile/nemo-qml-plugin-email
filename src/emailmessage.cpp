@@ -126,6 +126,13 @@ void EmailMessage::send()
         newMessage.setParentAccountId(m_account.id());
         newMessage.setFrom(m_account.fromAddress());
         newMessage.setSubject(m_msg.subject());
+        if (!m_originalMessageId.isValid() && m_msg.inResponseTo().isValid()) {
+            m_originalMessageId = m_msg.inResponseTo();
+            if (newMessage.responseType() == QMailMessage::UnspecifiedResponse ||
+                    newMessage.responseType() == QMailMessage::NoResponse) {
+                newMessage.setResponseType(QMailMessage::Reply);
+            }
+        }
         m_msg = newMessage;
         this->setPriority(previousMessagePriority);
         m_idToRemove = m_id;
