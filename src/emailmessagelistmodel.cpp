@@ -213,7 +213,11 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
         QStringList recipients;
         QList<QMailAddress> addresses = messageMetaData.recipients();
         foreach (const QMailAddress &address, addresses) {
-            recipients << address.name();
+            if (address.name().isEmpty()) {
+                recipients << address.address();
+            } else {
+                recipients << address.name();
+            }
         }
         return recipients;
     }
@@ -224,7 +228,11 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
             return 0; // 0 for unread
     }
     else if (role == MessageSenderDisplayNameRole) {
-        return messageMetaData.from().name();
+        if (messageMetaData.from().name().isEmpty()) {
+            return messageMetaData.from().address();
+        } else {
+            return messageMetaData.from().name();
+        }
     }
     else if (role == MessageSenderEmailAddressRole) {
         return messageMetaData.from().address();

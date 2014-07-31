@@ -62,6 +62,7 @@ public:
     Q_INVOKABLE int folderUnreadCount(int idx);
     Q_INVOKABLE int folderServerCount(int folderId);
     Q_INVOKABLE int indexFromFolderId(int folderId);
+    Q_INVOKABLE bool isOutgoingFolder(int idx);
     Q_INVOKABLE int numberOfFolders();
     Q_INVOKABLE void setAccountKey(int id);
     Q_INVOKABLE int standardFolderIndex(FolderStandardType folderType);
