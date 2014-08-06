@@ -160,6 +160,22 @@ void FolderListModel::onFoldersChanged(const QMailFolderIdList &ids)
 
 void FolderListModel::updateUnreadCount(const QMailFolderIdList &folderIds)
 {
+    // Update unread count
+    // all local folders in the model will be updated since they have same ID
+    int count = rowCount();
+    for (int i = 0; i < count; ++i) {
+        QMailFolderId tmpFolderId(folderId(i));
+        if (folderIds.contains(tmpFolderId)) {
+            FolderItem *folderItem = m_folderList[i];
+            if (folderItem->folderId == tmpFolderId) {
+                folderItem->unreadCount = folderUnreadCount(folderItem->folderId, folderItem->folderType, folderItem->messageKey);
+                dataChanged(index(i,0), index(i,0), QVector<int>() << FolderUnreadCount);
+            } else {
+                qWarning() << Q_FUNC_INFO << "Failed to update unread count for folderId " << tmpFolderId.toULongLong();
+            }
+        }
+    }
+
     if (m_currentFolderId.isValid() && folderIds.contains(m_currentFolderId)) {
         if (m_currentFolderType == OutboxFolder || m_currentFolderType == DraftsFolder) {
             // read total number of messages again from database
@@ -173,21 +189,6 @@ void FolderListModel::updateUnreadCount(const QMailFolderIdList &folderIds)
             if (tmpUnreadCount != m_currentFolderUnreadCount) {
                 m_currentFolderUnreadCount = tmpUnreadCount;
                 emit currentFolderUnreadCountChanged();
-            }
-        }
-    }
-    // Update unread count
-    // all local folders in the model will be updated since they have same ID
-    int count = rowCount();
-    for (int i = 0; i < count; ++i) {
-        QMailFolderId tmpFolderId(folderId(i));
-        if (folderIds.contains(tmpFolderId)) {
-            FolderItem *folderItem = m_folderList[i];
-            if (folderItem->folderId == tmpFolderId) {
-                folderItem->unreadCount = folderUnreadCount(folderItem->folderId, folderItem->folderType, folderItem->messageKey);
-                dataChanged(index(i,0), index(i,0), QVector<int>() << FolderUnreadCount);
-            } else {
-                qWarning() << Q_FUNC_INFO << "Failed to update unread count for folderId " << tmpFolderId.toULongLong();
             }
         }
     }
