@@ -68,7 +68,7 @@ public:
 
     enum Priority { LowPriority, NormalPriority, HighPriority };
 
-    enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject};
+    enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject, Recipients};
 
     // property accessors.
     int count() const;
@@ -91,6 +91,7 @@ public slots:
     Q_INVOKABLE void setFolderKey(int id, QMailMessageKey messageKey = QMailMessageKey());
     Q_INVOKABLE void setAccountKey(int id);
     Q_INVOKABLE void sortBySender(int order = 0);
+    Q_INVOKABLE void sortByRecipients(int order = 0);
     Q_INVOKABLE void sortBySubject(int order = 0);
     Q_INVOKABLE void sortByDate(int order = 1);
     Q_INVOKABLE void sortByAttachment(int order = 1);
