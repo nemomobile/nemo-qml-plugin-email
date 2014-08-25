@@ -426,6 +426,17 @@ void EmailAccount::setRecvPassword(QString val)
     mRecvCfg->setValue("password", Base64::encode(val));
 }
 
+bool EmailAccount::pushCapable() const
+{
+    if (mRecvType.toLower() == "imap4") {
+        // Reload configuration since this setting is saved by messageserver
+        QMailServiceConfiguration imapConf(mAccountConfig, mRecvType);
+        return (imapConf.value("pushCapable").toInt() != 0);
+    } else {
+        return false;
+    }
+}
+
 QString EmailAccount::sendServer() const
 {
     return mSendCfg->value("server");

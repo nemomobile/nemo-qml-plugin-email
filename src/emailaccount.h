@@ -36,6 +36,7 @@ class Q_DECL_EXPORT EmailAccount : public QObject {
     Q_PROPERTY(QString recvSecurity READ recvSecurity WRITE setRecvSecurity)
     Q_PROPERTY(QString recvUsername READ recvUsername WRITE setRecvUsername)
     Q_PROPERTY(QString recvPassword READ recvPassword WRITE setRecvPassword)
+    Q_PROPERTY(QString pushCapable READ pushCapable)
 
     Q_PROPERTY(QString sendServer READ sendServer WRITE setSendServer)
     Q_PROPERTY(QString sendPort READ sendPort WRITE setSendPort)
@@ -89,6 +90,7 @@ public:
     void setRecvUsername(QString val);
     QString recvPassword() const;
     void setRecvPassword(QString val);
+    bool pushCapable() const;
 
     QString sendServer() const;
     void setSendServer(QString val);
