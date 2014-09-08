@@ -418,6 +418,20 @@ QStringList EmailMessage::recipients() const
     return recipients;
 }
 
+QStringList EmailMessage::recipientsDisplayName() const
+{
+    QStringList recipients;
+    QList<QMailAddress> addresses = m_msg.recipients();
+    foreach (const QMailAddress &address, addresses) {
+        if (address.name().isEmpty()) {
+            recipients << address.address();
+        } else {
+            recipients << address.name();
+        }
+    }
+    return recipients;
+}
+
 bool EmailMessage::read() const
 {
     if (m_msg.status() & QMailMessage::Read) {
@@ -750,6 +764,7 @@ void EmailMessage::emitMessageReloadedSignals()
     emit priorityChanged();
     emit readChanged();
     emit recipientsChanged();
+    emit recipientsDisplayNameChanged();
     emit replyToChanged();
     emit responseTypeChanged();
     emit subjectChanged();
