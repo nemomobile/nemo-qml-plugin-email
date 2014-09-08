@@ -10,6 +10,7 @@
 #include <qmailmessage.h>
 
 #include "emailaccountsettingsmodel.h"
+#include "emailagent.h"
 
 EmailAccountSettingsModel::EmailAccountSettingsModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -103,7 +104,7 @@ QVariant EmailAccountSettingsModel::data(const QModelIndex &index, int role) con
         } else if (services.contains("pop3")) {
             recvsvc = "pop3";
         } else {
-            qWarning("EmailAccountSettingsModel::data: No IMAP or POP service found for account");
+            qCWarning(lcGeneral) << "EmailAccountSettingsModel::data: No IMAP or POP service found for account";
             return QVariant();
         }
         switch (role) {
@@ -205,7 +206,7 @@ bool EmailAccountSettingsModel::setData(const QModelIndex &index, const QVariant
         } else if (services.contains("pop3")) {
             recvsvc = "pop3";
         } else {
-            qWarning("EmailAccountSettingsModel::setData: No IMAP or POP service found for account");
+            qCWarning(lcGeneral) << "EmailAccountSettingsModel::setData: No IMAP or POP service found for account";
             return false;
         }
         switch (role) {

@@ -125,7 +125,7 @@ int EmailMessageListModel::rowCount(const QModelIndex & parent) const {
 
 QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const {
     if (!index.isValid() || index.row() > rowCount(parent(index))) {
-        qWarning() << Q_FUNC_INFO << "Invalid Index";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Invalid Index";
         return QVariant();
     }
 
