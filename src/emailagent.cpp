@@ -1009,18 +1009,25 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
         }
 
         m_actionQueue.append(action);
+    }
 
-        if (!m_enqueing && m_currentAction.isNull()) {
-            // Nothing is running, start first action.
-            m_currentAction = getNext();
+    if (!m_enqueing && (m_currentAction.isNull() || !m_currentAction->serviceAction()->isRunning())) {
+        // Nothing is running or current action is in waiting state, start first action.
+        QSharedPointer<EmailAction> nextAction = getNext();
+        if (m_currentAction.isNull() || !(*(m_currentAction.data()) == *(nextAction.data()))) {
+            m_currentAction = nextAction;
             executeCurrent();
         }
-        return action->id();
+    }
+
+    if (!foundAction) {
+         return action->id();
     } else {
         qWarning() << "This request already exists in the queue: " << action->description();
         qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
         return actionInQueueId(action);
     }
+
 #endif
 }
 
@@ -1076,7 +1083,18 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
     if(m_actionQueue.isEmpty())
         return QSharedPointer<EmailAction>();
 
-    return m_actionQueue.first();
+    QSharedPointer<EmailAction> firstAction = m_actionQueue.first();
+    // if we are offline move the first offline action to the top of the queue if one exists
+    if (!isOnline() && firstAction->needsNetworkConnection() && m_actionQueue.size() > 1) {
+        for (int i = 1; i < m_actionQueue.size(); i++) {
+            QSharedPointer<EmailAction> action = m_actionQueue.at(i);
+            if (!action->needsNetworkConnection()) {
+                m_actionQueue.move(i,0);
+                return action;
+            }
+        }
+    }
+    return firstAction;
 }
 
 quint64 EmailAgent::newAction()
