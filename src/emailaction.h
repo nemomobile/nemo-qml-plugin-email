@@ -35,6 +35,7 @@ public:
     virtual QMailAccountId accountId() const;
     virtual QMailServiceAction* serviceAction() const = 0;
     bool operator==(const EmailAction &action) const;
+    bool operator!=(const EmailAction &action) const;
     QString description() const;
     ActionType type() const;
     quint64 id() const;

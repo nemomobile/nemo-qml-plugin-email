@@ -57,6 +57,15 @@ bool EmailAction::operator==(const EmailAction &action) const
     }
 }
 
+bool EmailAction::operator!=(const EmailAction &action) const
+{
+    if (action._description != _description) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 QString EmailAction::description() const
 {
     return _description;
