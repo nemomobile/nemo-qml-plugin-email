@@ -59,6 +59,7 @@ public:
         Q_ASSERT(uri == QLatin1String("org.nemomobile.email"));
         Q_UNUSED(engine)
         Q_UNUSED(uri)
+        QLoggingCategory::setFilterRules(QStringLiteral("org.nemomobile.email.debug=false"));
     }
 
     void registerTypes(const char *uri)

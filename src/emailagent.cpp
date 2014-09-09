@@ -24,6 +24,9 @@
 #include "emailagent.h"
 #include "emailaction.h"
 
+Q_LOGGING_CATEGORY(lcGeneral, "org.nemomobile.email.general")
+Q_LOGGING_CATEGORY(lcDebug, "org.nemomobile.email.debug")
+
 #define MESSAGESERVER "/usr/bin/messageserver5"
 
 namespace {
@@ -61,7 +64,6 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_nmanager(new QNetworkConfigurationManager(this))
     , m_networkSession(0)
 {
-
     connect(QMailStore::instance(), SIGNAL(ipcConnectionEstablished()),
             this, SLOT(onIpcConnectionEstablished()));
 
@@ -205,7 +207,7 @@ void EmailAgent::initMailServer()
         return;
     }
     QMail::fileUnlock(id);
-    qDebug() << Q_FUNC_INFO << "Starting messageserver process...";
+    qCDebug(lcGeneral) << Q_FUNC_INFO << "Starting messageserver process...";
     m_messageServerProcess = new QProcess(this);
     connect(m_messageServerProcess, SIGNAL(error(QProcess::ProcessError)),
             this, SLOT(onMessageServerProcessError(QProcess::ProcessError)));
@@ -276,12 +278,12 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             m_cancelling = false;
             m_actionQueue.clear();
             // Cancel by the user skip error reporting
-            qDebug() << "Canceled by the user";
+            qCDebug(lcGeneral) << "Canceled by the user";
             break;
         } else if (m_cancellingSingleAction) {
             dequeue();
             m_currentAction.clear();
-            qDebug() << "Single action canceled by the user";
+            qCDebug(lcGeneral) << "Single action canceled by the user";
             m_cancellingSingleAction = false;
             m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
@@ -296,31 +298,31 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 m_transmitting = false;
                 m_sendFailed = true;
                 emit sendCompleted(false);
-                qDebug() << "Error: Send failed";
+                qCDebug(lcGeneral) << "Error: Send failed";
             }
 
             if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
                 RetrieveMessagePart* messagePartAction = static_cast<RetrieveMessagePart *>(m_currentAction.data());
                 if (messagePartAction->isAttachment()) {
                     updateAttachmentDowloadStatus(messagePartAction->partLocation(), Failed);
-                    qDebug() << "Attachment dowload failed for " << messagePartAction->partLocation();
+                    qCDebug(lcGeneral) << "Attachment dowload failed for " << messagePartAction->partLocation();
                 } else {
                     emit messagePartDownloaded(messagePartAction->messageId(), messagePartAction->partLocation(), false);
-                    qDebug() << "Failed to dowload message part!!";
+                    qCDebug(lcGeneral) << "Failed to dowload message part!!";
                 }
             }
 
             if (m_currentAction->type() == EmailAction::RetrieveMessages) {
                 RetrieveMessages* retrieveMessagesAction = static_cast<RetrieveMessages *>(m_currentAction.data());
                 emit messagesDownloaded(retrieveMessagesAction->messageIds(), false);
-                qDebug() << "Failed to download messages";
+                qCDebug(lcGeneral) << "Failed to download messages";
             }
 
             m_currentAction = getNext();
             reportError(status.accountId, status.errorCode);
 
             if (m_currentAction.isNull()) {
-                qDebug() << "Sync completed with Errors!!!.";
+                qCDebug(lcGeneral) << "Sync completed with Errors!!!.";
                 m_synchronizing = false;
                 m_accountSynchronizing = -1;
                 emit currentSynchronizingAccountIdChanged();
@@ -335,7 +337,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
     case QMailServiceAction::Successful:
         dequeue();
         if (m_currentAction->type() == EmailAction::Transmit) {
-            qDebug() << "Finished sending for " << m_currentAction->accountId();
+            qCDebug(lcGeneral) << "Finished sending for " << m_currentAction->accountId();
             m_transmitting = false;
             emit sendCompleted(true);
         }
@@ -368,7 +370,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
         m_currentAction = getNext();
 
         if (m_currentAction.isNull()) {
-            qDebug() << "Sync completed.";
+            qCDebug(lcGeneral) << "Sync completed.";
             m_synchronizing = false;
             m_accountSynchronizing = -1;
             emit currentSynchronizingAccountIdChanged();
@@ -381,7 +383,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
 
     default:
         //emit acctivity changed here
-        qDebug() << "Activity State Changed:" << activity;
+        qCDebug(lcDebug) << "Activity State Changed:" << activity;
         break;
     }
 }
@@ -396,7 +398,7 @@ void EmailAgent::onIpcConnectionEstablished()
             m_currentAction = getNext();
 
         if (m_currentAction.isNull()) {
-            qDebug() << "Ipc connection established, but no action in the queue.";
+            qCDebug(lcDebug) << "Ipc connection established, but no action in the queue.";
         } else {
             executeCurrent();
         }
@@ -412,13 +414,13 @@ void EmailAgent::onMessageServerProcessError(QProcess::ProcessError error)
 
 void EmailAgent::onOnlineStateChanged(bool isOnline)
 {
-    qDebug() << Q_FUNC_INFO << "Online State changed, device is now connected ? " << isOnline;
+    qCDebug(lcGeneral) << Q_FUNC_INFO << "Online State changed, device is now connected ? " << isOnline;
     if (isOnline) {
         if (m_currentAction.isNull())
             m_currentAction = getNext();
 
         if (m_currentAction.isNull()) {
-            qDebug() << "Network connection established, but no action in the queue.";
+            qCDebug(lcDebug) << "Network connection established, but no action in the queue.";
         } else {
             executeCurrent();
         }
@@ -436,7 +438,7 @@ void EmailAgent::onStandardFoldersCreated(const QMailAccountId &accountId)
         synchronizeInbox(accountId.toULongLong());
     }
     else {
-        qDebug() << "Error: Inbox not found!!!";
+        qCCritical(lcGeneral) << "Error: Inbox not found!!!";
     }
 }
 
@@ -464,10 +466,10 @@ void EmailAgent::accountsSync(const bool syncOnlyInbox, const uint minimum)
     m_enabledAccounts.clear();
     m_enabledAccounts = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
                                                               & QMailAccountKey::status(QMailAccount::Enabled));
-    qDebug() << "Enabled accounts size is: " << m_enabledAccounts.count();
+    qCDebug(lcDebug) << "Enabled accounts size is: " << m_enabledAccounts.count();
 
     if (m_enabledAccounts.isEmpty()) {
-        qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
+        qCDebug(lcDebug) << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
         m_synchronizing = false;
         emit synchronizingChanged(EmailAgent::Error);
         return;
@@ -512,7 +514,7 @@ void EmailAgent::createFolder(const QString &name, int mailAccountId, int parent
 {
 
     if(!name.isEmpty()) {
-        qDebug() << "Error: Can't create a folder with empty name";
+        qCDebug(lcDebug) << "Error: Can't create a folder with empty name";
     }
 
     else {
@@ -597,7 +599,7 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
             QMailFolderId trashFolderId = account.standardFolder(QMailFolder::TrashFolder);
             // If standard folder is not valid we use local storage
             if (!trashFolderId.isValid()) {
-                qDebug() << "Trash folder not found using local storage";
+                qCDebug(lcGeneral) << "Trash folder not found using local storage";
                 trashFolderId = QMailFolder::LocalStorageFolderId;
             }
             m_enqueing = true;
@@ -659,7 +661,7 @@ void EmailAgent::downloadAttachment(int messageId, const QString &attachmentloca
             if (sourcePart.hasBody()) {
                 saveAttachmentToDownloads(m_messageId, attachmentlocation);
             } else {
-                qDebug() << "Start Dowload for: " << attachmentlocation;
+                qCDebug(lcDebug) << "Start Dowload for: " << attachmentlocation;
                 enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, true));
             }
         }
@@ -708,7 +710,7 @@ int EmailAgent::standardFolderId(int accountId, QMailFolder::StandardFolder fold
             return foldId.toULongLong();
         }
     }
-    qDebug() << "Error: Standard folder " << folder << " not found for account: " << accountId;
+    qCDebug(lcGeneral) << "Error: Standard folder " << folder << " not found for account: " << accountId;
     return 0;
 }
 
@@ -784,7 +786,7 @@ void EmailAgent::moveMessage(int messageId, int destinationId)
 void EmailAgent::renameFolder(int folderId, const QString &name)
 {
     if(!name.isEmpty()) {
-        qDebug() << "Error: Can't rename a folder to a empty name";
+        qCDebug(lcDebug) << "Error: Can't rename a folder to a empty name";
     }
 
     else{
@@ -874,7 +876,7 @@ void EmailAgent::synchronizeInbox(int accountId, const uint minimum)
 void EmailAgent::syncAccounts(const QMailAccountIdList &accountIdList, const bool syncOnlyInbox, const uint minimum)
 {
     if (accountIdList.isEmpty()) {
-        qDebug() << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
+        qCDebug(lcDebug) << Q_FUNC_INFO << "No enabled accounts, nothing to do.";
         emit synchronizingChanged(EmailAgent::Error);
         return;
     } else {
@@ -918,7 +920,7 @@ quint64 EmailAgent::actionInQueueId(QSharedPointer<EmailAction> action) const
 void EmailAgent::dequeue()
 {
     if(m_actionQueue.isEmpty()) {
-        qDebug() << "Error: can't dequeue a emtpy list";
+        qCWarning(lcGeneral) << "Error: can't dequeue a emtpy list";
     }
     else {
         m_actionQueue.removeFirst();
@@ -938,7 +940,7 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
         if(action->needsNetworkConnection()) {
             //discard action in this case
             m_synchronizing = false;
-            qDebug() << "Discarding online action!!";
+            qCDebug(lcGeneral) << "Discarding online action!!";
             emit synchronizingChanged(EmailAgent::Completed);
             return quint64(0);
         } else {
@@ -969,8 +971,8 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
         return action->id();
     }
     else {
-        qWarning() << "This request already exists in the queue: " << action->description();
-        qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
+        qCWarning(lcGeneral) << "This request already exists in the queue: " << action->description();
+        qCDebug(lcDebug) << "Number of actions in the queue: " << m_actionQueue.size();
         return actionInQueueId(action);
     }
 #else
@@ -981,7 +983,7 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
     // Check if action neeeds connectivity and if we are not running from a background process
     if(action->needsNetworkConnection() && !backgroundProcess() && !isOnline()) {
         if (m_backgroundProcess) {
-            qDebug() << "Network not available to execute background action, exiting...";
+            qCDebug(lcDebug) << "Network not available to execute background action, exiting...";
             m_synchronizing = false;
             emit synchronizingChanged(EmailAgent::Error);
             return quint64(0);
@@ -1017,8 +1019,8 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
         }
         return action->id();
     } else {
-        qWarning() << "This request already exists in the queue: " << action->description();
-        qDebug() << "Number of actions in the queue: " << m_actionQueue.size();
+        qCWarning(lcGeneral) << "This request already exists in the queue: " << action->description();
+        qCDebug(lcDebug) << "Number of actions in the queue: " << m_actionQueue.size();
         return actionInQueueId(action);
     }
 #endif
@@ -1030,17 +1032,17 @@ void EmailAgent::executeCurrent()
 
     if (!QMailStore::instance()->isIpcConnectionEstablished()) {
         if (m_backgroundProcess) {
-            qDebug() << "IPC not connected to execute background action, exiting...";
+            qCWarning(lcGeneral) << "IPC not connected to execute background action, exiting...";
             m_synchronizing = false;
             emit synchronizingChanged(EmailAgent::Error);
         } else {
-            qWarning() << "Ipc connection not established, can't execute service action";
+            qCWarning(lcGeneral) << "Ipc connection not established, can't execute service action";
             m_waitForIpc = true;
         }
     } else if (m_currentAction->needsNetworkConnection() && !isOnline()) {
-        qDebug() << "Current action not executed, waiting for newtwork";
+        qCDebug(lcGeneral) << "Current action not executed, waiting for newtwork";
         if (m_backgroundProcess) {
-            qDebug() << "Network not available to execute background action, exiting...";
+            qCWarning(lcGeneral) << "Network not available to execute background action, exiting...";
             m_synchronizing = false;
             emit synchronizingChanged(EmailAgent::Error);
         }
@@ -1056,7 +1058,7 @@ void EmailAgent::executeCurrent()
             emit currentSynchronizingAccountIdChanged();
         }
 
-        qDebug() << "Executing " << m_currentAction->description();
+        qCDebug(lcGeneral) << "Executing " << m_currentAction->description();
 
         // Attachment download
         if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {

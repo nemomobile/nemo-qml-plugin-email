@@ -25,7 +25,7 @@ namespace {
         }
 
         if (securityType.toLower() != QLatin1String("none"))
-            qWarning() << "Unknown security type:" << securityType;
+            qCWarning(lcGeneral) << "Unknown security type:" << securityType;
         return QLatin1String("0");
     }
 
@@ -39,7 +39,7 @@ namespace {
         }
 
         if (authType.toLower() != QLatin1String("none"))
-            qWarning() << "Unknown authorization type:" << authType;
+            qCWarning(lcGeneral) << "Unknown authorization type:" << authType;
         return QLatin1String("0");
     }
 }
@@ -256,7 +256,7 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         } else if (activity == QMailServiceAction::Failed && !mIncomingTested) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            qCDebug(lcGeneral) << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
             emitError(IncomingServer, status.errorCode);
         }
     } else if (sender() == static_cast<QObject*>(mTransmitAction)) {
@@ -267,7 +267,7 @@ void EmailAccount::activityChanged(QMailServiceAction::Activity activity)
         } else if (activity == QMailServiceAction::Failed) {
             mErrorMessage = status.text;
             mErrorCode = status.errorCode;
-            qDebug() << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
+            qCDebug(lcGeneral) << "Testing configuration failed with error " << mErrorMessage << " code: " << mErrorCode;
             emitError(OutgoingServer, status.errorCode);
         }
     }
@@ -290,7 +290,7 @@ void EmailAccount::setAccountId(const int accId)
         mAccount = new QMailAccount(accountId);
     }
     else {
-        qWarning() << "Invalid account id " << accountId.toULongLong();
+        qCWarning(lcGeneral) << "Invalid account id " << accountId.toULongLong();
     }
 }
 

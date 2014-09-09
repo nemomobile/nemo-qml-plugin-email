@@ -102,7 +102,7 @@ QModelIndex AttachmentListModel::index(int row, int column, const QModelIndex &p
         return m_attachmentsList[row]->index;
     }
 
-    qWarning() << Q_FUNC_INFO << "Row " << row << "is not present in the model";
+    qCWarning(lcGeneral) << Q_FUNC_INFO << "Row " << row << "is not present in the model";
     return QModelIndex();
 }
 

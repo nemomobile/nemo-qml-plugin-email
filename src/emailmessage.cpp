@@ -159,7 +159,7 @@ void EmailMessage::send()
         m_newMessage = false;
         emitSignals();
     } else {
-       qWarning() << "Error: queuing message, stored: " << stored;
+       qCWarning(lcGeneral) << "Error: queuing message, stored: " << stored;
     }
 }
 
@@ -174,7 +174,7 @@ void EmailMessage::saveDraft()
         m_msg.setParentFolderId(draftFolderId);
     } else {
         //local storage set on buildMessage step
-        qWarning() << "Drafts folder not found, saving to local storage!";
+        qCWarning(lcGeneral) << "Drafts folder not found, saving to local storage!";
     }
 
     bool saved = false;
@@ -201,7 +201,7 @@ void EmailMessage::saveDraft()
         EmailAgent::instance()->exportUpdates(m_msg.parentAccountId());
         emitSignals();
     } else {
-        qWarning() << "Failed to save message!";
+        qCWarning(lcGeneral) << "Failed to save message!";
     }
 }
 
@@ -480,7 +480,7 @@ void EmailMessage::setBcc(const QStringList &bccList)
         emit bccChanged();
         emit multipleRecipientsChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set 'Bcc' addresses from a empty list";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set 'Bcc' addresses from a empty list";
     }
 }
 
@@ -499,7 +499,7 @@ void EmailMessage::setCc(const QStringList &ccList)
         emit ccChanged();
         emit multipleRecipientsChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set 'Cc' addresses from a empty list";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set 'Cc' addresses from a empty list";
     }
 }
 
@@ -523,7 +523,7 @@ void EmailMessage::setFrom(const QString &sender)
         emit accountIdChanged();
         emit accountAddressChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set a empty 'From' address.";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set a empty 'From' address.";
     }
 }
 
@@ -533,7 +533,7 @@ void EmailMessage::setInReplyTo(const QString &messageId)
         m_msg.setInReplyTo(messageId);
         emit inReplyToChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set a empty messageId as 'InReplyTo' header.";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set a empty messageId as 'InReplyTo' header.";
     }
 }
 
@@ -547,7 +547,7 @@ void EmailMessage::setMessageId(int messageId)
         } else {
             m_id = QMailMessageId();
             m_msg = QMailMessage();
-            qWarning() << "Invalid message id " << msgId.toULongLong();
+            qCWarning(lcGeneral) << "Invalid message id " << msgId.toULongLong();
         }
         // Construct initial plain text body, even if not entirely available.
         m_bodyText = EmailAgent::instance()->bodyPlainText(m_msg);
@@ -608,7 +608,7 @@ void EmailMessage::setReplyTo(const QString &address)
         m_msg.setReplyTo(addr);
         emit replyToChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set a empty address as 'ReplyTo' header.";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set a empty address as 'ReplyTo' header.";
     }
 }
 
@@ -653,7 +653,7 @@ void EmailMessage::setTo(const QStringList &toList)
         m_msg.setTo(QMailAddress::fromStringList(toList));
         emit toChanged();
     } else {
-        qWarning() << Q_FUNC_INFO << "Can't set 'To' addresses from a empty list";
+        qCWarning(lcGeneral) << Q_FUNC_INFO << "Can't set 'To' addresses from a empty list";
     }
 }
 
