@@ -408,7 +408,8 @@ EmailMessageListModel::Sort EmailMessageListModel::sortBy() const
 void EmailMessageListModel::sortBySender(int order)
 {
     Qt::SortOrder sortOrder = static_cast<Qt::SortOrder>(order);
-    m_sortKey = QMailMessageSortKey::sender(sortOrder);
+    m_sortKey = QMailMessageSortKey::sender(sortOrder) &
+            QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
     m_sortBy = Sender;
     QMailMessageListModel::setSortKey(m_sortKey);
     emit sortByChanged();
@@ -417,7 +418,8 @@ void EmailMessageListModel::sortBySender(int order)
 void EmailMessageListModel::sortByRecipients(int order)
 {
     Qt::SortOrder sortOrder = static_cast<Qt::SortOrder>(order);
-    m_sortKey = QMailMessageSortKey::recipients(sortOrder);
+    m_sortKey = QMailMessageSortKey::recipients(sortOrder) &
+            QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
     m_sortBy = Recipients;
     QMailMessageListModel::setSortKey(m_sortKey);
     emit sortByChanged();
