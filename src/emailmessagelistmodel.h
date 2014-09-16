@@ -98,6 +98,7 @@ public slots:
     Q_INVOKABLE void sortByReadStatus(int order = 0);
     Q_INVOKABLE void sortByPriority(int order = 1);
     Q_INVOKABLE void sortBySize(int order = 1);
+    Q_INVOKABLE void sortByTime(int order, EmailMessageListModel::Sort sortBy);
     Q_INVOKABLE void setSearch(const QString search);
 
     Q_INVOKABLE int accountIdForMessage(int messageId);
