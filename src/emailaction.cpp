@@ -31,7 +31,7 @@ QString idListToString(const QList<T> &ids)
   EmailAction
 */
 EmailAction::EmailAction(bool onlineAction)
-    : _onlineAction(onlineAction)
+    : _id(0), _onlineAction(onlineAction)
 {
 }
 
