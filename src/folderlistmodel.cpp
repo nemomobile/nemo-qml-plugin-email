@@ -27,6 +27,7 @@ FolderListModel::FolderListModel(QObject *parent) :
     QAbstractListModel(parent)
   , m_currentFolderIdx(-1)
   , m_currentFolderUnreadCount(0)
+  , m_currentFolderType(NormalFolder)
   , m_accountId(QMailAccountId())
 {
     roles.insert(FolderName, "folderName");
