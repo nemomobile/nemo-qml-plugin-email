@@ -1016,7 +1016,7 @@ quint64 EmailAgent::enqueue(EmailAction *actionPointer)
     if (!m_enqueing && (m_currentAction.isNull() || !m_currentAction->serviceAction()->isRunning())) {
         // Nothing is running or current action is in waiting state, start first action.
         QSharedPointer<EmailAction> nextAction = getNext();
-        if (m_currentAction.isNull() || (*(m_currentAction.data()) != *(nextAction.data()))) {
+        if (m_currentAction.isNull() || (!nextAction.isNull() && (*(m_currentAction.data()) != *(nextAction.data())))) {
             m_currentAction = nextAction;
             executeCurrent();
         }
