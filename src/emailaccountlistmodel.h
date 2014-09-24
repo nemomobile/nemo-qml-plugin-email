@@ -53,6 +53,8 @@ public slots:
     Q_INVOKABLE int accountId(int idx);
     Q_INVOKABLE QStringList allDisplayNames();
     Q_INVOKABLE QStringList allEmailAddresses();
+    Q_INVOKABLE QString customField(QString name, int idx) const;
+    Q_INVOKABLE QString customFieldFromAccountId(QString name,int accountId) const;
     Q_INVOKABLE QString displayName(int idx);
     Q_INVOKABLE QString displayNameFromAccountId(int accountId);
     Q_INVOKABLE QString emailAddress(int idx);

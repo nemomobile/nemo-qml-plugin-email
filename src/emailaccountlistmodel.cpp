@@ -275,6 +275,27 @@ QStringList EmailAccountListModel::allEmailAddresses()
     return emailAddressList;
 }
 
+QString EmailAccountListModel::customField(QString name, int idx) const
+{
+    int accountId = data(index(idx), EmailAccountListModel::MailAccountId).toInt();
+
+    if (accountId) {
+        return customFieldFromAccountId(name, accountId);
+    } else {
+        return QString();
+    }
+}
+
+QString EmailAccountListModel::customFieldFromAccountId(QString name, int accountId) const
+{
+    QMailAccountId acctId(accountId);
+    if (acctId.isValid()) {
+        QMailAccount account(acctId);
+        return account.customField(name);
+    }
+    return QString();
+}
+
 QString EmailAccountListModel::displayName(int idx)
 {
     return data(index(idx), EmailAccountListModel::DisplayName).toString();
