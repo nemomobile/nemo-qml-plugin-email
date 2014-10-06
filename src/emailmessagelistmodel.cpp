@@ -58,6 +58,7 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     : QMailMessageListModel(parent),
       m_combinedInbox(false),
       m_filterUnread(true),
+      m_canFetchMore(false),
       m_retrievalAction(new QMailRetrievalAction(this))
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
@@ -107,6 +108,12 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
 
     connect(this, SIGNAL(rowsRemoved(QModelIndex,int,int)),
             this,SIGNAL(countChanged()));
+
+    connect(QMailStore::instance(), SIGNAL(messagesAdded(QMailMessageIdList)),
+            this, SLOT(messagesAdded(QMailMessageIdList)));
+
+    connect(QMailStore::instance(), SIGNAL(messagesRemoved(QMailMessageIdList)),
+            this, SLOT(messagesRemoved(QMailMessageIdList)));
 }
 
 EmailMessageListModel::~EmailMessageListModel()
@@ -340,6 +347,7 @@ void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
         setCombinedInbox(false);
 
     emit countChanged();
+    checkFetchMoreChanged();
 }
 
 void EmailMessageListModel::setAccountKey(int id)
@@ -376,7 +384,8 @@ void EmailMessageListModel::setAccountKey(int id)
     if (combinedInbox())
         setCombinedInbox(false);
 
-     emit countChanged();
+    emit countChanged();
+    checkFetchMoreChanged();
 }
 
 void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
@@ -733,6 +742,11 @@ void EmailMessageListModel::downloadActivityChanged(QMailServiceAction::Activity
     }
 }
 
+bool EmailMessageListModel::canFetchMore() const
+{
+    return m_canFetchMore;
+}
+
 bool EmailMessageListModel::combinedInbox() const
 {
     return m_combinedInbox;
@@ -803,4 +817,54 @@ void EmailMessageListModel::setFilterUnread(bool u)
 
     m_filterUnread = u;
     emit filterUnreadChanged();
+}
+
+uint EmailMessageListModel::limit() const
+{
+    return QMailMessageListModel::limit();
+}
+
+void EmailMessageListModel::setLimit(uint limit)
+{
+    if (limit != this->limit()) {
+        QMailMessageListModel::setLimit(limit);
+        emit limitChanged();
+        checkFetchMoreChanged();
+    }
+}
+
+void EmailMessageListModel::checkFetchMoreChanged()
+{
+    if (limit()) {
+        bool canFetchMore = QMailMessageListModel::totalCount() > rowCount();
+        if (canFetchMore != m_canFetchMore) {
+            m_canFetchMore = canFetchMore;
+            emit canFetchMoreChanged();
+        }
+    } else if (m_canFetchMore) {
+        m_canFetchMore = false;
+        emit canFetchMoreChanged();
+    }
+}
+
+void EmailMessageListModel::messagesAdded(const QMailMessageIdList &ids)
+{
+    Q_UNUSED(ids);
+
+    if (limit()) {
+        if (!m_canFetchMore) {
+            checkFetchMoreChanged();
+        }
+    }
+}
+
+void EmailMessageListModel::messagesRemoved(const QMailMessageIdList &ids)
+{
+    Q_UNUSED(ids);
+
+    if (limit()) { 
+        if (m_canFetchMore) {
+            checkFetchMoreChanged();
+        }
+    }
 }

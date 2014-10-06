@@ -25,9 +25,11 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_ENUMS(Priority)
     Q_ENUMS(Sort)
 
+    Q_PROPERTY(bool canFetchMore READ canFetchMore NOTIFY canFetchMoreChanged)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
+    Q_PROPERTY(uint limit READ limit WRITE setLimit NOTIFY limitChanged)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
 
 public:
@@ -71,17 +73,22 @@ public:
     enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject, Recipients};
 
     // property accessors.
+    bool canFetchMore() const;
     int count() const;
     bool combinedInbox() const;
     void setCombinedInbox(bool c);
     bool filterUnread() const;
+    uint limit() const;
+    void setLimit(uint limit);
     void setFilterUnread(bool u);
     EmailMessageListModel::Sort sortBy() const;
 
 Q_SIGNALS:
+    void canFetchMoreChanged();
     void countChanged();
     void combinedInboxChanged();
     void filterUnreadChanged();
+    void limitChanged();
     void sortByChanged();
 
 signals:
@@ -136,6 +143,8 @@ public slots:
 
 private slots:
     void downloadActivityChanged(QMailServiceAction::Activity);
+    void messagesAdded(const QMailMessageIdList &ids);
+    void messagesRemoved(const QMailMessageIdList &ids);
 
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
@@ -144,6 +153,8 @@ private:
     QHash<int, QByteArray> roles;
     bool m_combinedInbox;
     bool m_filterUnread;
+    bool m_canFetchMore;
+    int m_limit;
     QProcess m_msgAccount;
     QMailFolderId m_currentFolderId;
     QMailAccountIdList m_mailAccountIds;
@@ -153,6 +164,8 @@ private:
     QMailMessageSortKey m_sortKey;
     EmailMessageListModel::Sort m_sortBy;
     QList<QMailMessageId> m_selectedMsgIds;
+
+    void checkFetchMoreChanged();
 };
 
 #endif
