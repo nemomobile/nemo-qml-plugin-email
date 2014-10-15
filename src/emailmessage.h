@@ -164,7 +164,7 @@ private:
     void requestMessagePartDownload(const QMailMessagePartContainer *container);
     void requestInlinePartsDownload(const QList<QMailMessagePart> &inlineParts);
     void updateReferences(QMailMessage &message, const QMailMessage &originalMessage);
-    QString imageMimeType(const QMailMessageContentType contentType, const QString fileName);
+    QString imageMimeType(const QMailMessageContentType &contentType, const QString &fileName);
     void insertInlineImages(const QList<QMailMessagePart::Location> &inlineParts);
 
     QMailAccount m_account;

@@ -23,17 +23,9 @@ static const QStringList supportedImageTypes = (QStringList() <<  "jpeg" << "jpg
 
 EmailMessage::EmailMessage(QObject *parent)
     : QObject(parent)
-    , m_account(QMailAccountId())
-    , m_attachments(QStringList())
-    , m_bodyText(QString())
-    , m_htmlText(QString())
-    , m_id(QMailMessageId())
     , m_originalMessageId(QMailMessageId())
-    , m_idToRemove(QMailMessageId())
-    , m_msg(QMailMessage())
     , m_newMessage(true)
     , m_downloadActionId(0)
-    , m_partsToDownload(QStringList())
     , m_htmlBodyConstructed(false)
 {
     setPriority(NormalPriority);
@@ -345,24 +337,22 @@ QString EmailMessage::htmlBody()
                 // Some email clients don't add html tags to the html
                 // body in case there's no content in the email body itself
                 if (container->body().data().length()) {
-                    QList<QMailMessagePart::Location> inlineParts = m_msg.findInlinePartLocations();
                     m_htmlText = container->body().data();
                     // Check if we have some inline parts
+                    QList<QMailMessagePart::Location> inlineParts = m_msg.findInlinePartLocations();
                     if (!inlineParts.isEmpty()) {
                         // Check if we have something downloading already
                         if (m_partsToDownload.isEmpty()) {
                             insertInlineImages(inlineParts);
                         }
-                        return m_htmlText;
                     } else {
                         m_htmlBodyConstructed = true;
-                        return m_htmlText;
                     }
                 } else {
                     m_htmlBodyConstructed = true;
                     m_htmlText = QStringLiteral("<br/>");
-                    return m_htmlText;
                 }
+                return m_htmlText;
             } else {
                 if (m_msg.multipartType() == QMailMessage::MultipartNone) {
                     requestMessageDownload();
@@ -855,7 +845,7 @@ void EmailMessage::requestInlinePartsDownload(const QList<QMailMessagePart> &inl
             this, SLOT(onInlinePartDownloaded(QMailMessageId,QString,bool)));
 
     foreach (const QMailMessagePart &inlinePart, inlineParts) {
-       EmailAgent::instance()->downloadMessagePart(inlinePart.location());;
+       EmailAgent::instance()->downloadMessagePart(inlinePart.location());
     }
 }
 
@@ -880,7 +870,7 @@ void EmailMessage::updateReferences(QMailMessage &message, const QMailMessage &o
     }
 }
 
-QString EmailMessage::imageMimeType(const QMailMessageContentType contentType, const QString fileName)
+QString EmailMessage::imageMimeType(const QMailMessageContentType &contentType, const QString &fileName)
 {
     if (contentType.type().toLower() == QStringLiteral("image")) {
         return QString::fromLatin1("image/") + QString::fromLatin1(contentType.subType().toLower());
@@ -903,11 +893,11 @@ void EmailMessage::insertInlineImages(const QList<QMailMessagePart::Location> &i
     foreach(const QMailMessagePart::Location &location, inlineParts) {
         QMailMessagePart sourcePart = m_msg.partAt(location);
         if (sourcePart.contentAvailable()) {
-            QString contentId = "cid:" + sourcePart.contentID();
+            QString contentId = QString::fromLatin1("cid:") + sourcePart.contentID() + QString::fromLatin1("\"");
             QString imgFormat = imageMimeType(sourcePart.contentType(), sourcePart.displayName());
             if (!imgFormat.isEmpty()) {
                 QString blobImage = QString::fromLatin1("data:") + imgFormat + QString::fromLatin1(";base64,")
-                        + QString(sourcePart.body().data(QMailMessageBody::Encoded));
+                        + QString(sourcePart.body().data(QMailMessageBody::Encoded)) + QString::fromLatin1("\" nemo-inline-image=\"yes\"");
                 m_htmlText.replace(contentId, blobImage);
             }
         } else {
