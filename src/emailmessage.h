@@ -117,7 +117,6 @@ public:
     QString subject();
     QStringList to();
 
-
 signals:
     void sendCompleted(bool success);
 
@@ -151,6 +150,7 @@ signals:
 private slots:
     void onMessagesDownloaded(const QMailMessageIdList &ids, bool success);
     void onMessagePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
+    void onInlinePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success);
     void onSendCompleted(bool success);
 
 private:
@@ -162,17 +162,23 @@ private:
     void processAttachments();
     void requestMessageDownload();
     void requestMessagePartDownload(const QMailMessagePartContainer *container);
+    void requestInlinePartsDownload(const QList<QMailMessagePart> &inlineParts);
     void updateReferences(QMailMessage &message, const QMailMessage &originalMessage);
+    QString imageMimeType(const QMailMessageContentType &contentType, const QString &fileName);
+    void insertInlineImages(const QList<QMailMessagePart::Location> &inlineParts);
 
     QMailAccount m_account;
     QStringList m_attachments;
     QString m_bodyText;
+    QString m_htmlText;
     QMailMessageId m_id;
     QMailMessageId m_originalMessageId;
     QMailMessageId m_idToRemove;
     QMailMessage m_msg;
     bool m_newMessage;
     quint64 m_downloadActionId;
+    QStringList m_partsToDownload;
+    bool m_htmlBodyConstructed;
 };
 
 #endif
