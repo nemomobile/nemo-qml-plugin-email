@@ -106,9 +106,9 @@ void EmailMessage::onInlinePartDownloaded(const QMailMessageId &messageId, const
             // remove the image placeholder if the content fails to download
             removeInlineImagePlaceholder(m_msg.partAt(m_partsToDownload.value(partLocation)));
         }
+        emit htmlBodyChanged();
         m_partsToDownload.remove(partLocation);
         if (m_partsToDownload.isEmpty()) {
-            emit htmlBodyChanged();
             disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
                     this, SLOT(onInlinePartDownloaded(QMailMessageId,QString,bool)));
         }
@@ -907,6 +907,9 @@ void EmailMessage::insertInlineImage(const QMailMessagePart &inlinePart)
             }
             QString blobImage = QString("data:%1;base64,%2\" nemo-inline-image-loading=\"no\"").arg(imgFormat, QString::fromLatin1(inlinePart.body().data(QMailMessageBody::Encoded)));
             m_htmlText.replace(contentId, blobImage);
+        } else {
+            // restore original content if we can't determine the inline part type
+            removeInlineImagePlaceholder(inlinePart);
         }
     }
 }
@@ -928,7 +931,7 @@ void EmailMessage::insertInlineImages(const QList<QMailMessagePart::Location> &i
             insertInlineImage(sourcePart);
         } else if (!m_partsToDownload.contains(location.toString(true))) {
             QString contentId = QString("cid:%1\"").arg(sourcePart.contentID());
-            QString loadingPlaceHolder = contentId + QString::fromLatin1("nemo-inline-image-loading=\"yes\"");
+            QString loadingPlaceHolder = contentId + QString::fromLatin1(" nemo-inline-image-loading=\"yes\"");
             m_htmlText.replace(contentId, loadingPlaceHolder);
             m_partsToDownload.insert(location.toString(true), location);
         }
