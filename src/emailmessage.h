@@ -162,9 +162,11 @@ private:
     void processAttachments();
     void requestMessageDownload();
     void requestMessagePartDownload(const QMailMessagePartContainer *container);
-    void requestInlinePartsDownload(const QList<QMailMessagePart> &inlineParts);
+    void requestInlinePartsDownload(const QMap<QString, QMailMessagePart::Location> &inlineParts);
     void updateReferences(QMailMessage &message, const QMailMessage &originalMessage);
     QString imageMimeType(const QMailMessageContentType &contentType, const QString &fileName);
+    void insertInlineImage(const QMailMessagePart &inlinePart);
+    void removeInlineImagePlaceholder(const QMailMessagePart &inlinePart);
     void insertInlineImages(const QList<QMailMessagePart::Location> &inlineParts);
 
     QMailAccount m_account;
@@ -177,7 +179,7 @@ private:
     QMailMessage m_msg;
     bool m_newMessage;
     quint64 m_downloadActionId;
-    QStringList m_partsToDownload;
+    QMap<QString, QMailMessagePart::Location> m_partsToDownload;
     bool m_htmlBodyConstructed;
 };
 
