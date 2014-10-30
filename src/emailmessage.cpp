@@ -96,7 +96,6 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
 
 void EmailMessage::onInlinePartDownloaded(const QMailMessageId &messageId, const QString &partLocation, bool success)
 {
-
     if (messageId == m_id) {
         if (success) {
             // Reload the message and insert the image
@@ -905,7 +904,13 @@ void EmailMessage::insertInlineImage(const QMailMessagePart &inlinePart)
             } else {
                 contentId = QString("cid:%1\"").arg(inlinePart.contentID());
             }
-            QString blobImage = QString("data:%1;base64,%2\" nemo-inline-image-loading=\"no\"").arg(imgFormat, QString::fromLatin1(inlinePart.body().data(QMailMessageBody::Encoded)));
+            QString bodyData;
+            if (inlinePart.body().transferEncoding() == QMailMessageBody::Base64) {
+                bodyData = QString::fromLatin1(inlinePart.body().data(QMailMessageBody::Encoded));
+            } else {
+                bodyData = QString::fromLatin1(inlinePart.body().data(QMailMessageBody::Decoded).toBase64());
+            }
+            QString blobImage = QString("data:%1;base64,%2\" nemo-inline-image-loading=\"no\"").arg(imgFormat, bodyData);
             m_htmlText.replace(contentId, blobImage);
         } else {
             // restore original content if we can't determine the inline part type
