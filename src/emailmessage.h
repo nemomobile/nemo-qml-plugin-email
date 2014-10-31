@@ -146,6 +146,7 @@ signals:
     void toChanged();
     void bodyChanged();
     void quotedBodyChanged();
+    void inlinePartsDownloaded();
 
 private slots:
     void onMessagesDownloaded(const QMailMessageIdList &ids, bool success);
