@@ -108,6 +108,7 @@ void EmailMessage::onInlinePartDownloaded(const QMailMessageId &messageId, const
         emit htmlBodyChanged();
         m_partsToDownload.remove(partLocation);
         if (m_partsToDownload.isEmpty()) {
+            emit inlinePartsDownloaded();
             disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
                     this, SLOT(onInlinePartDownloaded(QMailMessageId,QString,bool)));
         }
