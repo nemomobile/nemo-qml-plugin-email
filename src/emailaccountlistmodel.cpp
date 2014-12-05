@@ -12,9 +12,11 @@
 #include <qmailnamespace.h>
 
 #include "emailaccountlistmodel.h"
+#include "emailagent.h"
 
 EmailAccountListModel::EmailAccountListModel(QObject *parent) :
-    QMailAccountListModel(parent)
+    QMailAccountListModel(parent),
+    m_hasPersistentConnection(false)
 {
     roles.insert(DisplayName, "displayName");
     roles.insert(EmailAddress, "emailAddress");
@@ -26,6 +28,7 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
     roles.insert(Signature, "signature");
     roles.insert(AppendSignature, "appendSignature");
     roles.insert(IconPath, "iconPath");
+    roles.insert(HasPersistentConnection, "hasPersistentConnection");
 
     connect(this, SIGNAL(rowsInserted(QModelIndex,int,int)),
             this,SLOT(onAccountsAdded(QModelIndex,int,int)));
@@ -47,6 +50,11 @@ EmailAccountListModel::EmailAccountListModel(QObject *parent) :
 
         QMailAccountId accountId(data(index(row), EmailAccountListModel::MailAccountId).toInt());
         m_unreadCountCache.insert(accountId, accountUnreadCount(accountId));
+
+        // Check if any account has a persistent connection to the server(always online)
+        if (!m_hasPersistentConnection && (data(index(row), EmailAccountListModel::HasPersistentConnection)).toBool()) {
+            m_hasPersistentConnection = true;
+        }
     }
 }
 
@@ -136,6 +144,10 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
         return account.iconPath();
     }
 
+    if (role == HasPersistentConnection) {
+        return account.status() & QMailAccount::HasPersistentConnection;
+    }
+
     return QVariant();
 }
 
@@ -159,6 +171,12 @@ void EmailAccountListModel::onAccountsAdded(const QModelIndex &parent, int start
             updateTimeChanged = true;
             m_lastUpdateTime = (data(index(i), EmailAccountListModel::LastSynchronized)).toDateTime();
         }
+
+        // Check if any of the new accounts has a persistent connection to the server(always online)
+        if (!m_hasPersistentConnection && (data(index(i), EmailAccountListModel::HasPersistentConnection)).toBool()) {
+            m_hasPersistentConnection = true;
+            emit hasPersistentConnectionChanged();
+        }
     }
 
     emit accountsAdded();
@@ -177,11 +195,23 @@ void EmailAccountListModel::onAccountsRemoved(const QModelIndex &parent, int sta
 
     if (rowCount()) {
         m_lastUpdateTime = QDateTime();
+        bool hadPersistentConnection = m_hasPersistentConnection;
+        m_hasPersistentConnection = false;
         for (int row = 0; row < rowCount(); row++) {
             if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
                 m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
             }
+            // Check if any of the remaining accounts has a persistent connection to the server(always online)
+            if (!m_hasPersistentConnection && (data(index(row), EmailAccountListModel::HasPersistentConnection)).toBool()) {
+                m_hasPersistentConnection = true;
+            }
         }
+
+        if (hadPersistentConnection != m_hasPersistentConnection) {
+            qCDebug(lcDebug) << Q_FUNC_INFO << "HasPersistentConnection changed to " << m_hasPersistentConnection;
+            emit hasPersistentConnectionChanged();
+        }
+
         emit lastUpdateTimeChanged();
     }
 
@@ -206,11 +236,23 @@ void EmailAccountListModel::onAccountsUpdated(const QMailAccountIdList &ids)
     Q_UNUSED(ids);
 
     bool emitSignal = false;
+    bool hadPersistentConnection = m_hasPersistentConnection;
+    m_hasPersistentConnection = false;
     for (int row = 0; row < rowCount(); row++) {
         if ((data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime() > m_lastUpdateTime) {
             emitSignal = true;
             m_lastUpdateTime = (data(index(row), EmailAccountListModel::LastSynchronized)).toDateTime();
         }
+
+        // Check if any account has a persistent connection to the server(always online)
+        if (!m_hasPersistentConnection && (data(index(row), EmailAccountListModel::HasPersistentConnection)).toBool()) {
+            m_hasPersistentConnection = true;
+        }
+    }
+
+    if (hadPersistentConnection != m_hasPersistentConnection) {
+        qCDebug(lcDebug) << Q_FUNC_INFO << "HasPersistentConnection changed to " << m_hasPersistentConnection;
+        emit hasPersistentConnectionChanged();
     }
 
     if (emitSignal) {
@@ -246,6 +288,11 @@ void EmailAccountListModel::setCanTransmitAccounts(bool value)
         emit numberOfAccountsChanged();
         emit canTransmitAccountsChanged();
     }
+}
+
+bool EmailAccountListModel::hasPersistentConnection() const
+{
+    return m_hasPersistentConnection;
 }
 
 // ########### Invokable API ###################
