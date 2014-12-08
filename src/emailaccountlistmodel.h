@@ -21,6 +21,7 @@ class Q_DECL_EXPORT EmailAccountListModel : public QMailAccountListModel
     Q_PROPERTY(int numberOfAccounts READ numberOfAccounts NOTIFY numberOfAccountsChanged)
     Q_PROPERTY(QDateTime lastUpdateTime READ lastUpdateTime NOTIFY lastUpdateTimeChanged)
     Q_PROPERTY(bool canTransmitAccounts READ canTransmitAccounts WRITE setCanTransmitAccounts NOTIFY canTransmitAccountsChanged)
+    Q_PROPERTY(bool hasPersistentConnection READ hasPersistentConnection NOTIFY hasPersistentConnectionChanged)
 
 public:
     explicit EmailAccountListModel(QObject *parent = 0);
@@ -37,7 +38,8 @@ public:
         Signature = Qt::UserRole + 11,
         AppendSignature = Qt::UserRole + 12,
         IconPath = Qt::UserRole + 13,
-        Index = Qt::UserRole + 14
+        HasPersistentConnection = Qt::UserRole + 14,
+        Index = Qt::UserRole + 15
     };
 
     virtual QVariant data(const QModelIndex &index, int role) const;
@@ -48,6 +50,7 @@ public:
     QDateTime lastUpdateTime() const;
     bool canTransmitAccounts() const;
     void setCanTransmitAccounts(bool value);
+    bool hasPersistentConnection() const;
 
 public slots:
     Q_INVOKABLE int accountId(int idx);
@@ -72,6 +75,7 @@ signals:
     void modelReset();
     void numberOfAccountsChanged();
     void canTransmitAccountsChanged();
+    void hasPersistentConnectionChanged();
 
 private slots:
     void onAccountsAdded(const QModelIndex &parent, int start, int end);
@@ -87,6 +91,7 @@ private:
     QHash<QMailAccountId, int> m_unreadCountCache;
     QDateTime m_lastUpdateTime;
     bool m_canTransmitAccounts;
+    bool m_hasPersistentConnection;
 
     int accountUnreadCount(const QMailAccountId accountId);
 
