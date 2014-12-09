@@ -129,7 +129,11 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
 
     if (role == StandardFoldersRetrieved) {
         quint64 standardFoldersMask = QMailAccount::statusMask("StandardFoldersRetrieved");
-        return account.status() & standardFoldersMask;
+        if (account.status() & standardFoldersMask) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     if (role == Signature) {
@@ -137,7 +141,11 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     }
 
     if (role == AppendSignature) {
-        return account.status() & QMailAccount::AppendSignature;
+        if (account.status() & QMailAccount::AppendSignature) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     if (role == IconPath) {
@@ -145,7 +153,11 @@ QVariant EmailAccountListModel::data(const QModelIndex &index, int role) const
     }
 
     if (role == HasPersistentConnection) {
-        return account.status() & QMailAccount::HasPersistentConnection;
+        if (account.status() & QMailAccount::HasPersistentConnection) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     return QVariant();
