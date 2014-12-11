@@ -245,8 +245,17 @@ void EmailAccountListModel::onAccountContentsModified(const QMailAccountIdList &
 
 void EmailAccountListModel::onAccountsUpdated(const QMailAccountIdList &ids)
 {
-    Q_UNUSED(ids);
+    int count = numberOfAccounts();
+    QVector<int> roles;
+    roles << HasPersistentConnection << LastSynchronized;
+    for (int i = 0; i < count; ++i) {
+        QMailAccountId tmpAccountId(accountId(i));
+        if (ids.contains(tmpAccountId)) {
+            dataChanged(index(i), index(i), roles);
+        }
+    }
 
+    // Global lastSyncTime and persistent connection(all accounts)
     bool emitSignal = false;
     bool hadPersistentConnection = m_hasPersistentConnection;
     m_hasPersistentConnection = false;
