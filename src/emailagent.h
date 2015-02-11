@@ -81,6 +81,7 @@ public:
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
+    void sendMessage(const QMailMessageId &messageId);
     void sendMessages(const QMailAccountId &accountId);
     void setupAccountFlags();
     int standardFolderId(int accountId, QMailFolder::StandardFolder folder) const;

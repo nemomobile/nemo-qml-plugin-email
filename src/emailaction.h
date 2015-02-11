@@ -341,6 +341,21 @@ private:
     QMailAccountId _accountId;
 };
 
+class TransmitMessage : public EmailAction
+{
+public:
+    TransmitMessage(QMailTransmitAction* transmitAction, const QMailMessageId& messageId);
+    ~TransmitMessage();
+    void execute();
+    QMailServiceAction* serviceAction() const;
+    QMailMessageId messageId() const;
+    QMailAccountId accountId() const;
+
+private:
+    QMailTransmitAction* _transmitAction;
+    QMailMessageId _messageId;
+};
+
 class TransmitMessages : public EmailAction
 {
 public:
