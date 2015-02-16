@@ -175,7 +175,7 @@ void EmailMessage::send()
     EmailAgent *emailAgent = EmailAgent::instance();
     if (stored) {
         connect(emailAgent, SIGNAL(sendCompleted(bool)), this, SLOT(onSendCompleted(bool)));
-        emailAgent->sendMessages(m_msg.parentAccountId());
+        emailAgent->sendMessage(m_msg.id());
         if (m_idToRemove.isValid()) {
             emailAgent->expungeMessages(QMailMessageIdList() << m_idToRemove);
             m_idToRemove = QMailMessageId();

@@ -715,6 +715,43 @@ QMailAccountId Synchronize::accountId() const
 }
 
 /*
+    TransmitMessage
+*/
+TransmitMessage::TransmitMessage(QMailTransmitAction* transmitAction, const QMailMessageId &messageId)
+    : EmailAction()
+    , _transmitAction(transmitAction)
+    , _messageId(messageId)
+{
+    _description = QString("transmit-message:message-id=%1").arg(_messageId.toULongLong());
+    _type = EmailAction::Transmit;
+}
+
+TransmitMessage::~TransmitMessage()
+{
+}
+
+void TransmitMessage::execute()
+{
+    _transmitAction->transmitMessage(_messageId);
+}
+
+QMailServiceAction* TransmitMessage::serviceAction() const
+{
+    return _transmitAction;
+}
+
+QMailMessageId TransmitMessage::messageId() const
+{
+    return _messageId;
+}
+
+QMailAccountId TransmitMessage::accountId() const
+{
+    QMailMessageMetaData msg(_messageId);
+    return msg.parentAccountId();
+}
+
+/*
     TransmitMessages
 */
 TransmitMessages::TransmitMessages(QMailTransmitAction* transmitAction, const QMailAccountId &id)

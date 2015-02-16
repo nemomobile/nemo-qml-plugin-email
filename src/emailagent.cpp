@@ -245,6 +245,13 @@ void EmailAgent::moveMessages(const QMailMessageIdList &ids, const QMailFolderId
     enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
 }
 
+void EmailAgent::sendMessage(const QMailMessageId &messageId)
+{
+    if (messageId.isValid()) {
+        enqueue(new TransmitMessage(m_transmitAction.data(), messageId));
+    }
+}
+
 void EmailAgent::sendMessages(const QMailAccountId &accountId)
 {
     if (accountId.isValid()) {
