@@ -414,6 +414,11 @@ EmailMessageListModel::Sort EmailMessageListModel::sortBy() const
     return m_sortBy;
 }
 
+bool EmailMessageListModel::unreadMailsSelected() const
+{
+    return !m_selectedUnreadIdx.isEmpty();
+}
+
 void EmailMessageListModel::sortBySender(int order)
 {
     sortByTime(order, Sender);
@@ -664,6 +669,13 @@ void EmailMessageListModel::selectMessage(int idx)
         m_selectedMsgIds.append(msgId);
         dataChanged(index(idx), index(idx));
     }
+
+    if (m_selectedUnreadIdx.isEmpty() && !messageRead(idx)) {
+        m_selectedUnreadIdx.append(idx);
+        emit unreadMailsSelectedChanged();
+    } else if (!messageRead(idx)) {
+        m_selectedUnreadIdx.append(idx);
+    }
 }
 
 void EmailMessageListModel::deSelectMessage(int idx)
@@ -673,6 +685,13 @@ void EmailMessageListModel::deSelectMessage(int idx)
     if (m_selectedMsgIds.contains (msgId)) {
         m_selectedMsgIds.removeOne(msgId);
         dataChanged(index(idx), index(idx));
+    }
+
+    if (m_selectedUnreadIdx.contains(idx)) {
+        m_selectedUnreadIdx.removeOne(idx);
+        if (m_selectedUnreadIdx.isEmpty()) {
+            emit unreadMailsSelectedChanged();
+        }
     }
 }
 
