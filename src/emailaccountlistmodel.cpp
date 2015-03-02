@@ -72,6 +72,7 @@ int EmailAccountListModel::accountUnreadCount(const QMailAccountId accountId)
     QMailMessageKey folderKey(QMailMessageKey::parentFolderId(folderIds));
     QMailMessageKey unreadKey(QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes) &
                               QMailMessageKey::status(QMailMessage::Trash, QMailDataComparator::Excludes) &
+                              QMailMessageKey::status(QMailMessage::Removed, QMailDataComparator::Excludes) &
                               QMailMessageKey::status(QMailMessage::Junk, QMailDataComparator::Excludes) &
                               QMailMessageKey::status(QMailMessage::Outgoing, QMailDataComparator::Excludes) &
                               QMailMessageKey::status(QMailMessage::Sent, QMailDataComparator::Excludes) &

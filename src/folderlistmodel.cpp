@@ -408,10 +408,16 @@ void FolderListModel::resetModel()
     qDeleteAll(m_folderList.begin(), m_folderList.end());
     m_folderList.clear();
     QMailFolderKey key = QMailFolderKey::parentAccountId(m_accountId);
+    QMailMessageKey excludeRemovedKey = QMailMessageKey::status(QMailMessage::Removed,  QMailDataComparator::Excludes);
     QList<QMailFolderId> folders = QMailStore::instance()->queryFolders(key);
     int i=0;
     foreach (const QMailFolderId& folderId, folders) {
-        FolderItem *item = new FolderItem(QModelIndex(), folderId, folderTypeFromId(folderId), QMailMessageKey(), 0);
+        FolderStandardType folderType = folderTypeFromId(folderId);
+        QMailMessageKey messageKey(excludeRemovedKey);
+        if (folderType != TrashFolder) {
+            messageKey &= QMailMessageKey::status(QMailMessage::Trash, QMailDataComparator::Excludes);
+        }
+        FolderItem *item = new FolderItem(QModelIndex(), folderId, folderType, messageKey, 0);
         item->index = createIndex(i, 0, item);
         item->unreadCount = folderUnreadCount(item->folderId, item->folderType, item->messageKey);
         m_folderList.append(item);
@@ -419,7 +425,9 @@ void FolderListModel::resetModel()
     }
     // Outbox
     FolderItem *item = new FolderItem(QModelIndex(), QMailFolder::LocalStorageFolderId, OutboxFolder,
-                                      QMailMessageKey::status(QMailMessage::Outbox), 0);
+                                      QMailMessageKey::status(QMailMessage::Outbox) &
+                                      ~QMailMessageKey::status(QMailMessage::Trash) &
+                                      excludeRemovedKey , 0);
     item->index = createIndex(i, 0, item);
     item->unreadCount = folderUnreadCount(item->folderId, item->folderType, item->messageKey);
     m_folderList.append(item);
@@ -431,7 +439,8 @@ void FolderListModel::resetModel()
     if (trashFolderId <= 1) {
         qCDebug(lcDebug) << "Creating local trash folder!";
         FolderItem *item = new FolderItem(QModelIndex(), QMailFolder::LocalStorageFolderId, TrashFolder,
-                                          QMailMessageKey::status(QMailMessage::Trash), 0);
+                                          QMailMessageKey::status(QMailMessage::Trash) &
+                                          excludeRemovedKey, 0);
         item->index = createIndex(i, 0, item);
         item->unreadCount = folderUnreadCount(item->folderId, item->folderType, item->messageKey);
         m_folderList.append(item);
@@ -443,7 +452,8 @@ void FolderListModel::resetModel()
         qCDebug(lcDebug) << "Creating local sent folder!";
         FolderItem *item = new FolderItem(QModelIndex(), QMailFolder::LocalStorageFolderId, SentFolder,
                                           QMailMessageKey::status(QMailMessage::Sent) &
-                                          ~QMailMessageKey::status(QMailMessage::Trash), 0);
+                                          ~QMailMessageKey::status(QMailMessage::Trash) &
+                                          excludeRemovedKey, 0);
         item->index = createIndex(i, 0, item);
         // Sent folder unread count is always zero
         m_folderList.append(item);
@@ -456,7 +466,8 @@ void FolderListModel::resetModel()
         FolderItem *item = new FolderItem(QModelIndex(), QMailFolder::LocalStorageFolderId, DraftsFolder,
                                           QMailMessageKey::status(QMailMessage::Draft) &
                                           ~QMailMessageKey::status(QMailMessage::Outbox) &
-                                          ~QMailMessageKey::status(QMailMessage::Trash), 0);
+                                          ~QMailMessageKey::status(QMailMessage::Trash) &
+                                          excludeRemovedKey, 0);
         item->index = createIndex(i, 0, item);
         item->unreadCount = folderUnreadCount(item->folderId, item->folderType, item->messageKey);
         m_folderList.append(item);
