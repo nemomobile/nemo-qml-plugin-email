@@ -337,9 +337,9 @@ void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
     if (!m_currentFolderId.isValid())
         return;
     // Local folders (e.g outbox) can have messages from several accounts.
-    QMailMessageKey accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds) & messageKey;
+    QMailMessageKey accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds);
     QMailMessageKey folderKey = accountKey & QMailMessageKey::parentFolderId(m_currentFolderId);
-    QMailMessageListModel::setKey(folderKey);
+    QMailMessageListModel::setKey(folderKey & messageKey);
     m_key=key();
     QMailMessageListModel::setSortKey(m_sortKey);
 
@@ -762,6 +762,9 @@ void EmailMessageListModel::setCombinedInbox(bool c)
     m_mailAccountIds = QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
                                                              & QMailAccountKey::status(QMailAccount::Enabled),
                                                              QMailAccountSortKey::name());
+    QMailMessageKey excludeRemovedKey = QMailMessageKey::status(QMailMessage::Removed,  QMailDataComparator::Excludes);
+    QMailMessageKey excludeReadKey = QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes);
+
     if (c) {
         QMailFolderIdList folderIds;
         foreach (const QMailAccountId &accountId, m_mailAccountIds) {
@@ -772,11 +775,12 @@ void EmailMessageListModel::setCombinedInbox(bool c)
         }
 
         QMailFolderKey inboxKey = QMailFolderKey::id(folderIds, QMailDataComparator::Includes);
-        QMailMessageKey messageKey =  QMailMessageKey::parentFolderId(inboxKey);
+        QMailMessageKey messageKey =  QMailMessageKey::parentFolderId(inboxKey) & excludeRemovedKey;
 
         if (m_filterUnread) {
             QMailMessageKey unreadKey = QMailMessageKey::parentFolderId(inboxKey)
-                    & QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes);
+                    & excludeReadKey
+                    & excludeRemovedKey;
             QMailMessageListModel::setKey(unreadKey);
         }
         else {
@@ -791,10 +795,12 @@ void EmailMessageListModel::setCombinedInbox(bool c)
 
         if (m_filterUnread) {
             accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds)
-                    &  QMailMessageKey::status(QMailMessage::Read, QMailDataComparator::Excludes);
+                    & excludeReadKey
+                    & excludeRemovedKey;
         }
         else {
-            accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds);
+            accountKey = QMailMessageKey::parentAccountId(m_mailAccountIds)
+                    & excludeRemovedKey;
         }
         QMailMessageListModel::setKey(accountKey);
         m_key = key();
