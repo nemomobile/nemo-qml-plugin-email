@@ -140,6 +140,8 @@ public slots:
     Q_INVOKABLE void deSelectMessage(int index);
     Q_INVOKABLE void moveSelectedMessageIds(int vFolderId);
     Q_INVOKABLE void deleteSelectedMessageIds();
+    Q_INVOKABLE void markAsReadSelectedMessagesIds();
+    Q_INVOKABLE void markAsUnReadSelectedMessagesIds();
     Q_INVOKABLE void markAllMessagesAsRead();
 
     void foldersAdded(const QMailFolderIdList &folderIds);
@@ -166,7 +168,7 @@ private:
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
     EmailMessageListModel::Sort m_sortBy;
-    QList<QMailMessageId> m_selectedMsgIds;
+    QMap<int, QMailMessageId> m_selectedMsgIds;
     QList<int> m_selectedUnreadIdx;
 
     void checkFetchMoreChanged();
