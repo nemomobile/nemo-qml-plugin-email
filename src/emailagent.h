@@ -83,6 +83,8 @@ public:
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
     void sendMessage(const QMailMessageId &messageId);
     void sendMessages(const QMailAccountId &accountId);
+    void setMessagesReadState(const QMailMessageIdList &ids, bool state);
+
     void setupAccountFlags();
     int standardFolderId(int accountId, QMailFolder::StandardFolder folder) const;
     void syncAccounts(const QMailAccountIdList &accountIdList, const bool syncOnlyInbox = true, const uint minimum = 20);

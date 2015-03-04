@@ -31,6 +31,7 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(uint limit READ limit WRITE setLimit NOTIFY limitChanged)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
+    Q_PROPERTY(bool unreadMailsSelected READ unreadMailsSelected NOTIFY unreadMailsSelectedChanged FINAL)
 
 public:
     enum Roles
@@ -82,6 +83,7 @@ public:
     void setLimit(uint limit);
     void setFilterUnread(bool u);
     EmailMessageListModel::Sort sortBy() const;
+    bool unreadMailsSelected() const;
 
 Q_SIGNALS:
     void canFetchMoreChanged();
@@ -90,6 +92,7 @@ Q_SIGNALS:
     void filterUnreadChanged();
     void limitChanged();
     void sortByChanged();
+    void unreadMailsSelectedChanged();
 
 signals:
     void messageDownloadCompleted();
@@ -137,6 +140,8 @@ public slots:
     Q_INVOKABLE void deSelectMessage(int index);
     Q_INVOKABLE void moveSelectedMessageIds(int vFolderId);
     Q_INVOKABLE void deleteSelectedMessageIds();
+    Q_INVOKABLE void markAsReadSelectedMessagesIds();
+    Q_INVOKABLE void markAsUnReadSelectedMessagesIds();
     Q_INVOKABLE void markAllMessagesAsRead();
 
     void foldersAdded(const QMailFolderIdList &folderIds);
@@ -163,7 +168,8 @@ private:
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
     EmailMessageListModel::Sort m_sortBy;
-    QList<QMailMessageId> m_selectedMsgIds;
+    QMap<int, QMailMessageId> m_selectedMsgIds;
+    QList<int> m_selectedUnreadIdx;
 
     void checkFetchMoreChanged();
 };

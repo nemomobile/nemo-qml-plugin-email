@@ -175,7 +175,7 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     }
     else if (role == MessageSelectModeRole) {
        int selected = 0;
-       if (m_selectedMsgIds.contains(msgId) == true)
+       if (m_selectedMsgIds.contains(index.row()) == true)
            selected = 1;
         return (selected);
     }
@@ -412,6 +412,11 @@ void EmailMessageListModel::foldersAdded(const QMailFolderIdList &folderIds)
 EmailMessageListModel::Sort EmailMessageListModel::sortBy() const
 {
     return m_sortBy;
+}
+
+bool EmailMessageListModel::unreadMailsSelected() const
+{
+    return !m_selectedUnreadIdx.isEmpty();
 }
 
 void EmailMessageListModel::sortBySender(int order)
@@ -651,28 +656,46 @@ void EmailMessageListModel::deSelectAllMessages()
     if (!m_selectedMsgIds.size())
         return;
 
-    for (int row = 0; row < rowCount(); row++) {
-        deSelectMessage(row);
+    QMutableMapIterator<int, QMailMessageId> iter(m_selectedMsgIds);
+    while (iter.hasNext()) {
+        iter.next();
+        int idx = iter.key();
+        iter.remove();
+        dataChanged(index(idx), index(idx), QVector<int>() << MessageSelectModeRole);
     }
+    m_selectedUnreadIdx.clear();
+    emit unreadMailsSelectedChanged();
 }
 
 void EmailMessageListModel::selectMessage(int idx)
 {
     QMailMessageId msgId = idFromIndex(index(idx));
 
-    if (!m_selectedMsgIds.contains (msgId)) {
-        m_selectedMsgIds.append(msgId);
-        dataChanged(index(idx), index(idx));
+    if (!m_selectedMsgIds.contains(idx)) {
+        m_selectedMsgIds.insert(idx, msgId);
+        dataChanged(index(idx), index(idx), QVector<int>() << MessageSelectModeRole);
+    }
+
+    if (m_selectedUnreadIdx.isEmpty() && !messageRead(idx)) {
+        m_selectedUnreadIdx.append(idx);
+        emit unreadMailsSelectedChanged();
+    } else if (!messageRead(idx)) {
+        m_selectedUnreadIdx.append(idx);
     }
 }
 
 void EmailMessageListModel::deSelectMessage(int idx)
 {
-    QMailMessageId msgId = idFromIndex(index(idx));
+    if (m_selectedMsgIds.contains(idx)) {
+        m_selectedMsgIds.remove(idx);
+        dataChanged(index(idx), index(idx), QVector<int>() << MessageSelectModeRole);
+    }
 
-    if (m_selectedMsgIds.contains (msgId)) {
-        m_selectedMsgIds.removeOne(msgId);
-        dataChanged(index(idx), index(idx));
+    if (m_selectedUnreadIdx.contains(idx)) {
+        m_selectedUnreadIdx.removeOne(idx);
+        if (m_selectedUnreadIdx.isEmpty()) {
+            emit unreadMailsSelectedChanged();
+        }
     }
 }
 
@@ -683,9 +706,9 @@ void EmailMessageListModel::moveSelectedMessageIds(int vFolderId)
 
     const QMailFolderId id(vFolderId);
     if (id.isValid()) {
-        EmailAgent::instance()->moveMessages(m_selectedMsgIds, id);
+        EmailAgent::instance()->moveMessages(m_selectedMsgIds.values(), id);
     }
-    m_selectedMsgIds.clear();
+    deSelectAllMessages();
 }
 
 void EmailMessageListModel::deleteSelectedMessageIds()
@@ -693,8 +716,26 @@ void EmailMessageListModel::deleteSelectedMessageIds()
     if (m_selectedMsgIds.empty())
         return;
 
-    EmailAgent::instance()->deleteMessages(m_selectedMsgIds);
-    m_selectedMsgIds.clear();
+    EmailAgent::instance()->deleteMessages(m_selectedMsgIds.values());
+    deSelectAllMessages();
+}
+
+void EmailMessageListModel::markAsReadSelectedMessagesIds()
+{
+    if (m_selectedMsgIds.empty())
+        return;
+
+    EmailAgent::instance()->setMessagesReadState(m_selectedMsgIds.values(), true);
+    deSelectAllMessages();
+}
+
+void EmailMessageListModel::markAsUnReadSelectedMessagesIds()
+{
+    if (m_selectedMsgIds.empty())
+        return;
+
+    EmailAgent::instance()->setMessagesReadState(m_selectedMsgIds.values(), false);
+    deSelectAllMessages();
 }
 
 void EmailMessageListModel::markAllMessagesAsRead()

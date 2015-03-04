@@ -259,6 +259,14 @@ void EmailAgent::sendMessages(const QMailAccountId &accountId)
     }
 }
 
+void EmailAgent::setMessagesReadState(const QMailMessageIdList &ids, bool state)
+{
+    Q_ASSERT(!ids.empty());
+    QMailMessageId msgId(ids[0]);
+    QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(ids), QMailMessage::Read, state);
+    enqueue(new ExportUpdates(m_retrievalAction.data(), accountForMessageId(msgId)));
+}
+
 void EmailAgent::setupAccountFlags()
 {
     if (!QMailStore::instance()->accountStatusMask("StandardFoldersRetrieved")) {
