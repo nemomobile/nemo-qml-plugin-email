@@ -223,7 +223,7 @@ void EmailMessage::saveDraft()
         QMailDisconnected::flagMessage(m_msg.id(), QMailMessage::Draft, QMailMessage::Temporary,
                                        "Flagging message as draft");
         QMailDisconnected::moveToFolder(QMailMessageIdList() << m_msg.id(), m_msg.parentFolderId());
-        EmailAgent::instance()->exportUpdates(m_msg.parentAccountId());
+        EmailAgent::instance()->exportUpdates(QMailAccountIdList() << m_msg.parentAccountId());
         emitSignals();
     } else {
         qCWarning(lcGeneral) << "Failed to save message!";

@@ -179,12 +179,20 @@ quint64 EmailAgent::downloadMessagePart(const QMailMessagePart::Location &locati
     return enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, false));
 }
 
-void EmailAgent::exportUpdates(const QMailAccountId accountId)
+void EmailAgent::exportUpdates(const QMailAccountIdList &accountIdList)
 {
-    enqueue(new ExportUpdates(m_retrievalAction.data(),accountId));
+    if (!m_enqueing && accountIdList.size()) {
+        m_enqueing = true;
+    }
+    for (int i = 0; i < accountIdList.size(); i++) {
+        if (i+1 == accountIdList.size()) {
+            m_enqueing = false;
+        }
+        enqueue(new ExportUpdates(m_retrievalAction.data(), accountIdList.at(i)));
+    }
 }
 
-bool EmailAgent::hasMessagesInOutbox(const QMailAccountId accountId)
+bool EmailAgent::hasMessagesInOutbox(const QMailAccountId &accountId)
 {
     // Local folders can have messages from several accounts.
     QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox) & ~QMailMessageKey::status(QMailMessage::Trash));
@@ -242,7 +250,7 @@ void EmailAgent::moveMessages(const QMailMessageIdList &ids, const QMailFolderId
 
     QMailDisconnected::moveToFolder(ids, destinationId);
 
-    enqueue(new ExportUpdates(m_retrievalAction.data(), accountId));
+    exportUpdates(QMailAccountIdList() << accountId);
 }
 
 void EmailAgent::sendMessage(const QMailMessageId &messageId)
@@ -262,9 +270,17 @@ void EmailAgent::sendMessages(const QMailAccountId &accountId)
 void EmailAgent::setMessagesReadState(const QMailMessageIdList &ids, bool state)
 {
     Q_ASSERT(!ids.empty());
-    QMailMessageId msgId(ids[0]);
+    QMailAccountIdList accountIdList;
+    // Messages can be from several accounts
+    foreach (const QMailMessageId &id, ids) {
+       QMailAccountId accountId = accountForMessageId(id);
+       if (!accountIdList.contains(accountId)) {
+           accountIdList.append(accountId);
+       }
+    }
+
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(ids), QMailMessage::Read, state);
-    enqueue(new ExportUpdates(m_retrievalAction.data(), accountForMessageId(msgId)));
+    exportUpdates(accountIdList);
 }
 
 void EmailAgent::setupAccountFlags()
@@ -571,7 +587,7 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
         }
     }
 
-    bool exportUpdates;
+    bool exptUpdates;
 
     QMap<QMailAccountId, QMailMessageIdList> accountMap;
     // Messages can be from several accounts
@@ -604,7 +620,7 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
         if(!idsToRemove.isEmpty()) {
             m_enqueing = true;
             enqueue(new DeleteMessages(m_storageAction.data(), idsToRemove));
-            exportUpdates = true;
+            exptUpdates = true;
         }
     } else {
         QMapIterator<QMailAccountId, QMailMessageIdList> iter(accountMap);
@@ -624,19 +640,14 @@ void EmailAgent::deleteMessages(const QMailMessageIdList &ids)
                 m_enqueing = false;
             }
         }
-        exportUpdates = true;
+        exptUpdates = true;
     }
 
     // Do online actions at the end
-    if (exportUpdates) {
+    if (exptUpdates) {
         // Export updates for all accounts that we deleted messages from
         QMailAccountIdList accountList = accountMap.uniqueKeys();
-        for (int i = 0; i < accountList.size(); i++) {
-            if (i+1 == accountList.size()) {
-                m_enqueing = false;
-            }
-            enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
-        }
+        exportUpdates(accountList);
     }
 }
 
@@ -655,12 +666,7 @@ void EmailAgent::expungeMessages(const QMailMessageIdList &ids)
     }
 
     // Export updates for all accounts that we deleted messages from
-    for (int i = 0; i < accountList.size(); i++) {
-        if (i+1 == accountList.size()) {
-            m_enqueing = false;
-        }
-        enqueue(new ExportUpdates(m_retrievalAction.data(), accountList.at(i)));
-    }
+    exportUpdates(accountList);
 }
 
 void EmailAgent::downloadAttachment(int messageId, const QString &attachmentlocation)
@@ -688,7 +694,7 @@ void EmailAgent::exportUpdates(int accountId)
     QMailAccountId acctId(accountId);
 
     if (acctId.isValid()) {
-        enqueue(new ExportUpdates(m_retrievalAction.data(),acctId));;
+        exportUpdates(QMailAccountIdList() << acctId);
     }
 }
 
@@ -778,7 +784,7 @@ void EmailAgent::markMessageAsRead(int messageId)
     QMailMessageId id(messageId);
     quint64 status(QMailMessage::Read);
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(id), status, true);
-    exportUpdates(accountForMessageId(id));
+    exportUpdates(QMailAccountIdList() << accountForMessageId(id));
 }
 
 void EmailAgent::markMessageAsUnread(int messageId)
@@ -786,7 +792,7 @@ void EmailAgent::markMessageAsUnread(int messageId)
     QMailMessageId id(messageId);
     quint64 status(QMailMessage::Read);
     QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(id), status, false);
-    exportUpdates(accountForMessageId(id));
+    exportUpdates(QMailAccountIdList() << accountForMessageId(id));
 }
 
 void EmailAgent::moveMessage(int messageId, int destinationId)

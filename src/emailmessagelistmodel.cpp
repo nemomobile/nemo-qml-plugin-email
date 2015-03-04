@@ -760,7 +760,7 @@ void EmailMessageListModel::markAllMessagesAsRead()
             QMailStore::instance()->updateMessagesMetaData(QMailMessageKey::id(msgIds), status, true);
         }
         foreach (const QMailAccountId &accId,  accountIdList) {
-            EmailAgent::instance()->exportUpdates(accId);
+            EmailAgent::instance()->exportUpdates(QMailAccountIdList() << accId);
         }
     }
     else {
