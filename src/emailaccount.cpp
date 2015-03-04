@@ -288,6 +288,7 @@ void EmailAccount::setAccountId(const int accId)
     QMailAccountId accountId(accId);
     if (accountId.isValid()) {
         mAccount = new QMailAccount(accountId);
+        mAccountConfig = new QMailAccountConfiguration(mAccount->id());
     }
     else {
         qCWarning(lcGeneral) << "Invalid account id " << accountId.toULongLong();
@@ -426,11 +427,12 @@ void EmailAccount::setRecvPassword(QString val)
     mRecvCfg->setValue("password", Base64::encode(val));
 }
 
-bool EmailAccount::pushCapable() const
+bool EmailAccount::pushCapable()
 {
     if (mRecvType.toLower() == "imap4") {
         // Reload configuration since this setting is saved by messageserver
-        QMailServiceConfiguration imapConf(mAccountConfig, mRecvType);
+        mAccountConfig = new QMailAccountConfiguration(mAccount->id());
+        QMailServiceConfiguration imapConf(mAccountConfig, "imap4");
         return (imapConf.value("pushCapable").toInt() != 0);
     } else {
         return false;
