@@ -96,7 +96,7 @@ public:
     Q_INVOKABLE void deleteMessage(int messageId);
     Q_INVOKABLE void deleteMessages(const QMailMessageIdList &ids);
     Q_INVOKABLE void expungeMessages(const QMailMessageIdList &ids);
-    Q_INVOKABLE void downloadAttachment(int messageId, const QString &attachmentlocation);
+    Q_INVOKABLE void downloadAttachment(int messageId, const QString &attachmentLocation);
     Q_INVOKABLE void exportUpdates(int accountId);
     Q_INVOKABLE void getMoreMessages(int folderId, uint minimum = 20);
     Q_INVOKABLE QString signatureForAccount(int accountId);
