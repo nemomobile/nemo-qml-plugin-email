@@ -669,23 +669,22 @@ void EmailAgent::expungeMessages(const QMailMessageIdList &ids)
     exportUpdates(accountList);
 }
 
-void EmailAgent::downloadAttachment(int messageId, const QString &attachmentlocation)
+void EmailAgent::downloadAttachment(int messageId, const QString &attachmentLocation)
 {
     m_messageId = QMailMessageId(messageId);
-    QMailMessage message (m_messageId);
-
-    for (uint i = 0; i < message.partCount(); i++) {
-        QMailMessagePart sourcePart = message.partAt(i);
-        if (attachmentlocation == sourcePart.location().toString(true)) {
-            QMailMessagePart::Location location = sourcePart.location();
-            location.setContainingMessageId(m_messageId);
-            if (sourcePart.hasBody()) {
-                saveAttachmentToDownloads(m_messageId, attachmentlocation);
-            } else {
-                qCDebug(lcDebug) << "Start Dowload for: " << attachmentlocation;
-                enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, true));
-            }
+    const QMailMessage message(m_messageId);
+    QMailMessagePart::Location location(attachmentLocation);
+    if (message.contains(location)) {
+        const QMailMessagePart attachmentPart = message.partAt(location);
+        location.setContainingMessageId(m_messageId);
+        if (attachmentPart.hasBody()) {
+            saveAttachmentToDownloads(m_messageId, attachmentLocation);
+        } else {
+            qCDebug(lcDebug) << "Start Download for: " << attachmentLocation;
+            enqueue(new RetrieveMessagePart(m_retrievalAction.data(), location, true));
         }
+    } else {
+       qCDebug(lcDebug) << "ERROR: Attachment location not found " << attachmentLocation;
     }
 }
 
@@ -1188,49 +1187,52 @@ void EmailAgent::removeAction(quint64 actionId)
 void EmailAgent::saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation)
 {
     QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/" + attachmentLocation;
-
     // Message and part structure can be updated during attachment download
     // is safer to reload everything
-    QMailMessage message (messageId);
-    for (uint i = 0; i < message.partCount(); i++) {
-        QMailMessagePart sourcePart = message.partAt(i);
-        if (attachmentLocation == sourcePart.location().toString(true)) {
-            QString attachmentPath = attachmentDownloadFolder + "/" + sourcePart.displayName();
-            QFile attachmentFile(attachmentPath);
+    const QMailMessage message (messageId);
+    const QMailMessagePart::Location location(attachmentLocation);
+    if (message.contains(location)) {
+        const QMailMessagePart attachmentPart = message.partAt(location);
+        QString attachmentPath = attachmentDownloadFolder + "/" + attachmentPart.displayName();
+        QFile attachmentFile(attachmentPath);
 
-            if (attachmentFile.exists()) {
-                emit attachmentUrlChanged(attachmentLocation, attachmentDownloadFolder);
+        if (attachmentFile.exists()) {
+            emit attachmentUrlChanged(attachmentLocation, attachmentDownloadFolder);
+            updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
+        } else {
+            QString path = attachmentPart.writeBodyTo(attachmentDownloadFolder);
+            if (!path.isEmpty()) {
+                emit attachmentUrlChanged(attachmentLocation, path);
                 updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
             } else {
-                QString path = sourcePart.writeBodyTo(attachmentDownloadFolder);
-                if (!path.isEmpty()) {
-                    emit attachmentUrlChanged(attachmentLocation, path);
-                    updateAttachmentDowloadStatus(attachmentLocation, Downloaded);
-                } else {
-                    updateAttachmentDowloadStatus(attachmentLocation, FailedToSave);
-                }
+                qCDebug(lcDebug) << "ERROR: Failed to save attachment file to location " << attachmentDownloadFolder;
+                updateAttachmentDowloadStatus(attachmentLocation, FailedToSave);
             }
         }
+    } else {
+        qCDebug(lcDebug) << "ERROR: Can't save attachment, location not found " << attachmentLocation;
     }
 }
 
 void EmailAgent::updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status)
 {
-    if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
-        if (status == Failed) {
-            emit attachmentDownloadStatusChanged(attachmentLocation, status);
-            emit attachmentDownloadProgressChanged(attachmentLocation, 0);
-            m_attachmentDownloadQueue.remove(attachmentLocation);
-        } else if (status == Downloaded) {
-            emit attachmentDownloadStatusChanged(attachmentLocation, status);
-            emit attachmentDownloadProgressChanged(attachmentLocation, 100);
-            m_attachmentDownloadQueue.remove(attachmentLocation);
-        } else {
-            AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
-            attInfo.status = status;
-            m_attachmentDownloadQueue.insert(attachmentLocation, attInfo);
-            emit attachmentDownloadStatusChanged(attachmentLocation, status);
-        }
+    if (status == Failed) {
+        emit attachmentDownloadStatusChanged(attachmentLocation, status);
+        emit attachmentDownloadProgressChanged(attachmentLocation, 0);
+        m_attachmentDownloadQueue.remove(attachmentLocation);
+    } else if (status == Downloaded) {
+        emit attachmentDownloadStatusChanged(attachmentLocation, status);
+        emit attachmentDownloadProgressChanged(attachmentLocation, 100);
+        m_attachmentDownloadQueue.remove(attachmentLocation);
+    } else if (m_attachmentDownloadQueue.contains(attachmentLocation)) {
+        AttachmentInfo attInfo = m_attachmentDownloadQueue.value(attachmentLocation);
+        attInfo.status = status;
+        m_attachmentDownloadQueue.insert(attachmentLocation, attInfo);
+        emit attachmentDownloadStatusChanged(attachmentLocation, status);
+    } else {
+        updateAttachmentDowloadStatus(attachmentLocation, Failed);
+        qCDebug(lcDebug) << "ERROR: Can't update attachment download status for items outside of the download queue, part location: "
+                         << attachmentLocation;
     }
 }
 
