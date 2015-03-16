@@ -514,7 +514,7 @@ void EmailMessage::setAttachments (const QStringList &uris)
 
 void EmailMessage::setBcc(const QStringList &bccList)
 {
-    if (bccList.size()) {
+    if (bccList.size() || bcc().size()) {
         m_msg.setBcc(QMailAddress::fromStringList(bccList));
         emit bccChanged();
         emit multipleRecipientsChanged();
@@ -533,7 +533,7 @@ void EmailMessage::setBody(const QString &body)
 
 void EmailMessage::setCc(const QStringList &ccList)
 {
-    if (ccList.size()) {
+    if (ccList.size() || cc().size()) {
         m_msg.setCc(QMailAddress::fromStringList(ccList));
         emit ccChanged();
         emit multipleRecipientsChanged();
@@ -690,7 +690,7 @@ void EmailMessage::setSubject(const QString &subject)
 
 void EmailMessage::setTo(const QStringList &toList)
 {
-    if (toList.size()) {
+    if (toList.size() || to().size()) {
         m_msg.setTo(QMailAddress::fromStringList(toList));
         emit toChanged();
     } else {
