@@ -324,9 +324,10 @@ void EmailMessageListModel::setSearch(const QString search)
         if(m_search == search)
             return;
         QMailMessageKey subjectKey = QMailMessageKey::subject(search, QMailDataComparator::Includes);
-        QMailMessageKey toKey = QMailMessageKey::recipients(search, QMailDataComparator::Includes);
+        QMailMessageKey recipientsKey = QMailMessageKey::recipients(search, QMailDataComparator::Includes);
         QMailMessageKey fromKey = QMailMessageKey::sender(search, QMailDataComparator::Includes);
-        setKey(m_key & (subjectKey | toKey | fromKey));
+        QMailMessageKey previewKey = QMailMessageKey::preview(search, QMailDataComparator::Includes);
+        setKey(m_key & (subjectKey | recipientsKey | fromKey | previewKey));
     }
     m_search = search;
 }
