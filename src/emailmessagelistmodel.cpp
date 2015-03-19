@@ -96,6 +96,7 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessageSortByRole] = "sortBy";
     roles[MessageSubjectFirstCharRole] = "subjectFirstChar";
     roles[MessageSenderFirstCharRole] = "senderFirstChar";
+    roles[MessageParsedSubject] = "parsedSubject";
 
     m_key = key();
     m_sortKey = QMailMessageSortKey::timeStamp(Qt::DescendingOrder);
@@ -305,6 +306,13 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
     else if (role == MessageSenderFirstCharRole) {
         QString sender = messageMetaData.from().name();
         return firstChar(sender);
+    } else if (role == MessageParsedSubject) {
+        // Filter <img> and <ahref> html tags to make the text suitable to be displayed in a qml
+        // label using StyledText(allows only small subset of html)
+        QString subject = data(index, QMailMessageModelBase::MessageSubjectTextRole).toString();
+        subject.replace(QRegExp("<\\s*img", Qt::CaseInsensitive), "<no-img");
+        subject.replace(QRegExp("<\\s*a", Qt::CaseInsensitive), "<no-a");
+        return subject;
     }
 
     return QMailMessageListModel::data(index, role);
