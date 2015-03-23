@@ -30,6 +30,7 @@ class Q_DECL_EXPORT EmailAgent : public QObject
     Q_ENUMS(Status)
     Q_ENUMS(AttachmentStatus)
     Q_ENUMS(SyncErrors)
+    Q_ENUMS(SearchStatus)
 public:
     static EmailAgent *instance();
 
@@ -64,6 +65,12 @@ public:
         SendFailed
     };
 
+    enum SearchStatus {
+        SearchDone = 0,
+        SearchCanceled,
+        SearchFailed
+    };
+
     int currentSynchronizingAccountId() const;
     EmailAgent::AttachmentStatus attachmentDownloadStatus(const QString &attachmentLocation);
     int attachmentDownloadProgress(const QString &attachmentLocation);
@@ -78,6 +85,9 @@ public:
     bool hasMessagesInOutbox(const QMailAccountId &accountId);
     void initMailServer();
     bool ipcConnected();
+    bool isOnline();
+    void searchMessages(const QMailMessageKey &filter, const QString &bodyText, QMailSearchAction::SearchSpecification spec,
+                        quint64 limit, const QMailMessageSortKey &sort = QMailMessageSortKey());
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
@@ -134,6 +144,9 @@ signals:
     void standardFoldersCreated(const QMailAccountId &accountId);
     void synchronizingChanged(EmailAgent::Status status);
     void networkConnectionRequested();
+    void searchMessageIdsMatched(const QMailMessageIdList &ids);
+    void searchCompleted(const QString &search, const QMailMessageIdList &matchedIds, bool isRemote,
+                         int remainingMessagesOnRemote, EmailAgent::SearchStatus status);
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
@@ -156,12 +169,14 @@ private:
     bool m_backgroundProcess;
     bool m_waitForIpc;
     bool m_sendFailed;
+    quint64 m_searchActionId;
 
     QMailAccountIdList m_enabledAccounts;
 
     QScopedPointer<QMailRetrievalAction> const m_retrievalAction;
     QScopedPointer<QMailStorageAction> const m_storageAction;
     QScopedPointer<QMailTransmitAction> const m_transmitAction;
+    QScopedPointer<QMailSearchAction> const m_searchAction;
     QMailRetrievalAction *m_attachmentRetrievalAction;
     QMailMessageId m_messageId;
 
@@ -181,13 +196,14 @@ private:
     quint64 enqueue(EmailAction *action);
     void executeCurrent();
     QSharedPointer<EmailAction> getNext();
+    void processNextAction(bool error = false);
     quint64 newAction();
-    bool isOnline();
     void reportError(const QMailAccountId &accountId, const QMailServiceAction::Status::ErrorCode &errorCode);
     void removeAction(quint64 actionId);
     void saveAttachmentToDownloads(const QMailMessageId messageId, const QString &attachmentLocation);
     void updateAttachmentDowloadStatus(const QString &attachmentLocation, AttachmentStatus status);
     void updateAttachmentDowloadProgress(const QString &attachmentLocation, int progress);
+    void emitSearchStatusChanges(QSharedPointer<EmailAction> action, EmailAgent::SearchStatus status);
 };
 
 #endif

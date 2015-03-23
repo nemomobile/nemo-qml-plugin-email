@@ -10,6 +10,8 @@
 #ifndef EMAILMESSAGELISTMODEL_H
 #define EMAILMESSAGELISTMODEL_H
 
+#include "emailagent.h"
+
 #include <QAbstractListModel>
 #include <QProcess>
 
@@ -151,6 +153,9 @@ private slots:
     void downloadActivityChanged(QMailServiceAction::Activity);
     void messagesAdded(const QMailMessageIdList &ids);
     void messagesRemoved(const QMailMessageIdList &ids);
+    void searchOnline();
+    void onSearchCompleted(const QString &search, const QMailMessageIdList &matchedIds, bool isRemote,
+                           int remainingMessagesOnRemote, EmailAgent::SearchStatus status);
 
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
@@ -166,6 +171,8 @@ private:
     QMailAccountIdList m_mailAccountIds;
     QMailRetrievalAction *m_retrievalAction;
     QString m_search;
+    QString m_remoteSearch;
+    QMailMessageKey m_searchKey;
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
     EmailMessageListModel::Sort m_sortBy;

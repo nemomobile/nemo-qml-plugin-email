@@ -12,6 +12,7 @@
 
 #include <QObject>
 #include <qmailserviceaction.h>
+#include <qmailserviceaction.h>
 
 class Q_DECL_EXPORT EmailAction : public QObject
 {
@@ -24,6 +25,7 @@ public:
         RetrieveFolderList,
         RetrieveMessages,
         RetrieveMessagePart,
+        Search,
         Send,
         StandardFolders,
         Storage,
@@ -325,6 +327,28 @@ private:
     QMailRetrievalAction* _retrievalAction;
     QMailMessageIdList _messageIds;
     QMailRetrievalAction::RetrievalSpecification _spec;
+};
+
+class SearchMessages : public EmailAction
+{
+public:
+    SearchMessages(QMailSearchAction* searchAction,
+                   const QMailMessageKey &filter,
+                   const QString &bodyText, QMailSearchAction::SearchSpecification spec,
+                   quint64 limit, const QMailMessageSortKey &sort = QMailMessageSortKey());
+    ~SearchMessages();
+    void execute();
+    QMailServiceAction* serviceAction() const;
+    bool isRemote() const;
+    QString searchText() const;
+
+private:
+    QMailSearchAction *_searchAction;
+    QMailMessageKey _filter;
+    QString _bodyText;
+    QMailSearchAction::SearchSpecification _spec;
+    quint64 _limit;
+    QMailMessageSortKey _sort;
 };
 
 class Synchronize : public EmailAction
