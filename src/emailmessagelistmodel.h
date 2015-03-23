@@ -32,6 +32,7 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(uint limit READ limit WRITE setLimit NOTIFY limitChanged)
+    Q_PROPERTY(uint searchLimit READ searchLimit WRITE setSearchLimit NOTIFY searchLimitChanged)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
     Q_PROPERTY(bool unreadMailsSelected READ unreadMailsSelected NOTIFY unreadMailsSelectedChanged FINAL)
 
@@ -84,6 +85,8 @@ public:
     bool filterUnread() const;
     uint limit() const;
     void setLimit(uint limit);
+    uint searchLimit() const;
+    void setSearchLimit(uint limit);
     void setFilterUnread(bool u);
     EmailMessageListModel::Sort sortBy() const;
     bool unreadMailsSelected() const;
@@ -94,6 +97,7 @@ Q_SIGNALS:
     void combinedInboxChanged();
     void filterUnreadChanged();
     void limitChanged();
+    void searchLimitChanged();
     void sortByChanged();
     void unreadMailsSelectedChanged();
 
@@ -172,6 +176,7 @@ private:
     QMailRetrievalAction *m_retrievalAction;
     QString m_search;
     QString m_remoteSearch;
+    uint m_searchLimit;
     QMailMessageKey m_searchKey;
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;

@@ -58,7 +58,8 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
       m_combinedInbox(false),
       m_filterUnread(true),
       m_canFetchMore(false),
-      m_retrievalAction(new QMailRetrievalAction(this))
+      m_retrievalAction(new QMailRetrievalAction(this)),
+      m_searchLimit(100)
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
     roles[QMailMessageModelBase::MessageSubjectTextRole] = "subject";
@@ -344,7 +345,7 @@ void EmailMessageListModel::setSearch(const QString search)
         m_search = search;
         // We have model filtering already via searchKey, so we pass just the current model key plus body search,
         // otherwise results will be merged and just entries with both, fields and body matches will be returned.
-        EmailAgent::instance()->searchMessages(m_key, search, QMailSearchAction::Local, 100);
+        EmailAgent::instance()->searchMessages(m_key, search, QMailSearchAction::Local, m_searchLimit);
     }
 }
 
@@ -894,6 +895,19 @@ void EmailMessageListModel::setLimit(uint limit)
         QMailMessageListModel::setLimit(limit);
         emit limitChanged();
         checkFetchMoreChanged();
+    }
+}
+
+uint EmailMessageListModel::searchLimit() const
+{
+    return m_searchLimit;
+}
+
+void EmailMessageListModel::setSearchLimit(uint limit)
+{
+    if (limit != m_searchLimit) {
+        m_searchLimit = limit;
+        emit searchLimitChanged();
     }
 }
 
