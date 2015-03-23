@@ -59,7 +59,8 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
       m_filterUnread(true),
       m_canFetchMore(false),
       m_retrievalAction(new QMailRetrievalAction(this)),
-      m_searchLimit(100)
+      m_searchLimit(100),
+      m_searchRemainingOnRemote(0)
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
     roles[QMailMessageModelBase::MessageSubjectTextRole] = "subject";
@@ -911,6 +912,11 @@ void EmailMessageListModel::setSearchLimit(uint limit)
     }
 }
 
+int EmailMessageListModel::searchRemainingOnRemote() const
+{
+    return m_searchRemainingOnRemote;
+}
+
 void EmailMessageListModel::checkFetchMoreChanged()
 {
     if (limit()) {
@@ -974,6 +980,8 @@ void EmailMessageListModel::onSearchCompleted(const QString &search, const QMail
         if (isRemote) {
             // Append online search results to local ones
             setKey(key() | QMailMessageKey::id(matchedIds));
+            m_searchRemainingOnRemote = remainingMessagesOnRemote;
+            emit searchRemainingOnRemoteChanged();
             qCDebug(lcGeneral) << "We have more messages on remote " << remainingMessagesOnRemote;
         } else {
             setKey(m_searchKey | QMailMessageKey::id(matchedIds));
