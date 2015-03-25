@@ -88,6 +88,7 @@ public:
     bool isOnline();
     void searchMessages(const QMailMessageKey &filter, const QString &bodyText, QMailSearchAction::SearchSpecification spec,
                         quint64 limit, const QMailMessageSortKey &sort = QMailMessageSortKey());
+    void cancelSearch();
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);
     void moveMessages(const QMailMessageIdList &ids, const QMailFolderId &destinationId);
@@ -169,7 +170,6 @@ private:
     bool m_backgroundProcess;
     bool m_waitForIpc;
     bool m_sendFailed;
-    quint64 m_searchActionId;
 
     QMailAccountIdList m_enabledAccounts;
 

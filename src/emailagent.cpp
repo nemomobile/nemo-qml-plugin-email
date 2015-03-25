@@ -58,7 +58,6 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_enqueing(false)
     , m_backgroundProcess(false)
     , m_sendFailed(false)
-    , m_searchActionId(0)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
@@ -167,10 +166,13 @@ void EmailAgent::setBackgroundProcess(const bool isBackgroundProcess)
 void EmailAgent::cancelAction(quint64 actionId)
 {
     //cancel running action
-    if (m_currentAction && m_currentAction->id() == actionId) {
+    if (m_currentAction && (m_currentAction->id() == actionId)) {
         if(m_currentAction->serviceAction()->isRunning()) {
             m_cancellingSingleAction = true;
             m_currentAction->serviceAction()->cancelOperation();
+        } else {
+            m_currentAction.reset();
+            processNextAction();
         }
     } else {
         removeAction(actionId);
@@ -247,10 +249,34 @@ void EmailAgent::searchMessages(const QMailMessageKey &filter,
 {
     // Only one search action should be running at time,
     // cancel any running or queued
-    if (m_searchActionId) {
-        cancelAction(m_searchActionId);
+    m_enqueing = true;
+    cancelSearch();
+    qCDebug(lcDebug) << "Enqueuing new search " << bodyText;
+    m_enqueing = false;
+    enqueue(new SearchMessages(m_searchAction.data(), filter, bodyText, spec, limit, sort));
+}
+
+void EmailAgent::cancelSearch()
+{
+    //cancel running action if is search
+    if (m_currentAction && (m_currentAction->type() == EmailAction::Search)) {
+        if (m_currentAction->serviceAction()->isRunning()) {
+            m_cancellingSingleAction = true;
+            m_currentAction->serviceAction()->cancelOperation();
+        } else {
+            m_currentAction.reset();
+            processNextAction();
+        }
     }
-    m_searchActionId = enqueue(new SearchMessages(m_searchAction.data(), filter, bodyText, spec, limit, sort));
+    // Starts from 1 since top of the queue will be removed if above conditions are met.
+    for (int i = 1; i < m_actionQueue.size();) {
+         if (m_actionQueue.at(i).data()->type() == EmailAction::Search) {
+            m_actionQueue.removeAt(i);
+            qCDebug(lcDebug) <<  "Search action removed from the queue";
+        } else {
+            ++i;
+        }
+    }
 }
 
 bool EmailAgent::synchronizing() const
@@ -1209,10 +1235,12 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
 
 void EmailAgent::removeAction(quint64 actionId)
 {
-    for (int i = 0; i < m_actionQueue.size(); ++i) {
+    for (int i = 0; i < m_actionQueue.size();) {
         if (m_actionQueue.at(i).data()->id() == actionId) {
             m_actionQueue.removeAt(i);
             return;
+        } else {
+            ++i;
         }
     }
 }
@@ -1291,5 +1319,4 @@ void EmailAgent::emitSearchStatusChanges(QSharedPointer<EmailAction> action, Ema
     } else {
         qCDebug(lcDebug) << "Error: Invalid search action.";
     }
-    m_searchActionId = 0;
 }

@@ -14,6 +14,7 @@
 
 #include <QAbstractListModel>
 #include <QProcess>
+#include <QTimer>
 
 #include <qmailmessage.h>
 #include <qmailmessagelistmodel.h>
@@ -119,7 +120,8 @@ public slots:
     Q_INVOKABLE void sortByPriority(int order = 1);
     Q_INVOKABLE void sortBySize(int order = 1);
     Q_INVOKABLE void sortByTime(int order, EmailMessageListModel::Sort sortBy);
-    Q_INVOKABLE void setSearch(const QString search);
+    Q_INVOKABLE void setSearch(const QString &search);
+    Q_INVOKABLE void cancelSearch();
 
     Q_INVOKABLE int accountIdForMessage(int messageId);
     Q_INVOKABLE int folderIdForMessage(int messageId);
@@ -187,8 +189,10 @@ private:
     EmailMessageListModel::Sort m_sortBy;
     QMap<int, QMailMessageId> m_selectedMsgIds;
     QList<int> m_selectedUnreadIdx;
+    QTimer m_remoteSearchTimer;
 
     void checkFetchMoreChanged();
+    void setSearchRemainingOnRemote(int count);
 };
 
 #endif
