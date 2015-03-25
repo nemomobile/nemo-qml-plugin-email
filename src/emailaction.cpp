@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Jolla Ltd.
+ * Copyright (C) 2013-2015 Jolla Ltd.
  * Contact: Valerio Valerio <valerio.valerio@jollamobile.com>
  *
  * This program is licensed under the terms and conditions of the
@@ -681,6 +681,48 @@ QMailServiceAction* RetrieveMessages::serviceAction() const
 QMailMessageIdList RetrieveMessages::messageIds() const
 {
     return _messageIds;
+}
+
+/*
+  SearchMessages
+*/
+SearchMessages::SearchMessages(QMailSearchAction *searchAction,
+                               const QMailMessageKey &filter, const QString &bodyText,
+                               QMailSearchAction::SearchSpecification spec, quint64 limit, const QMailMessageSortKey &sort)
+    : EmailAction(spec == QMailSearchAction::Local ? false : true)
+    , _searchAction(searchAction)
+    , _filter(filter)
+    , _bodyText(bodyText)
+    , _spec(spec)
+    , _limit(limit)
+    , _sort(sort)
+{
+    _description = QString("search-messages:body-text=%1").arg(bodyText);
+    _type = EmailAction::Search;
+}
+
+SearchMessages::~SearchMessages()
+{
+}
+
+void SearchMessages::execute()
+{
+    _searchAction->searchMessages(_filter, _bodyText, _spec, _limit, _sort);
+}
+
+QMailServiceAction* SearchMessages::serviceAction() const
+{
+    return _searchAction;
+}
+
+bool SearchMessages::isRemote() const
+{
+    return (_spec == QMailSearchAction::Remote);
+}
+
+QString SearchMessages::searchText() const
+{
+    return _bodyText;
 }
 
 /*

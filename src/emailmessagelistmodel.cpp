@@ -20,7 +20,6 @@
 
 #include <mlocale.h>
 
-#include "emailagent.h"
 #include "emailmessagelistmodel.h"
 
 namespace {
@@ -59,7 +58,9 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
       m_combinedInbox(false),
       m_filterUnread(true),
       m_canFetchMore(false),
-      m_retrievalAction(new QMailRetrievalAction(this))
+      m_retrievalAction(new QMailRetrievalAction(this)),
+      m_searchLimit(100),
+      m_searchRemainingOnRemote(0)
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
     roles[QMailMessageModelBase::MessageSubjectTextRole] = "subject";
@@ -115,6 +116,12 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
 
     connect(QMailStore::instance(), SIGNAL(messagesRemoved(QMailMessageIdList)),
             this, SLOT(messagesRemoved(QMailMessageIdList)));
+
+    connect(EmailAgent::instance(), SIGNAL(searchCompleted(QString,const QMailMessageIdList&,bool,int,EmailAgent::SearchStatus)),
+            this, SLOT(onSearchCompleted(QString,const QMailMessageIdList&,bool,int,EmailAgent::SearchStatus)));
+
+    m_remoteSearchTimer.setSingleShot(true);
+    connect(&m_remoteSearchTimer, SIGNAL(timeout()), this, SLOT(searchOnline()));
 }
 
 EmailMessageListModel::~EmailMessageListModel()
@@ -323,11 +330,12 @@ int EmailMessageListModel::count() const
     return rowCount();
 }
 
-void EmailMessageListModel::setSearch(const QString search)
+void EmailMessageListModel::setSearch(const QString &search)
 {
-
     if(search.isEmpty()) {
-        setKey(QMailMessageKey::nonMatchingKey());
+        m_searchKey = QMailMessageKey::nonMatchingKey();
+        setKey(m_searchKey);
+        m_search = search;
     } else {
         if(m_search == search)
             return;
@@ -335,9 +343,20 @@ void EmailMessageListModel::setSearch(const QString search)
         QMailMessageKey recipientsKey = QMailMessageKey::recipients(search, QMailDataComparator::Includes);
         QMailMessageKey fromKey = QMailMessageKey::sender(search, QMailDataComparator::Includes);
         QMailMessageKey previewKey = QMailMessageKey::preview(search, QMailDataComparator::Includes);
-        setKey(m_key & (subjectKey | recipientsKey | fromKey | previewKey));
+        m_searchKey = QMailMessageKey(m_key & (subjectKey | recipientsKey | fromKey | previewKey));
+        setKey(m_searchKey);
+
+        m_search = search;
+        setSearchRemainingOnRemote(0);
+        // We have model filtering already via searchKey, so we pass just the current model key plus body search,
+        // otherwise results will be merged and just entries with both, fields and body matches will be returned.
+        EmailAgent::instance()->searchMessages(m_key, search, QMailSearchAction::Local, m_searchLimit);
     }
-    m_search = search;
+}
+
+void EmailMessageListModel::cancelSearch()
+{
+    EmailAgent::instance()->cancelSearch();
 }
 
 void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
@@ -889,6 +908,32 @@ void EmailMessageListModel::setLimit(uint limit)
     }
 }
 
+uint EmailMessageListModel::searchLimit() const
+{
+    return m_searchLimit;
+}
+
+void EmailMessageListModel::setSearchLimit(uint limit)
+{
+    if (limit != m_searchLimit) {
+        m_searchLimit = limit;
+        emit searchLimitChanged();
+    }
+}
+
+int EmailMessageListModel::searchRemainingOnRemote() const
+{
+    return m_searchRemainingOnRemote;
+}
+
+void EmailMessageListModel::setSearchRemainingOnRemote(int count)
+{
+    if (count != m_searchRemainingOnRemote) {
+        m_searchRemainingOnRemote = count;
+        emit searchRemainingOnRemoteChanged();
+    }
+}
+
 void EmailMessageListModel::checkFetchMoreChanged()
 {
     if (limit()) {
@@ -922,5 +967,53 @@ void EmailMessageListModel::messagesRemoved(const QMailMessageIdList &ids)
         if (m_canFetchMore) {
             checkFetchMoreChanged();
         }
+    }
+}
+
+void EmailMessageListModel::searchOnline()
+{
+    // Check if the search term did not change yet,
+    // if changed we skip online search until local search returns again
+    if (m_remoteSearch == m_search) {
+        qCDebug(lcGeneral) << "Starting remote search for " << m_search;
+        EmailAgent::instance()->searchMessages(m_searchKey, m_search, QMailSearchAction::Remote, m_searchLimit);
+    }
+}
+
+void EmailMessageListModel::onSearchCompleted(const QString &search, const QMailMessageIdList &matchedIds,
+                                              bool isRemote, int remainingMessagesOnRemote, EmailAgent::SearchStatus status)
+{
+    if (m_search.isEmpty()) {
+        return;
+    }
+
+    if (search != m_search) {
+        qCDebug(lcGeneral) << "Search terms are different, skipping. Received: " << search << " Have: " << m_search;
+        return;
+    }
+    switch (status) {
+    case EmailAgent::SearchDone:
+        if (isRemote) {
+            // Append online search results to local ones
+            setKey(key() | QMailMessageKey::id(matchedIds));
+            setSearchRemainingOnRemote(remainingMessagesOnRemote);
+            qCDebug(lcGeneral) << "We have more messages on remote " << remainingMessagesOnRemote;
+        } else {
+            setKey(m_searchKey | QMailMessageKey::id(matchedIds));
+            if (EmailAgent::instance()->isOnline()) {
+                m_remoteSearch = search;
+                // start online search after 2 seconds to avoid flooding the server with incomplete queries
+                m_remoteSearchTimer.start(2000);
+            } else {
+                qCDebug(lcGeneral) << "Device is offline, not performing online search";
+            }
+        }
+        break;
+    case EmailAgent::SearchCanceled:
+        break;
+    case EmailAgent::SearchFailed:
+        break;
+    default:
+        break;
     }
 }

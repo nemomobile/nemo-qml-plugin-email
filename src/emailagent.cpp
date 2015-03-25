@@ -1,6 +1,6 @@
 /*
  * Copyright 2011 Intel Corporation.
- * Copyright (C) 2012 Jolla Ltd.
+ * Copyright (C) 2012-2015 Jolla Ltd.
  *
  * This program is licensed under the terms and conditions of the
  * Apache License, version 2.0.  The full text of the Apache License is at 	
@@ -61,6 +61,7 @@ EmailAgent::EmailAgent(QObject *parent)
     , m_retrievalAction(new QMailRetrievalAction(this))
     , m_storageAction(new QMailStorageAction(this))
     , m_transmitAction(new QMailTransmitAction(this))
+    , m_searchAction(new QMailSearchAction(this))
     , m_nmanager(new QNetworkConfigurationManager(this))
     , m_networkSession(0)
 {
@@ -84,6 +85,12 @@ EmailAgent::EmailAgent(QObject *parent)
 
     connect(m_transmitAction.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
             this, SLOT(activityChanged(QMailServiceAction::Activity)));
+
+    connect(m_searchAction.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
+            this, SLOT(activityChanged(QMailServiceAction::Activity)));
+
+    connect(m_searchAction.data(), SIGNAL(messageIdsMatched(const QMailMessageIdList&)),
+            this, SIGNAL(searchMessageIdsMatched(const QMailMessageIdList&)));
 
     connect(m_nmanager, SIGNAL(onlineStateChanged(bool)), this, SLOT(onOnlineStateChanged(bool)));
 
@@ -159,10 +166,13 @@ void EmailAgent::setBackgroundProcess(const bool isBackgroundProcess)
 void EmailAgent::cancelAction(quint64 actionId)
 {
     //cancel running action
-    if (m_currentAction->id() == actionId) {
+    if (m_currentAction && (m_currentAction->id() == actionId)) {
         if(m_currentAction->serviceAction()->isRunning()) {
             m_cancellingSingleAction = true;
             m_currentAction->serviceAction()->cancelOperation();
+        } else {
+            m_currentAction.reset();
+            processNextAction();
         }
     } else {
         removeAction(actionId);
@@ -226,6 +236,47 @@ void EmailAgent::initMailServer()
 bool EmailAgent::ipcConnected()
 {
     return !m_waitForIpc;
+}
+
+bool EmailAgent::isOnline()
+{
+    return m_nmanager->isOnline();
+}
+
+void EmailAgent::searchMessages(const QMailMessageKey &filter,
+                                const QString &bodyText, QMailSearchAction::SearchSpecification spec,
+                                quint64 limit, const QMailMessageSortKey &sort)
+{
+    // Only one search action should be running at time,
+    // cancel any running or queued
+    m_enqueing = true;
+    cancelSearch();
+    qCDebug(lcDebug) << "Enqueuing new search " << bodyText;
+    m_enqueing = false;
+    enqueue(new SearchMessages(m_searchAction.data(), filter, bodyText, spec, limit, sort));
+}
+
+void EmailAgent::cancelSearch()
+{
+    //cancel running action if is search
+    if (m_currentAction && (m_currentAction->type() == EmailAction::Search)) {
+        if (m_currentAction->serviceAction()->isRunning()) {
+            m_cancellingSingleAction = true;
+            m_currentAction->serviceAction()->cancelOperation();
+        } else {
+            m_currentAction.reset();
+            processNextAction();
+        }
+    }
+    // Starts from 1 since top of the queue will be removed if above conditions are met.
+    for (int i = 1; i < m_actionQueue.size();) {
+         if (m_actionQueue.at(i).data()->type() == EmailAction::Search) {
+            m_actionQueue.removeAt(i);
+            qCDebug(lcDebug) <<  "Search action removed from the queue";
+        } else {
+            ++i;
+        }
+    }
 }
 
 bool EmailAgent::synchronizing() const
@@ -312,6 +363,10 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             qCDebug(lcGeneral) << "Canceled by the user";
             break;
         } else if (m_cancellingSingleAction) {
+            if (m_currentAction->type() == EmailAction::Search) {
+                qCDebug(lcGeneral) << "Search canceled by the user";
+                emitSearchStatusChanges(m_currentAction, EmailAgent::SearchCanceled);
+            }
             dequeue();
             m_currentAction.clear();
             qCDebug(lcGeneral) << "Single action canceled by the user";
@@ -320,6 +375,8 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             emit currentSynchronizingAccountIdChanged();
             if (m_actionQueue.empty()) {
                 m_synchronizing = false;
+            } else {
+                processNextAction();
             }
             break;
         } else {
@@ -330,6 +387,11 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 m_sendFailed = true;
                 emit sendCompleted(false);
                 qCDebug(lcGeneral) << "Error: Send failed";
+            }
+
+            if (m_currentAction->type() == EmailAction::Search) {
+                qCDebug(lcGeneral) << "Error: Search failed";
+                emitSearchStatusChanges(m_currentAction, EmailAgent::SearchFailed);
             }
 
             if (m_currentAction->type() == EmailAction::RetrieveMessagePart) {
@@ -349,19 +411,8 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
                 qCDebug(lcGeneral) << "Failed to download messages";
             }
 
-            m_currentAction = getNext();
             reportError(status.accountId, status.errorCode);
-
-            if (m_currentAction.isNull()) {
-                qCDebug(lcGeneral) << "Sync completed with Errors!!!.";
-                m_synchronizing = false;
-                m_accountSynchronizing = -1;
-                emit currentSynchronizingAccountIdChanged();
-                emit synchronizingChanged(EmailAgent::Error);
-            }
-            else {
-                executeCurrent();
-            }
+            processNextAction(true);
             break;
         }
 
@@ -371,6 +422,11 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             qCDebug(lcGeneral) << "Finished sending for " << m_currentAction->accountId();
             m_transmitting = false;
             emit sendCompleted(true);
+        }
+
+        if (m_currentAction->type() == EmailAction::Search) {
+            qCDebug(lcGeneral) << "Search done";
+            emitSearchStatusChanges(m_currentAction, EmailAgent::SearchDone);
         }
 
         if (m_currentAction->type() == EmailAction::StandardFolders) {
@@ -398,18 +454,7 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             emit messagesDownloaded(retrieveMessagesAction->messageIds(), true);
         }
 
-        m_currentAction = getNext();
-
-        if (m_currentAction.isNull()) {
-            qCDebug(lcGeneral) << "Sync completed.";
-            m_synchronizing = false;
-            m_accountSynchronizing = -1;
-            emit currentSynchronizingAccountIdChanged();
-            emit synchronizingChanged(EmailAgent::Completed);
-        }
-        else {
-            executeCurrent();
-        }
+        processNextAction();
         break;
 
     default:
@@ -1119,14 +1164,28 @@ QSharedPointer<EmailAction> EmailAgent::getNext()
     return firstAction;
 }
 
+void EmailAgent::processNextAction(bool error)
+{
+    m_currentAction = getNext();
+    if (m_currentAction.isNull()) {
+        m_synchronizing = false;
+        m_accountSynchronizing = -1;
+        emit currentSynchronizingAccountIdChanged();
+        if (error) {
+            emit synchronizingChanged(EmailAgent::Error);
+            qCDebug(lcGeneral) << "Sync completed with Errors!!!.";
+        } else {
+            emit synchronizingChanged(EmailAgent::Completed);
+            qCDebug(lcGeneral) << "Sync completed.";
+        }
+    } else {
+        executeCurrent();
+    }
+}
+
 quint64 EmailAgent::newAction()
 {
     return quint64(++m_actionCount);
-}
-
-bool EmailAgent::isOnline()
-{
-    return m_nmanager->isOnline();
 }
 
 void EmailAgent::reportError(const QMailAccountId &accountId, const QMailServiceAction::Status::ErrorCode &errorCode)
@@ -1176,10 +1235,12 @@ void EmailAgent::reportError(const QMailAccountId &accountId, const QMailService
 
 void EmailAgent::removeAction(quint64 actionId)
 {
-    for (int i = 0; i < m_actionQueue.size(); ++i) {
+    for (int i = 0; i < m_actionQueue.size();) {
         if (m_actionQueue.at(i).data()->id() == actionId) {
             m_actionQueue.removeAt(i);
             return;
+        } else {
+            ++i;
         }
     }
 }
@@ -1246,5 +1307,16 @@ void EmailAgent::updateAttachmentDowloadProgress(const QString &attachmentLocati
             m_attachmentDownloadQueue.insert(attachmentLocation, attInfo);
             emit attachmentDownloadProgressChanged(attachmentLocation, progress);
         }
+    }
+}
+
+void EmailAgent::emitSearchStatusChanges(QSharedPointer<EmailAction> action, EmailAgent::SearchStatus status)
+{
+    SearchMessages* searchAction = static_cast<SearchMessages *>(action.data());
+    if (searchAction) {
+        qCDebug(lcDebug) << "Search completed for " << searchAction->searchText();
+        emit searchCompleted(searchAction->searchText(), m_searchAction->matchingMessageIds(), searchAction->isRemote(), m_searchAction->remainingMessagesCount(), status);
+    } else {
+        qCDebug(lcDebug) << "Error: Invalid search action.";
     }
 }

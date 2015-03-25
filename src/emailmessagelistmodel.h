@@ -10,8 +10,11 @@
 #ifndef EMAILMESSAGELISTMODEL_H
 #define EMAILMESSAGELISTMODEL_H
 
+#include "emailagent.h"
+
 #include <QAbstractListModel>
 #include <QProcess>
+#include <QTimer>
 
 #include <qmailmessage.h>
 #include <qmailmessagelistmodel.h>
@@ -30,6 +33,8 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_PROPERTY(bool combinedInbox READ combinedInbox WRITE setCombinedInbox NOTIFY combinedInboxChanged)
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(uint limit READ limit WRITE setLimit NOTIFY limitChanged)
+    Q_PROPERTY(uint searchLimit READ searchLimit WRITE setSearchLimit NOTIFY searchLimitChanged)
+    Q_PROPERTY(int searchRemainingOnRemote READ searchRemainingOnRemote NOTIFY searchRemainingOnRemoteChanged FINAL)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
     Q_PROPERTY(bool unreadMailsSelected READ unreadMailsSelected NOTIFY unreadMailsSelectedChanged FINAL)
 
@@ -82,6 +87,9 @@ public:
     bool filterUnread() const;
     uint limit() const;
     void setLimit(uint limit);
+    uint searchLimit() const;
+    void setSearchLimit(uint limit);
+    int searchRemainingOnRemote() const;
     void setFilterUnread(bool u);
     EmailMessageListModel::Sort sortBy() const;
     bool unreadMailsSelected() const;
@@ -92,6 +100,8 @@ Q_SIGNALS:
     void combinedInboxChanged();
     void filterUnreadChanged();
     void limitChanged();
+    void searchLimitChanged();
+    void searchRemainingOnRemoteChanged();
     void sortByChanged();
     void unreadMailsSelectedChanged();
 
@@ -110,7 +120,8 @@ public slots:
     Q_INVOKABLE void sortByPriority(int order = 1);
     Q_INVOKABLE void sortBySize(int order = 1);
     Q_INVOKABLE void sortByTime(int order, EmailMessageListModel::Sort sortBy);
-    Q_INVOKABLE void setSearch(const QString search);
+    Q_INVOKABLE void setSearch(const QString &search);
+    Q_INVOKABLE void cancelSearch();
 
     Q_INVOKABLE int accountIdForMessage(int messageId);
     Q_INVOKABLE int folderIdForMessage(int messageId);
@@ -151,6 +162,9 @@ private slots:
     void downloadActivityChanged(QMailServiceAction::Activity);
     void messagesAdded(const QMailMessageIdList &ids);
     void messagesRemoved(const QMailMessageIdList &ids);
+    void searchOnline();
+    void onSearchCompleted(const QString &search, const QMailMessageIdList &matchedIds, bool isRemote,
+                           int remainingMessagesOnRemote, EmailAgent::SearchStatus status);
 
 protected:
     virtual QHash<int, QByteArray> roleNames() const;
@@ -166,13 +180,19 @@ private:
     QMailAccountIdList m_mailAccountIds;
     QMailRetrievalAction *m_retrievalAction;
     QString m_search;
+    QString m_remoteSearch;
+    uint m_searchLimit;
+    int m_searchRemainingOnRemote;
+    QMailMessageKey m_searchKey;
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
     EmailMessageListModel::Sort m_sortBy;
     QMap<int, QMailMessageId> m_selectedMsgIds;
     QList<int> m_selectedUnreadIdx;
+    QTimer m_remoteSearchTimer;
 
     void checkFetchMoreChanged();
+    void setSearchRemainingOnRemote(int count);
 };
 
 #endif
