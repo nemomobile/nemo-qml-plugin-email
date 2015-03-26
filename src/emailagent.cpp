@@ -375,6 +375,10 @@ void EmailAgent::activityChanged(QMailServiceAction::Activity activity)
             emit currentSynchronizingAccountIdChanged();
             if (m_actionQueue.empty()) {
                 m_synchronizing = false;
+                m_accountSynchronizing = -1;
+                emit currentSynchronizingAccountIdChanged();
+                emit synchronizingChanged(EmailAgent::Completed);
+                qCDebug(lcGeneral) << "Sync completed.";
             } else {
                 processNextAction();
             }

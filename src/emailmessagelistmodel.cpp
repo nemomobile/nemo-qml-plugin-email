@@ -336,6 +336,7 @@ void EmailMessageListModel::setSearch(const QString &search)
         m_searchKey = QMailMessageKey::nonMatchingKey();
         setKey(m_searchKey);
         m_search = search;
+        cancelSearch();
     } else {
         if(m_search == search)
             return;
