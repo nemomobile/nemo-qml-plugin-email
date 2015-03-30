@@ -87,7 +87,7 @@ public:
     bool ipcConnected();
     bool isOnline();
     void searchMessages(const QMailMessageKey &filter, const QString &bodyText, QMailSearchAction::SearchSpecification spec,
-                        quint64 limit, const QMailMessageSortKey &sort = QMailMessageSortKey());
+                        quint64 limit, bool searchBody, const QMailMessageSortKey &sort = QMailMessageSortKey());
     void cancelSearch();
     bool synchronizing() const;
     void flagMessages(const QMailMessageIdList &ids, quint64 setMask, quint64 unsetMask);

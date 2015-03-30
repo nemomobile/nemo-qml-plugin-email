@@ -335,7 +335,7 @@ public:
     SearchMessages(QMailSearchAction* searchAction,
                    const QMailMessageKey &filter,
                    const QString &bodyText, QMailSearchAction::SearchSpecification spec,
-                   quint64 limit, const QMailMessageSortKey &sort = QMailMessageSortKey());
+                   quint64 limit, bool searchBody = true, const QMailMessageSortKey &sort = QMailMessageSortKey());
     ~SearchMessages();
     void execute();
     QMailServiceAction* serviceAction() const;
@@ -349,6 +349,7 @@ private:
     QMailSearchAction::SearchSpecification _spec;
     quint64 _limit;
     QMailMessageSortKey _sort;
+    bool _searchBody;
 };
 
 class Synchronize : public EmailAction

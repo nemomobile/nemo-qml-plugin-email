@@ -245,7 +245,7 @@ bool EmailAgent::isOnline()
 
 void EmailAgent::searchMessages(const QMailMessageKey &filter,
                                 const QString &bodyText, QMailSearchAction::SearchSpecification spec,
-                                quint64 limit, const QMailMessageSortKey &sort)
+                                quint64 limit, bool searchBody, const QMailMessageSortKey &sort)
 {
     // Only one search action should be running at time,
     // cancel any running or queued
@@ -253,7 +253,7 @@ void EmailAgent::searchMessages(const QMailMessageKey &filter,
     cancelSearch();
     qCDebug(lcDebug) << "Enqueuing new search " << bodyText;
     m_enqueing = false;
-    enqueue(new SearchMessages(m_searchAction.data(), filter, bodyText, spec, limit, sort));
+    enqueue(new SearchMessages(m_searchAction.data(), filter, bodyText, spec, limit, searchBody, sort));
 }
 
 void EmailAgent::cancelSearch()

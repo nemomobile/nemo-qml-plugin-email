@@ -27,6 +27,7 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_OBJECT
     Q_ENUMS(Priority)
     Q_ENUMS(Sort)
+    Q_ENUMS(SearchOn)
 
     Q_PROPERTY(bool canFetchMore READ canFetchMore NOTIFY canFetchMoreChanged)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
@@ -34,6 +35,11 @@ class Q_DECL_EXPORT EmailMessageListModel : public QMailMessageListModel
     Q_PROPERTY(bool filterUnread READ filterUnread WRITE setFilterUnread NOTIFY filterUnreadChanged)
     Q_PROPERTY(uint limit READ limit WRITE setLimit NOTIFY limitChanged)
     Q_PROPERTY(uint searchLimit READ searchLimit WRITE setSearchLimit NOTIFY searchLimitChanged)
+    Q_PROPERTY(EmailMessageListModel::SearchOn searchOn READ searchOn WRITE setSearchOn NOTIFY searchOnChanged)
+    Q_PROPERTY(bool searchFrom READ searchFrom WRITE setSearchFrom NOTIFY searchFromChanged)
+    Q_PROPERTY(bool searchRecipients READ searchRecipients WRITE setSearchRecipients NOTIFY searchRecipientsChanged)
+    Q_PROPERTY(bool searchSubject READ searchSubject WRITE setSearchSubject NOTIFY searchSubjectChanged)
+    Q_PROPERTY(bool searchBody READ searchBody WRITE setSearchBody NOTIFY searchBodyChanged)
     Q_PROPERTY(int searchRemainingOnRemote READ searchRemainingOnRemote NOTIFY searchRemainingOnRemoteChanged FINAL)
     Q_PROPERTY(EmailMessageListModel::Sort sortBy READ sortBy NOTIFY sortByChanged)
     Q_PROPERTY(bool unreadMailsSelected READ unreadMailsSelected NOTIFY unreadMailsSelectedChanged FINAL)
@@ -79,6 +85,8 @@ public:
 
     enum Sort { Time, Sender, Size, ReadStatus, Priority, Attachments, Subject, Recipients};
 
+    enum SearchOn { LocalAndRemote, Local, Remote };
+
     // property accessors.
     bool canFetchMore() const;
     int count() const;
@@ -89,6 +97,16 @@ public:
     void setLimit(uint limit);
     uint searchLimit() const;
     void setSearchLimit(uint limit);
+    EmailMessageListModel::SearchOn searchOn() const;
+    void setSearchOn(EmailMessageListModel::SearchOn value);
+    bool searchFrom() const;
+    void setSearchFrom(bool value);
+    bool searchRecipients() const;
+    void setSearchRecipients(bool value);
+    bool searchSubject() const;
+    void setSearchSubject(bool value);
+    bool searchBody() const;
+    void setSearchBody(bool value);
     int searchRemainingOnRemote() const;
     void setFilterUnread(bool u);
     EmailMessageListModel::Sort sortBy() const;
@@ -101,6 +119,11 @@ Q_SIGNALS:
     void filterUnreadChanged();
     void limitChanged();
     void searchLimitChanged();
+    void searchOnChanged();
+    void searchFromChanged();
+    void searchRecipientsChanged();
+    void searchSubjectChanged();
+    void searchBodyChanged();
     void searchRemainingOnRemoteChanged();
     void sortByChanged();
     void unreadMailsSelectedChanged();
@@ -181,7 +204,13 @@ private:
     QMailRetrievalAction *m_retrievalAction;
     QString m_search;
     QString m_remoteSearch;
+    QString m_searchBodyText;
     uint m_searchLimit;
+    EmailMessageListModel::SearchOn m_searchOn;
+    bool m_searchFrom;
+    bool m_searchRecipients;
+    bool m_searchSubject;
+    bool m_searchBody;
     int m_searchRemainingOnRemote;
     QMailMessageKey m_searchKey;
     QMailMessageKey m_key;                  // key set externally other than search

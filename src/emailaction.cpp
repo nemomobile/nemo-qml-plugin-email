@@ -688,7 +688,7 @@ QMailMessageIdList RetrieveMessages::messageIds() const
 */
 SearchMessages::SearchMessages(QMailSearchAction *searchAction,
                                const QMailMessageKey &filter, const QString &bodyText,
-                               QMailSearchAction::SearchSpecification spec, quint64 limit, const QMailMessageSortKey &sort)
+                               QMailSearchAction::SearchSpecification spec, quint64 limit, bool searchBody, const QMailMessageSortKey &sort)
     : EmailAction(spec == QMailSearchAction::Local ? false : true)
     , _searchAction(searchAction)
     , _filter(filter)
@@ -696,6 +696,7 @@ SearchMessages::SearchMessages(QMailSearchAction *searchAction,
     , _spec(spec)
     , _limit(limit)
     , _sort(sort)
+    , _searchBody(searchBody)
 {
     _description = QString("search-messages:body-text=%1").arg(bodyText);
     _type = EmailAction::Search;
@@ -707,7 +708,11 @@ SearchMessages::~SearchMessages()
 
 void SearchMessages::execute()
 {
-    _searchAction->searchMessages(_filter, _bodyText, _spec, _limit, _sort);
+    QString bodyText;
+    if (_searchBody) {
+        bodyText = _bodyText;
+    }
+    _searchAction->searchMessages(_filter, bodyText, _spec, _limit, _sort);
 }
 
 QMailServiceAction* SearchMessages::serviceAction() const
