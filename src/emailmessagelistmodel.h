@@ -212,6 +212,7 @@ private:
     bool m_searchSubject;
     bool m_searchBody;
     int m_searchRemainingOnRemote;
+    bool m_searchCanceled;
     QMailMessageKey m_searchKey;
     QMailMessageKey m_key;                  // key set externally other than search
     QMailMessageSortKey m_sortKey;
