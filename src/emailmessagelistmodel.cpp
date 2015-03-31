@@ -65,7 +65,8 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
       m_searchRecipients(true),
       m_searchSubject(true),
       m_searchBody(true),
-      m_searchRemainingOnRemote(0)
+      m_searchRemainingOnRemote(0),
+      m_searchCanceled(false)
 {
     roles[QMailMessageModelBase::MessageAddressTextRole] = "sender";
     roles[QMailMessageModelBase::MessageSubjectTextRole] = "subject";
@@ -360,6 +361,7 @@ void EmailMessageListModel::setSearch(const QString &search)
             tempKey |= QMailMessageKey::preview(search, QMailDataComparator::Includes);
         }
 
+        m_searchCanceled = false;
         m_searchKey = QMailMessageKey(m_key & tempKey);
         m_search = search;
         setSearchRemainingOnRemote(0);
@@ -378,6 +380,8 @@ void EmailMessageListModel::setSearch(const QString &search)
 
 void EmailMessageListModel::cancelSearch()
 {
+    // Cancel also remote search since it can be trigger later by the timer
+    m_searchCanceled = true;
     EmailAgent::instance()->cancelSearch();
 }
 
@@ -1062,7 +1066,7 @@ void EmailMessageListModel::searchOnline()
 {
     // Check if the search term did not change yet,
     // if changed we skip online search until local search returns again
-    if (m_remoteSearch == m_search) {
+    if (!m_searchCanceled && (m_remoteSearch == m_search)) {
         qCDebug(lcGeneral) << "Starting remote search for " << m_search;
         EmailAgent::instance()->searchMessages(m_searchKey, m_search, QMailSearchAction::Remote, m_searchLimit, m_searchBody);
     }
@@ -1088,7 +1092,7 @@ void EmailMessageListModel::onSearchCompleted(const QString &search, const QMail
             qCDebug(lcGeneral) << "We have more messages on remote " << remainingMessagesOnRemote;
         } else {
             setKey(m_searchKey | QMailMessageKey::id(matchedIds));
-            if ((m_searchOn == EmailMessageListModel::LocalAndRemote) && EmailAgent::instance()->isOnline()) {
+            if ((m_searchOn == EmailMessageListModel::LocalAndRemote) && EmailAgent::instance()->isOnline() && !m_searchCanceled) {
                 m_remoteSearch = search;
                 // start online search after 2 seconds to avoid flooding the server with incomplete queries
                 m_remoteSearchTimer.start(2000);
