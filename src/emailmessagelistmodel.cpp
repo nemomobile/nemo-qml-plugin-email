@@ -400,7 +400,7 @@ void EmailMessageListModel::setFolderKey(int id, QMailMessageKey messageKey)
     checkFetchMoreChanged();
 }
 
-void EmailMessageListModel::setAccountKey(int id)
+void EmailMessageListModel::setAccountKey(int id, bool defaultInbox)
 {
     QMailAccountId accountId = QMailAccountId(id);
     if (!accountId.isValid()) {
@@ -410,21 +410,22 @@ void EmailMessageListModel::setAccountKey(int id)
     else {
         m_mailAccountIds.clear();
         m_mailAccountIds.append(accountId);
-        QMailAccount account(accountId);
-        QMailFolderId folderId = account.standardFolder(QMailFolder::InboxFolder);
 
         QMailMessageKey accountKey = QMailMessageKey::parentAccountId(accountId);
         QMailMessageListModel::setKey(accountKey);
-
-        if(folderId.isValid()) {
-            // default to INBOX
-            QMailMessageKey folderKey = QMailMessageKey::parentFolderId(folderId);
-            QMailMessageListModel::setKey(folderKey);
-        }
-        else {
-            QMailMessageListModel::setKey(QMailMessageKey::nonMatchingKey());
-            connect(QMailStore::instance(), SIGNAL(foldersAdded ( const QMailFolderIdList &)), this,
-                    SLOT(foldersAdded( const QMailFolderIdList &)));
+        if (defaultInbox) {
+            QMailAccount account(accountId);
+            QMailFolderId folderId = account.standardFolder(QMailFolder::InboxFolder);
+            if(folderId.isValid()) {
+                // default to INBOX
+                QMailMessageKey folderKey = QMailMessageKey::parentFolderId(folderId);
+                QMailMessageListModel::setKey(folderKey);
+            }
+            else {
+                QMailMessageListModel::setKey(QMailMessageKey::nonMatchingKey());
+                connect(QMailStore::instance(), SIGNAL(foldersAdded ( const QMailFolderIdList &)), this,
+                        SLOT(foldersAdded( const QMailFolderIdList &)));
+            }
         }
     }
     QMailMessageListModel::setSortKey(m_sortKey);
