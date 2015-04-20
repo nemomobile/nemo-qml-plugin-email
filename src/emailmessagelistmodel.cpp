@@ -362,6 +362,10 @@ void EmailMessageListModel::setSearch(const QString &search)
         }
 
         m_searchCanceled = false;
+        // All options are disabled, nothing to search
+        if (tempKey.isEmpty()) {
+            return;
+        }
         m_searchKey = QMailMessageKey(m_key & tempKey);
         m_search = search;
         setSearchRemainingOnRemote(0);
@@ -371,9 +375,9 @@ void EmailMessageListModel::setSearch(const QString &search)
             EmailAgent::instance()->searchMessages(m_searchKey, m_search, QMailSearchAction::Remote, m_searchLimit, m_searchBody);
         } else {
             setKey(m_searchKey);
-            // We have model filtering already via searchKey, so we pass just the current model key plus body search,
+            // We have model filtering already via searchKey, so when doing body search we pass just the current model key plus body search,
             // otherwise results will be merged and just entries with both, fields and body matches will be returned.
-            EmailAgent::instance()->searchMessages(m_key, m_search, QMailSearchAction::Local, m_searchLimit, m_searchBody);
+            EmailAgent::instance()->searchMessages(m_searchBody ? m_key : m_searchKey, m_search, QMailSearchAction::Local, m_searchLimit, m_searchBody);
         }
     }
 }
