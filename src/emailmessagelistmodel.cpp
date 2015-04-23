@@ -98,6 +98,7 @@ EmailMessageListModel::EmailMessageListModel(QObject *parent)
     roles[MessagePriorityRole] = "priority";
     roles[MessageAccountIdRole] = "accountId";
     roles[MessageHasAttachmentsRole] = "hasAttachments";
+    roles[MessageHasCalendarInvitationRole] = "hasCalendarInvitation";
     roles[MessageSizeSectionRole] = "sizeSection";
     roles[MessageFolderIdRole] = "folderId";
     roles[MessageSortByRole] = "sortBy";
@@ -294,6 +295,13 @@ QVariant EmailMessageListModel::data(const QModelIndex & index, int role) const 
             return 1;
         else
             return 0;
+    }
+    else if (role == MessageHasCalendarInvitationRole) {
+        if (messageMetaData.status() & QMailMessageMetaData::CalendarInvitation) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
     else if (role == MessageSizeSectionRole) {
         const uint size(messageMetaData.size());
