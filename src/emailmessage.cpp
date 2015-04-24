@@ -17,6 +17,28 @@
 #include "qmailnamespace.h"
 #include <qmaildisconnected.h>
 #include <QTextDocument>
+#include <QTemporaryFile>
+#include <QStandardPaths>
+#include <QDir>
+
+// Part finder
+namespace {
+
+struct PartFinder {
+    PartFinder(QMailMessageContentType type, const QMailMessagePart *&part) : contentType(type), partFound(part) {}
+
+    QMailMessageContentType contentType;
+    const QMailMessagePart *&partFound;
+
+    bool operator()(const QMailMessagePart &part) {
+        if (part.contentType().content().toLower() == contentType.content().toLower()) {
+            partFound = const_cast<QMailMessagePart*>(&part);
+            return false;
+        }
+        return true;
+    }
+};
+}
 
 // Supported image types by webkit
 static const QStringList supportedImageTypes = (QStringList() <<  "jpeg" << "jpg" << "png" << "gif" << "bmp" << "ico" << "webp");
@@ -27,6 +49,7 @@ EmailMessage::EmailMessage(QObject *parent)
     , m_newMessage(true)
     , m_downloadActionId(0)
     , m_htmlBodyConstructed(false)
+    , m_calendarStatus(Unknown)
 {
     setPriority(NormalPriority);
 }
@@ -89,6 +112,24 @@ void EmailMessage::onMessagePartDownloaded(const QMailMessageId &messageId, cons
                     emit bodyChanged();
                     emit quotedBodyChanged();
                 }
+                return;
+            }
+        }
+        // Check if is the calendar invitation part
+        if (const QMailMessagePart *calendarPart = getCalendarPart()) {
+            QMailMessagePart::Location location = calendarPart->location();
+            if (location.toString(true) == partLocation) {
+                disconnect(EmailAgent::instance(), SIGNAL(messagePartDownloaded(QMailMessageId,QString,bool)),
+                        this, SLOT(onMessagePartDownloaded(QMailMessageId,QString,bool)));
+                if (success) {
+                    m_calendarStatus = Downloaded;
+                    saveTempCalendarInvitation(*calendarPart);
+                } else {
+                    m_calendarStatus = Failed;
+                    qCWarning(lcGeneral) << Q_FUNC_INFO << "Failed to download calendar invitation part";
+                }
+                emit calendarInvitationStatusChanged();
+                return;
             }
         }
     }
@@ -133,6 +174,28 @@ void EmailMessage::cancelMessageDownload()
 void EmailMessage::downloadMessage()
 {
     requestMessageDownload();
+}
+
+void EmailMessage::getCalendarInvitation()
+{
+    if (const QMailMessagePart *calendarPart = getCalendarPart()) {
+        if (calendarPart->contentAvailable()) {
+            saveTempCalendarInvitation(*calendarPart);
+        } else {
+            qCDebug(lcGeneral) << "Calendar invitation content not available yet, downloading";
+            m_calendarStatus = Downloading;
+            emit calendarInvitationStatusChanged();
+            if (m_msg.multipartType() == QMailMessage::MultipartNone) {
+                requestMessageDownload();
+            } else {
+                requestMessagePartDownload(calendarPart);
+            }
+        }
+    } else {
+        m_calendarInvitationUrl = QString();
+        emit calendarInvitationUrlChanged();
+        qCWarning(lcGeneral) << Q_FUNC_INFO <<  "The message does not contain a calendar invitation";
+   }
 }
 
 void EmailMessage::send()
@@ -291,6 +354,24 @@ QString EmailMessage::body()
         // we're composing an email message.
         return m_bodyText;
     }
+}
+QString EmailMessage::calendarInvitationUrl()
+{
+    return m_calendarInvitationUrl;
+}
+
+bool EmailMessage::hasCalendarInvitation() const
+{
+    if (m_msg.status() & QMailMessageMetaData::CalendarInvitation) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+EmailMessage::AttachedDataStatus EmailMessage::calendarInvitationStatus() const
+{
+    return m_calendarStatus;
 }
 
 QStringList EmailMessage::cc() const
@@ -786,6 +867,10 @@ void EmailMessage::emitSignals()
 
 void EmailMessage::emitMessageReloadedSignals()
 {
+    // reset calendar invitation properties
+    m_calendarInvitationUrl = QString();
+    m_calendarStatus = Unknown;
+
     if (contentType() == EmailMessage::HTML) {
         emit htmlBodyChanged();
     }
@@ -794,6 +879,9 @@ void EmailMessage::emitMessageReloadedSignals()
     emit accountAddressChanged();
     emit folderIdChanged();
     emit attachmentsChanged();
+    emit calendarInvitationUrlChanged();
+    emit hasCalendarInvitationChanged();
+    emit calendarInvitationStatusChanged();
     emit bccChanged();
     emit ccChanged();
     emit dateChanged();
@@ -947,5 +1035,31 @@ void EmailMessage::insertInlineImages(const QList<QMailMessagePart::Location> &i
     } else {
         m_htmlBodyConstructed = true;
         emit htmlBodyChanged();
+    }
+}
+
+const QMailMessagePart* EmailMessage::getCalendarPart()
+{
+    const QMailMessagePart *result = 0;
+    PartFinder finder(QMailMessageContentType("text/calendar"), result);
+    m_msg.foreachPart(finder);
+    return result;
+}
+
+void EmailMessage::saveTempCalendarInvitation(const QMailMessagePart &calendarPart)
+{
+    QString calendarFileName = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
+            + QDir::separator() + calendarPart.identifier();
+
+    QString path = calendarPart.writeBodyTo(calendarFileName);
+    if (!path.isEmpty()) {
+        m_calendarStatus = Saved;
+        m_calendarInvitationUrl = path.prepend("file://");
+        emit calendarInvitationStatusChanged();
+        emit calendarInvitationUrlChanged();
+    } else {
+        qCDebug(lcDebug) << "ERROR: Failed to save calendar file to location " << calendarFileName;
+        m_calendarStatus = FailedToSave;
+        emit calendarInvitationStatusChanged();
     }
 }

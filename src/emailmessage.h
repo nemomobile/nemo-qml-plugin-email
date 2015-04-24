@@ -20,6 +20,7 @@ class Q_DECL_EXPORT EmailMessage : public QObject
     Q_ENUMS(Priority)
     Q_ENUMS(ContentType)
     Q_ENUMS(ResponseType)
+    Q_ENUMS(AttachedDataStatus)
 
 public:
     explicit EmailMessage(QObject *parent = 0);
@@ -31,6 +32,9 @@ public:
     Q_PROPERTY(QStringList attachments READ attachments WRITE setAttachments NOTIFY attachmentsChanged)
     Q_PROPERTY(QStringList bcc READ bcc WRITE setBcc NOTIFY bccChanged)
     Q_PROPERTY(QString body READ body WRITE setBody NOTIFY bodyChanged)
+    Q_PROPERTY(QString calendarInvitationUrl READ calendarInvitationUrl NOTIFY calendarInvitationUrlChanged FINAL)
+    Q_PROPERTY(bool hasCalendarInvitation READ hasCalendarInvitation NOTIFY hasCalendarInvitationChanged FINAL)
+    Q_PROPERTY(AttachedDataStatus calendarInvitationStatus READ calendarInvitationStatus NOTIFY calendarInvitationStatusChanged FINAL)
     Q_PROPERTY(QStringList cc READ cc WRITE setCc NOTIFY ccChanged)
     Q_PROPERTY(ContentType contentType READ contentType NOTIFY storedMessageChanged FINAL)
     Q_PROPERTY(QDateTime date READ date NOTIFY storedMessageChanged)
@@ -68,8 +72,20 @@ public:
         Redirect            = 5,
         UnspecifiedResponse = 6
     };
+
+    enum AttachedDataStatus {
+        Unknown = 0,
+        Downloaded,
+        Downloading,
+        Failed,
+        FailedToSave,
+        Saved
+    };
+
+
     Q_INVOKABLE void cancelMessageDownload();
     Q_INVOKABLE void downloadMessage();
+    Q_INVOKABLE void getCalendarInvitation();
     Q_INVOKABLE void send();
     Q_INVOKABLE void saveDraft();
 
@@ -79,6 +95,9 @@ public:
     QStringList attachments();
     QStringList bcc() const;
     QString body();
+    QString calendarInvitationUrl();
+    bool hasCalendarInvitation() const;
+    AttachedDataStatus calendarInvitationStatus() const;
     QStringList cc() const;
     ContentType contentType() const;
     QDateTime date() const;
@@ -125,6 +144,9 @@ signals:
     void folderIdChanged();
     void attachmentsChanged();
     void bccChanged();
+    void calendarInvitationUrlChanged();
+    void hasCalendarInvitationChanged();
+    void calendarInvitationStatusChanged();
     void ccChanged();
     void dateChanged();
     void fromChanged();
@@ -169,6 +191,8 @@ private:
     void insertInlineImage(const QMailMessagePart &inlinePart);
     void removeInlineImagePlaceholder(const QMailMessagePart &inlinePart);
     void insertInlineImages(const QList<QMailMessagePart::Location> &inlineParts);
+    const QMailMessagePart *getCalendarPart();
+    void saveTempCalendarInvitation(const QMailMessagePart &calendarPart);
 
     QMailAccount m_account;
     QStringList m_attachments;
@@ -182,6 +206,8 @@ private:
     quint64 m_downloadActionId;
     QMap<QString, QMailMessagePart::Location> m_partsToDownload;
     bool m_htmlBodyConstructed;
+    QString m_calendarInvitationUrl;
+    AttachedDataStatus m_calendarStatus;
 };
 
 #endif
