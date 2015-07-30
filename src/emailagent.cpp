@@ -27,8 +27,6 @@
 Q_LOGGING_CATEGORY(lcGeneral, "org.nemomobile.email.general")
 Q_LOGGING_CATEGORY(lcDebug, "org.nemomobile.email.debug")
 
-#define MESSAGESERVER "/usr/bin/messageserver5"
-
 namespace {
 
 QMailAccountId accountForMessageId(const QMailMessageId &msgId)
@@ -225,11 +223,14 @@ void EmailAgent::initMailServer()
         return;
     }
     QMail::fileUnlock(id);
-    qCDebug(lcGeneral) << Q_FUNC_INFO << "Starting messageserver process...";
+    qCDebug(lcGeneral) << Q_FUNC_INFO << "Starting messageserver service...";
     m_messageServerProcess = new QProcess(this);
     connect(m_messageServerProcess, SIGNAL(error(QProcess::ProcessError)),
             this, SLOT(onMessageServerProcessError(QProcess::ProcessError)));
-    m_messageServerProcess->startDetached(MESSAGESERVER);
+    // We ignore the dependencies here because we want messageserver to start even if there are
+    // no accounts in the system (e.g if this plugin is initiated to test account credentials during creation)
+    m_messageServerProcess->startDetached("systemctl", QStringList() << "--user" << "--ignore-dependencies"
+                                          << "start" << "messageserver5");
     return;
 }
 
@@ -472,8 +473,6 @@ void EmailAgent::onIpcConnectionEstablished()
 {
     if (m_waitForIpc) {
         m_waitForIpc = false;
-        emit ipcConnectionEstablished();
-
         if (m_currentAction.isNull())
             m_currentAction = getNext();
 
@@ -482,11 +481,14 @@ void EmailAgent::onIpcConnectionEstablished()
         } else {
             executeCurrent();
         }
+        emit ipcConnectionEstablished();
     }
 }
 
 void EmailAgent::onMessageServerProcessError(QProcess::ProcessError error)
 {
+    m_synchronizing = false;
+    emit synchronizingChanged(EmailAgent::Error);
     QString errorMsg(QString("Could not start messageserver process, unable to communicate with the remove servers.\nQProcess exit with error: (%1)")
                      .arg(static_cast<int>(error)));
     qFatal(errorMsg.toLatin1());
