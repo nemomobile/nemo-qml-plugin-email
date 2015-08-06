@@ -153,7 +153,11 @@ void AttachmentListModel::onAttachmentUrlChanged(const QString &attachmentLocati
 
 QString AttachmentListModel::attachmentUrl(const QMailMessage message, const QString &attachmentLocation)
 {
-    QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/" + attachmentLocation;
+    QMailAccountId accountId = message.parentAccountId();
+    // Temporary attachments must be saved in a account specific folder to enable easy cleaning of them
+    QString attachmentDownloadFolder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/mail_attachments/"
+            + QString::number(accountId.toULongLong()) +  "/" + attachmentLocation;
+
     for (uint i = 0; i < message.partCount(); i++) {
         QMailMessagePart sourcePart = message.partAt(i);
         if (attachmentLocation == sourcePart.location().toString(true)) {
