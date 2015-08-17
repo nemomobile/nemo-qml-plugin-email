@@ -103,9 +103,14 @@ private:
     QMailAccountId m_accountId;
     QList<FolderItem*> m_folderList;
 
+    static bool lessThan(const QMailFolderId &idA, const QMailFolderId &idB);
     FolderStandardType folderTypeFromId(const QMailFolderId &id) const;
+    bool isStandardFolder(const QMailFolderId &id) const;
+    void createAndAddFolderItem(const QModelIndex &idx, const QMailFolderId &mailFolderId,
+                                 FolderStandardType mailFolderType, const QMailMessageKey &folderMessageKey);
     QString localFolderName(const FolderStandardType folderType) const;
     void updateCurrentFolderIndex();
+    void addFolderAndChildren(const QMailFolderId &folderId, QMailMessageKey messageKey, QList<QMailFolderId> &originalList);
     void resetModel();
 };
 
